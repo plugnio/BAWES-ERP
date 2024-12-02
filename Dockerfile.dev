@@ -1,0 +1,14 @@
+FROM node:18-slim
+
+WORKDIR /usr/src/app
+
+# Install OpenSSL - often needed for Prisma
+RUN apt-get update && apt-get install -y openssl
+
+# First copy only package files to leverage Docker cache
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+CMD ["npm", "run", "start:dev"] 
