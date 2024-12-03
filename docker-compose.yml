@@ -21,8 +21,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: prisma
-      POSTGRES_PASSWORD: prisma123
+      POSTGRES_USER: erpuser
+      POSTGRES_PASSWORD: erppassword
       POSTGRES_DB: erp_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
