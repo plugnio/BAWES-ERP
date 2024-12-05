@@ -1,20 +1,23 @@
 import { PrismaClient } from '@prisma/client';
-import { banks } from './data/banks';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const bankCount = await prisma.bank.count();
+    /*
+    * Seed the database with the banks data
+    */
+    const bankCount = await prisma.bank.count();
 
-  if (bankCount === 0) {
-    for (const bank of banks) {
-      await prisma.bank.create({
-        data: bank,
-      });
+    if (bankCount === 0) {
+        const { banks } = await import('./data/banks');
+        for (const bank of banks) {
+            await prisma.bank.create({
+                data: bank,
+            });
+        }
+    } else {
+        console.log('Banks have already been seeded.');
     }
-  } else {
-    console.log('Banks have already been seeded.');
-  }
 }
 
 main()
