@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,30 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/// Bank model
+model Bank {
+  /// Unique identifier for the bank
+  id        String   @id @default(cuid())
+  /// Date and time when the bank was created
+  createdAt DateTime @default(now())
+  /// Date and time when the bank was last updated
+  updatedAt DateTime @updatedAt
+  /// English name of the bank
+  nameEn String
+  /// Arabic name of the bank
+  nameAr String
+  /// IBAN (International Bank Account Number) code prefix of the bank
+  ibanCode        String
+  /// SWIFT (Society for Worldwide Interbank Financial Telecommunication) code of the bank
+  swiftCode       String
+  /// Abbreviated code for the bank (internal usage for ABK system)
+  codeAbk         Int
+  /// Address of the bank (headquarters or branch)
+  address          String
+  /// Type of transfer the bank supports (e.g., LCL, TRF)
+  transferType  String
+  /// Indicates whether the record is deleted (soft delete)
+  isDeleted       Boolean @default(false)
 }
