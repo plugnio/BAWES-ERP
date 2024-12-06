@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Account model for bank accounts
+model Account {
+  /// Unique identifier for the account
+  id        String   @id @default(cuid())
+  /// Date and time when the account was created
+  createdAt DateTime @default(now())
+  /// Date and time when the account was last updated
+  updatedAt DateTime @updatedAt
+  /// Type of the account (savings, checking, credit card, etc.)
+  type      String
+}
+
 /// Bank model
 model Bank {
   /// Unique identifier for the bank
@@ -20,7 +32,7 @@ model Bank {
   /// Arabic name of the bank
   nameAr String
   /// IBAN (International Bank Account Number) code prefix of the bank
-  ibanCode        String
+  ibanCode        String   @unique
   /// SWIFT (Society for Worldwide Interbank Financial Telecommunication) code of the bank
   swiftCode       String
   /// Abbreviated code for the bank (internal usage for ABK system)
