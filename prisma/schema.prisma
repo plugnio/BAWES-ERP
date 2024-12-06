@@ -17,8 +17,12 @@ model Account {
   updatedAt DateTime @updatedAt
   /// Label of the account, used for display and identification. optional
   label     String?
-  /// Type of the account (savings, checking, credit card, etc.)
+  /// Type of the account (savings, checking, credit card, debit card, etc.)
   type      String
+  /// Balance of the account
+  balance   Decimal
+  /// Indicates whether the account is deleted (soft delete)
+  isDeleted Boolean @default(false)
 }
 
 /// Bank model
