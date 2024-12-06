@@ -23,7 +23,11 @@ model Account {
   balance         Decimal
   /// Indicates whether the account is deleted (soft delete)
   isDeleted       Boolean           @default(false)
-
+  
+  /// Optional reference to the associated bank
+  bankId          String?
+  /// Optional relation to the bank
+  bank            Bank?             @relation(fields: [bankId], references: [id])
   /// Account balances relation
   AccountBalances AccountBalances[]
 }
@@ -50,17 +54,17 @@ model AccountBalances {
 /// Bank model
 model Bank {
   /// Unique identifier for the bank
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   /// Date and time when the bank was created
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   /// Date and time when the bank was last updated
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
   /// English name of the bank
   nameEn       String
   /// Arabic name of the bank
   nameAr       String
   /// IBAN (International Bank Account Number) code prefix of the bank
-  ibanCode     String   @unique
+  ibanCode     String    @unique
   /// SWIFT (Society for Worldwide Interbank Financial Telecommunication) code of the bank
   swiftCode    String
   /// Abbreviated code for the bank (internal usage for ABK system)
@@ -70,5 +74,8 @@ model Bank {
   /// Type of transfer the bank supports (e.g., LCL, TRF)
   transferType String?
   /// Indicates whether the record is deleted (soft delete)
-  isDeleted    Boolean  @default(false)
+  isDeleted    Boolean   @default(false)
+
+  /// Relation to accounts
+  accounts     Account[]
 }
