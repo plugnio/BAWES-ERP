@@ -19,11 +19,15 @@ model Account {
   label           String?
   /// Type of the account (savings, checking, credit card, debit card, etc.)
   type            String
+  /// Status of the account (active, inactive, closed, etc.)
+  status          String
+  /// Currency of the account
+  currency        String
   /// Balance of the account
   balance         Decimal
   /// Indicates whether the account is deleted (soft delete)
   isDeleted       Boolean           @default(false)
-  
+
   /// Optional reference to the associated bank
   bankId          String?
   /// Optional relation to the bank
