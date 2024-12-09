@@ -8,6 +8,8 @@ datasource db {
 }
 
 // TODO: 
+// - Orgs ability to have multiple orgs, people being part of multiple orgs, 
+//  and what happens if a perosn is part of a parent org and a child org.
 // - Relationship between people and country for nationality and currently living in
 // - Relationship between bank and country?
 // - Relationship between person and organization
