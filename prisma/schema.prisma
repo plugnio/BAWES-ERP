@@ -8,6 +8,8 @@ datasource db {
 }
 
 // TODO: 
+// - Relationship between people and country for nationality and currently living in
+// - Relationship between bank and country?
 // - Relationship between person and organization
 // - Consider org relation with accounts for accounting
 // - Auth for person and organization, with RBAC implementation via JWT.
@@ -62,6 +64,12 @@ model Email {
   email String @unique
   /// Indicates whether the email is the primary email of the person
   isPrimary Boolean @default(false)
+  /// Is the email verified
+  isVerified Boolean @default(false)
+  /// Verification code for email
+  verificationCode String?
+  /// When the verification code expires
+  verificationCodeExpiresAt DateTime?
 
   /// Unique identifier for the person
   personId String?
@@ -76,7 +84,7 @@ model Email {
   @@map("email")
 }
 
-/// Person phone model, a person can have many phones. A phone can be associated with a person or not.
+/// Phone model, a phone can be associated with a person or organization.
 model Phone {
   /// Unique identifier for the person phone
   id String @id @default(cuid())
@@ -85,7 +93,19 @@ model Phone {
   /// Date and time when the phone was last updated
   updatedAt DateTime @updatedAt
   /// Phone number of the person
-  phone String @unique
+  phone String
+  /// Raw phone number without country code (e.g., "5555555")
+  phoneNumber String
+  /// E164 formatted phone number with country code (e.g., "+16505555555")
+  e164Number String
+  /// Formatted phone number for display (e.g., "(650) 555-5555")
+  formattedNumber String
+  /// Is the phone number verified
+  isVerified Boolean @default(false)
+  /// Verification code for phone number
+  verificationCode String?
+  /// When the verification code expires
+  verificationCodeExpiresAt DateTime?
   /// Indicates whether the phone is the primary phone of the person
   isPrimary Boolean @default(false)
 
@@ -93,11 +113,19 @@ model Phone {
   personId String?
   /// Unique identifier for the organization
   organizationId String?
+  /// Country ID for the phone number
+  countryId String
 
+  /// Relation to the country
+  country Country @relation(fields: [countryId], references: [id])
   /// Relation to the person
   person Person? @relation(fields: [personId], references: [id])
   /// Relation to the organization
   organization Organization? @relation(fields: [organizationId], references: [id])
+
+  /// Ensure phone numbers are unique within a country
+  @@unique([countryId, phoneNumber])
+
   // Map the model to the database table
   @@map("phone")
 }
@@ -183,4 +211,29 @@ model Bank {
   accounts     Account[]
   // Map the model to the database table
   @@map("bank")
+}
+
+/// Country model to handle country-specific data
+model Country {
+  /// Unique identifier for the country
+  id String @id @default(cuid())
+  /// ISO 3166-1 alpha-2 code (e.g., US, GB, SA)
+  code String @unique
+  /// English name of the country
+  nameEn String
+  /// Arabic name of the country
+  nameAr String
+  /// Phone country code (e.g., +1, +44, +966)
+  phoneCode String
+  /// ISO 4217 currency code (e.g., USD, GBP, SAR)
+  currencyCode String
+  /// Currency symbol (e.g., $, £, ﷼)
+  currencySymbol String
+  /// Indicates whether the country is deleted (soft delete)
+  isDeleted Boolean @default(false)
+
+  /// Relation to phones in this country
+  phones Phone[]
+  // Map the model to the database table
+  @@map("country")
 }
