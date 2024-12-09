@@ -8,9 +8,8 @@ datasource db {
 }
 
 // TODO: 
-// - Add org id to phone and email
+// - Relationship between person and organization
 // - Consider org relation with accounts for accounting
-// - Relation between person and organization
 // - Auth for person and organization, with RBAC implementation via JWT.
 // - Phone input unique across different countries / country codes.
 
@@ -24,6 +23,10 @@ model Organization {
   /// Indicates whether the organization is deleted (soft delete)
   isDeleted Boolean @default(false)
 
+  /// Relation to the organization emails
+  emails Email[]
+  /// Relation to the organization phones
+  phones Phone[]
   // Map the model to the database table
   @@map("organization")
 }
@@ -62,9 +65,13 @@ model Email {
 
   /// Unique identifier for the person
   personId String?
+  /// Unique identifier for the organization
+  organizationId String?
 
   /// Relation to the person
   person Person? @relation(fields: [personId], references: [id])
+  /// Relation to the organization
+  organization Organization? @relation(fields: [organizationId], references: [id])
   // Map the model to the database table
   @@map("email")
 }
@@ -84,10 +91,13 @@ model Phone {
 
   /// Unique identifier for the person
   personId String?
-  
+  /// Unique identifier for the organization
+  organizationId String?
 
   /// Relation to the person
   person Person? @relation(fields: [personId], references: [id])
+  /// Relation to the organization
+  organization Organization? @relation(fields: [organizationId], references: [id])
   // Map the model to the database table
   @@map("phone")
 }
@@ -137,7 +147,7 @@ model AccountBalances {
 
   /// Account ID
   accountId String
-  
+
   /// Account Relation
   account   Account @relation(fields: [accountId], references: [id])
   // Map the model to the database table
