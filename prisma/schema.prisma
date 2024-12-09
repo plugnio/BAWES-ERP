@@ -13,7 +13,6 @@ datasource db {
 // - Relationship between person and organization
 // - Consider org relation with accounts for accounting
 // - Auth for person and organization, with RBAC implementation via JWT.
-// - Phone input unique across different countries / country codes.
 
 model Organization {
   /// Unique identifier for the organization
