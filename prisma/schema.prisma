@@ -319,4 +319,7 @@ model RefreshToken {
   @@index([personId])
   @@index([expiresAt])
   @@index([hashedToken])
+
+  // Map the model to the database table
+  @@map("refresh_token")
 }
