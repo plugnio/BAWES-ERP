@@ -1,66 +1,17 @@
-# Cursor AI Rules for Financial Calculations
+# Development Guidelines
+- Keep changes small and focused and incremental
+- Keep code clean and readable, simple and easy to understand
+- Keep code scalable and easy to scale
+- Test your work and confirm it works before presenting it
 
-# CRITICAL: Decimal Handling
+# FinancialGuidelines
 - All financial calculations must use decimal.js library
 - Never use native JavaScript floating-point arithmetic for monetary values
 - Always import Decimal from 'decimal.js' when handling currency
-
-# Type Checking
 - Enforce strict type checking for all monetary values
 - Monetary values should always be of type Decimal
 - Validate decimal places (max 2 for standard currency)
-
-# Code Patterns to Enforce
-suggest: {
-    correct: [
-        "new Decimal(amount1).plus(amount2)",
-        "new Decimal(price).times(quantity)",
-        "amount.toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN)"
-    ],
-    avoid: [
-        "amount1 + amount2",
-        "price * quantity",
-        "parseFloat(amount).toFixed(2)"
-    ]
-}
-
-# Security Rules
-warn: {
-    patterns: [
-        "Math.random()",
-        "Math.floor()",
-        "Number()",
-        "parseFloat()",
-        "parseInt()"
-    ],
-    message: "⚠️ Potential precision loss in financial calculation. Use decimal.js methods instead."
-}
-
-# Documentation Requirements
-require: {
-    comments: [
-        "@param amount {Decimal}",
-        "@returns {Decimal}"
-    ],
-    imports: [
-        "import Decimal from 'decimal.js'"
-    ]
-}
-
-# Testing Requirements
-enforce: {
-    test_patterns: [
-        "*.test.ts should include decimal precision tests",
-        "*.test.ts should verify rounding behavior",
-        "*.test.ts should check for overflow conditions"
-    ]
-}
-
-# Performance Considerations
-optimize: {
-    patterns: [
-        "new Decimal() in loops",
-        "repeated decimal conversions"
-    ],
-    suggest: "Cache Decimal instances outside loops when possible"
-} 
+- Cache Decimal instances outside loops when possible
+- Use decimal.js methods instead of native JavaScript methods for precision
+- Implement proper error handling and logging for financial calculations
+- Regularly review and update decimal precision requirements
