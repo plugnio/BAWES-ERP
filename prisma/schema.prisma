@@ -8,6 +8,7 @@ datasource db {
 }
 
 // TODO: 
+// - Add account number and iban to account?
 // - Orgs ability to have multiple orgs, people being part of multiple orgs, 
 //  and what happens if a perosn is part of a parent org and a child org.
 // - Relationship between people and country for nationality and currently living in
