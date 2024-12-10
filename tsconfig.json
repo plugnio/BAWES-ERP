@@ -16,9 +16,13 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval"
-  }
+  },
+  "include": ["src/**/*"]
 }
