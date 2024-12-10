@@ -21,7 +21,12 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "seed:dev": "cross-env NODE_ENV=development prisma db seed",
+    "seed:prod": "cross-env NODE_ENV=production prisma db seed",
+    "db:reset": "prisma migrate reset --force",
+    "db:reset:dev": "cross-env NODE_ENV=development prisma migrate reset --force",
+    "db:reset:prod": "cross-env NODE_ENV=production prisma migrate reset --force"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -54,6 +59,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",

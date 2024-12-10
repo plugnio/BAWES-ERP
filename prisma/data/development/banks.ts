@@ -1,4 +1,6 @@
-export const banks = [
+import { Prisma } from '@prisma/client';
+
+export const banks: Prisma.BankCreateInput[] = [
     { 
         nameEn: 'Ahli United Bank', 
         nameAr: 'Ahli United Bank', 
@@ -7,7 +9,10 @@ export const banks = [
         codeAbk: 5, 
         address: 'Kuwait', 
         transferType: 'TRF', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'National Bank of Kuwait', 
@@ -17,7 +22,10 @@ export const banks = [
         codeAbk: 1, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Commercial Bank of Kuwait', 
@@ -27,7 +35,10 @@ export const banks = [
         codeAbk: 2, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Gulf Bank', 
@@ -37,7 +48,10 @@ export const banks = [
         codeAbk: 3, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Al-Ahli Bank of Kuwait', 
@@ -47,7 +61,10 @@ export const banks = [
         codeAbk: 4, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Kuwait International Bank', 
@@ -57,7 +74,10 @@ export const banks = [
         codeAbk: 6, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Burgan Bank', 
@@ -67,7 +87,10 @@ export const banks = [
         codeAbk: 7, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Kuwait Finance House', 
@@ -77,7 +100,10 @@ export const banks = [
         codeAbk: 9, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Boubyan Bank', 
@@ -87,7 +113,10 @@ export const banks = [
         codeAbk: 13, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Warba Bank', 
@@ -97,7 +126,10 @@ export const banks = [
         codeAbk: 23, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
     { 
         nameEn: 'Doha Bank', 
@@ -107,6 +139,9 @@ export const banks = [
         codeAbk: 19, 
         address: 'Kuwait', 
         transferType: 'LCL', 
-        isDeleted: false 
+        isDeleted: false,
+        country: {
+            connect: { code: 'KW' }
+        }
     },
 ]; 
