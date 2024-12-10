@@ -8,6 +8,7 @@ datasource db {
 }
 
 // TODO: 
+// - Connect bank to country, for transfers to India etc.
 // - Add account number and iban to account?
 // - Orgs ability to have multiple orgs, people being part of multiple orgs, 
 //  and what happens if a perosn is part of a parent org and a child org.
@@ -140,10 +141,16 @@ model Account {
   createdAt       DateTime          @default(now())
   /// Date and time when the account was last updated
   updatedAt       DateTime          @updatedAt
-  /// Label of the account, used for display and identification. optional
-  label           String?
   /// Type of the account (savings, checking, credit card, debit card, etc.)
   type            String
+  /// Name of the account as per issuer (Eg: BAWES FOR COMPUTER AND OPERATION COMPANY)
+  nameAsPerIssuer String
+  /// Account or credit card number as per issuer (Eg: 0603022881002)
+  numberAsPerIssuer String
+  /// IBAN of the account (if exists)
+  iban String?
+  /// Label of the account, used for display and identification. optional (ie: BAWES01: For Plugn)
+  label           String?
   /// Status of the account (active, inactive, closed, etc.)
   status          String
   /// Currency of the account
