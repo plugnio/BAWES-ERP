@@ -289,15 +289,34 @@ model Country {
   @@map("country")
 }
 
+/// Refresh token model for handling session persistence and token rotation
 model RefreshToken {
-  id        String   @id
-  personId  String
-  expiresAt DateTime
-  isRevoked Boolean  @default(false)
-  createdAt DateTime @default(now())
-  
-  person    Person   @relation(fields: [personId], references: [id])
+  /// Unique identifier for the refresh token
+  id            String    @id @default(cuid())
+  /// Reference to the person who owns this token
+  personId      String
+  /// Hashed version of the refresh token for secure storage
+  hashedToken   String    
+  /// User agent string of the device that created the token
+  deviceDetails String?   
+  /// IP address from which the token was created/last used (for audit only)
+  ipAddress     String    
+  /// When this token expires
+  expiresAt     DateTime
+  /// Whether this token has been revoked
+  isRevoked     Boolean   @default(false)
+  /// Reason for revocation if the token was revoked
+  revokedReason String?   
+  /// Last time this token was used to obtain a new access token
+  lastUsedAt    DateTime  @default(now())
+  /// Date and time when the token was created
+  createdAt     DateTime  @default(now())
+  /// Date and time when the token was last updated
+  updatedAt     DateTime  @updatedAt
+  /// Reference to the person model
+  person        Person    @relation(fields: [personId], references: [id])
 
   @@index([personId])
   @@index([expiresAt])
+  @@index([hashedToken])
 }

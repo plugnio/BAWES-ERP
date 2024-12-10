@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +11,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateLogin(email: string, password: string) {
+  async validateLogin(email: string, password: string, req: Request) {
     // Find the email record
     const emailRecord = await this.prisma.email.findUnique({
       where: { email },
@@ -43,7 +43,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    return this.generateTokens(person.id);
+    return this.generateTokens(person.id, req);
   }
 
   async register(data: { 
@@ -98,30 +98,59 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(personId: string) {
+  private async generateTokens(personId: string, req: Request) {
+    // Generate access token
     const accessTokenPayload = { sub: personId };
-    const refreshTokenId = uuidv4();
-    const refreshTokenPayload = { 
-      sub: personId,
-      jti: refreshTokenId 
-    };
-
-    // Generate tokens
     const accessToken = this.jwtService.sign(accessTokenPayload, {
       expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m'
     });
+
+    // Get a new CUID from Prisma without creating a record
+    const { id: tokenId } = await this.prisma.refreshToken.create({
+      select: { id: true },
+      data: {
+        personId,
+        hashedToken: 'pending', // Temporary value that will be immediately replaced in the upsert below
+        deviceDetails: 'pending',
+        ipAddress: 'pending',
+        expiresAt: new Date(),
+        isRevoked: true // Mark as revoked until we update with real values
+      }
+    });
+
+    // Generate refresh token with the CUID
+    const refreshTokenPayload = { 
+      sub: personId,
+      jti: tokenId
+    };
     
     const refreshToken = this.jwtService.sign(refreshTokenPayload, {
       expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRY || '7d'
     });
 
-    // Store refresh token in database
-    await this.prisma.refreshToken.create({
-      data: {
-        id: refreshTokenId,
+    // Hash the refresh token
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+
+    // Update the record with actual values using upsert to ensure atomicity
+    await this.prisma.refreshToken.upsert({
+      where: { id: tokenId },
+      create: {
+        id: tokenId,
         personId,
+        hashedToken,
+        deviceDetails: req.headers['user-agent'] || 'Unknown Device',
+        ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
         expiresAt: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 7 days
-        isRevoked: false
+        isRevoked: false,
+        lastUsedAt: new Date()
+      },
+      update: {
+        hashedToken,
+        deviceDetails: req.headers['user-agent'] || 'Unknown Device',
+        ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
+        expiresAt: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 7 days
+        isRevoked: false,
+        lastUsedAt: new Date()
       }
     });
 
@@ -133,7 +162,7 @@ export class AuthService {
     };
   }
 
-  async refreshAccessToken(refreshToken: string) {
+  async refreshAccessToken(refreshToken: string, req: Request) {
     try {
       // Verify refresh token
       const decoded = this.jwtService.verify(refreshToken);
@@ -146,6 +175,22 @@ export class AuthService {
       if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
         throw new UnauthorizedException('Invalid refresh token');
       }
+
+      // Verify the token hash matches
+      const isValidToken = await bcrypt.compare(refreshToken, storedToken.hashedToken);
+      if (!isValidToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Update last used timestamp and record current device/IP for audit
+      await this.prisma.refreshToken.update({
+        where: { id: decoded.jti },
+        data: { 
+          lastUsedAt: new Date(),
+          deviceDetails: req.headers['user-agent'] || 'Unknown Device',
+          ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP'
+        }
+      });
 
       // Generate new access token
       const accessTokenPayload = { sub: decoded.sub };
@@ -163,12 +208,15 @@ export class AuthService {
     }
   }
 
-  async revokeRefreshToken(refreshToken: string) {
+  async revokeRefreshToken(refreshToken: string, reason: string = 'Manual logout') {
     try {
       const decoded = this.jwtService.verify(refreshToken);
       await this.prisma.refreshToken.update({
         where: { id: decoded.jti },
-        data: { isRevoked: true }
+        data: { 
+          isRevoked: true,
+          revokedReason: reason
+        }
       });
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');

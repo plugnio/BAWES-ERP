@@ -1,6 +1,7 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
+import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -9,8 +10,11 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() data: { email: string; password: string }) {
-    return this.authService.validateLogin(data.email, data.password);
+  async login(
+    @Body() data: { email: string; password: string },
+    @Req() req: Request
+  ) {
+    return this.authService.validateLogin(data.email, data.password, req);
   }
 
   @Public()
@@ -27,8 +31,11 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() data: { refresh_token: string }) {
-    return this.authService.refreshAccessToken(data.refresh_token);
+  async refresh(
+    @Body() data: { refresh_token: string },
+    @Req() req: Request
+  ) {
+    return this.authService.refreshAccessToken(data.refresh_token, req);
   }
 
   @Post('logout')

@@ -102,15 +102,72 @@ Note: The system uses `JWT_ACCESS_TOKEN_EXPIRY` for regular access tokens and `J
 ### Database Schema
 ```prisma
 model RefreshToken {
-  id        String   @id
-  personId  String
-  expiresAt DateTime
-  isRevoked Boolean  @default(false)
-  person    Person   @relation(fields: [personId], references: [id])
+  id            String    @id
+  personId      String
+  hashedToken   String    // Store hashed version instead of raw token
+  deviceDetails String?   // Browser, OS, etc
+  ipAddress     String    // IP address of the request
+  expiresAt     DateTime
+  isRevoked     Boolean   @default(false)
+  revokedReason String?   // Reason for revocation if any
+  lastUsedAt    DateTime  @default(now()) // Track when the token was last used
+  createdAt     DateTime  @default(now())
+  person        Person    @relation(fields: [personId], references: [id])
 
   @@index([personId])
+  @@index([expiresAt])
+  @@index([hashedToken])
 }
 ```
+
+### Security Features
+
+1. **Token Storage Security**
+   - Refresh tokens are hashed before storage (using bcrypt)
+   - Original tokens are never stored in the database
+   - Tokens are validated against stored hashes
+
+2. **Device Tracking**
+   - Each refresh token is tied to a specific device
+   - Device information is captured from User-Agent
+   - Tokens are invalidated if used from different devices
+
+3. **IP Address Tracking**
+   - Each token records the IP address it was issued from
+   - Suspicious activity monitoring for IP changes
+   - Automatic token revocation for suspicious IP changes
+
+4. **Usage Tracking**
+   - Last used timestamp for each token
+   - Creation timestamp for audit trails
+   - Revocation reason tracking
+   - Token usage patterns monitoring
+
+5. **Automatic Security Responses**
+   - Tokens are automatically revoked on suspicious activity
+   - Different device usage triggers revocation
+   - Different IP address usage triggers revocation
+   - Detailed reason logging for revocations
+
+### Token Lifecycle
+
+1. **Token Creation**
+   - Generated during login
+   - Device details captured
+   - IP address recorded
+   - Token hashed for storage
+
+2. **Token Usage**
+   - Last used timestamp updated
+   - Device verification
+   - IP address verification
+   - Hash verification
+
+3. **Token Revocation**
+   - Manual logout
+   - Suspicious activity detection
+   - Expiration
+   - Reason logging
 
 ### API Endpoints
 
