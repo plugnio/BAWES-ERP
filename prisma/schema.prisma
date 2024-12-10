@@ -211,11 +211,26 @@ model Bank {
   codeAbk      Int?
   /// Address of the bank (headquarters or branch)
   address      String
+  /// Name of the branch (if exists)
+  branchName   String?
+  /// State of the bank (if exists)
+  state        String?
+  /// City of the bank (if exists)
+  city         String?
+  /// Postcode of the bank (if exists)
+  postcode     String?
   /// Type of transfer the bank supports (e.g., LCL, TRF)
   transferType String?
+  /// Additional information about the bank
+  additionalInfo Json? // Example: { "ifscCode": "ICIC0003990", "mmid": "9229333" }
   /// Indicates whether the record is deleted (soft delete)
   isDeleted    Boolean   @default(false)
 
+  /// Relation to country, which country is this bank in?
+  countryId String
+
+  /// Relation to country
+  country Country @relation(fields: [countryId], references: [id])  
   /// Relation to accounts
   accounts     Account[]
   // Map the model to the database table
@@ -241,6 +256,8 @@ model Country {
   /// Indicates whether the country is deleted (soft delete)
   isDeleted Boolean @default(false)
 
+  /// Relation to banks in this country
+  banks Bank[]
   /// Relation to phones in this country
   phones Phone[]
   // Map the model to the database table
