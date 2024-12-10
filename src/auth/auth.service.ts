@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +43,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    return this.generateToken(person.id);
+    return this.generateTokens(person.id);
   }
 
   async register(data: { 
@@ -97,11 +98,81 @@ export class AuthService {
     };
   }
 
-  private generateToken(personId: string) {
-    const payload = { sub: personId };
-    return {
-      access_token: this.jwtService.sign(payload),
+  private async generateTokens(personId: string) {
+    const accessTokenPayload = { sub: personId };
+    const refreshTokenId = uuidv4();
+    const refreshTokenPayload = { 
+      sub: personId,
+      jti: refreshTokenId 
     };
+
+    // Generate tokens
+    const accessToken = this.jwtService.sign(accessTokenPayload, {
+      expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m'
+    });
+    
+    const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+      expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRY || '7d'
+    });
+
+    // Store refresh token in database
+    await this.prisma.refreshToken.create({
+      data: {
+        id: refreshTokenId,
+        personId,
+        expiresAt: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 7 days
+        isRevoked: false
+      }
+    });
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: 'Bearer',
+      expires_in: 900 // 15 minutes in seconds
+    };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      // Verify refresh token
+      const decoded = this.jwtService.verify(refreshToken);
+      
+      // Check if token exists and is not revoked
+      const storedToken = await this.prisma.refreshToken.findUnique({
+        where: { id: decoded.jti }
+      });
+
+      if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Generate new access token
+      const accessTokenPayload = { sub: decoded.sub };
+      const accessToken = this.jwtService.sign(accessTokenPayload, {
+        expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m'
+      });
+
+      return {
+        access_token: accessToken,
+        token_type: 'Bearer',
+        expires_in: 900 // 15 minutes in seconds
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async revokeRefreshToken(refreshToken: string) {
+    try {
+      const decoded = this.jwtService.verify(refreshToken);
+      await this.prisma.refreshToken.update({
+        where: { id: decoded.jti },
+        data: { isRevoked: true }
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async verifyEmail(email: string, code: string) {

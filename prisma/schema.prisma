@@ -20,22 +20,23 @@ datasource db {
 
 model Organization {
   /// Unique identifier for the organization
-  id String @id @default(cuid())
+  id        String   @id @default(cuid())
   /// Date and time when the organization was created
   createdAt DateTime @default(now())
   /// Date and time when the organization was last updated
   updatedAt DateTime @updatedAt
   /// English name of the organization
-  nameEn String
+  nameEn    String
   /// Arabic name of the organization
-  nameAr String
+  nameAr    String
   /// Indicates whether the organization is deleted (soft delete)
-  isDeleted Boolean @default(false)
+  isDeleted Boolean  @default(false)
 
   /// Relation to the organization emails
   emails Email[]
   /// Relation to the organization phones
   phones Phone[]
+
   // Map the model to the database table
   @@map("organization")
 }
@@ -43,32 +44,34 @@ model Organization {
 /// Person model
 model Person {
   /// Unique identifier for the person
-  id String @id @default(cuid())
+  id                          String    @id @default(cuid())
   /// Date and time when the person was created
-  createdAt DateTime @default(now())
+  createdAt                   DateTime  @default(now())
   /// Date and time when the person was last updated
-  updatedAt DateTime @updatedAt
+  updatedAt                   DateTime  @updatedAt
   /// English name of the person
-  nameEn String?
+  nameEn                      String?
   /// Arabic name of the person
-  nameAr String?
+  nameAr                      String?
   /// Hashed password for authentication
-  passwordHash String?
+  passwordHash                String?
   /// Last login timestamp
-  lastLoginAt DateTime?
+  lastLoginAt                 DateTime?
   /// Account status (active, suspended, locked, etc.)
-  accountStatus String @default("active")
+  accountStatus               String    @default("active")
   /// Password reset token
-  passwordResetToken String?
+  passwordResetToken          String?
   /// Password reset token expiry
   passwordResetTokenExpiresAt DateTime?
   /// Indicates whether the person is deleted (soft delete)
-  isDeleted Boolean @default(false)
+  isDeleted                   Boolean   @default(false)
 
   /// Relation to the person emails
-  emails Email[]
+  emails       Email[]
   /// Relation to the person phones
-  phones Phone[]
+  phones       Phone[]
+  RefreshToken RefreshToken[]
+
   // Map the model to the database table
   @@map("person")
 }
@@ -76,31 +79,32 @@ model Person {
 /// Person email model, a person/organization can have many emails. An email can be associated with a person/organization or not.
 model Email {
   /// Unique identifier for the person email
-  id String @id @default(cuid())
+  id                        String    @id @default(cuid())
   /// Date and time when the email was created
-  createdAt DateTime @default(now())
+  createdAt                 DateTime  @default(now())
   /// Date and time when the email was last updated
-  updatedAt DateTime @updatedAt
+  updatedAt                 DateTime  @updatedAt
   /// Email address of the person
-  email String @unique
+  email                     String    @unique
   /// Indicates whether the email is the primary email of the person
-  isPrimary Boolean @default(false)
+  isPrimary                 Boolean   @default(false)
   /// Is the email verified
-  isVerified Boolean @default(false)
+  isVerified                Boolean   @default(false)
   /// Verification code for email
-  verificationCode String?
+  verificationCode          String?
   /// When the verification code expires
   verificationCodeExpiresAt DateTime?
 
   /// Unique identifier for the person
-  personId String?
+  personId       String?
   /// Unique identifier for the organization
   organizationId String?
 
   /// Relation to the person
-  person Person? @relation(fields: [personId], references: [id])
+  person       Person?       @relation(fields: [personId], references: [id])
   /// Relation to the organization
   organization Organization? @relation(fields: [organizationId], references: [id])
+
   // Map the model to the database table
   @@map("email")
 }
@@ -108,45 +112,44 @@ model Email {
 /// Phone model, a phone can be associated with a person or organization.
 model Phone {
   /// Unique identifier for the person phone
-  id String @id @default(cuid())
+  id                        String    @id @default(cuid())
   /// Date and time when the phone was created
-  createdAt DateTime @default(now())
+  createdAt                 DateTime  @default(now())
   /// Date and time when the phone was last updated
-  updatedAt DateTime @updatedAt
+  updatedAt                 DateTime  @updatedAt
   /// Phone number of the person
-  phone String
+  phone                     String
   /// Raw phone number without country code (e.g., "5555555")
-  phoneNumber String
+  phoneNumber               String
   /// E164 formatted phone number with country code (e.g., "+16505555555")
-  e164Number String
+  e164Number                String
   /// Formatted phone number for display (e.g., "(650) 555-5555")
-  formattedNumber String
+  formattedNumber           String
   /// Is the phone number verified
-  isVerified Boolean @default(false)
+  isVerified                Boolean   @default(false)
   /// Verification code for phone number
-  verificationCode String?
+  verificationCode          String?
   /// When the verification code expires
   verificationCodeExpiresAt DateTime?
   /// Indicates whether the phone is the primary phone of the person
-  isPrimary Boolean @default(false)
+  isPrimary                 Boolean   @default(false)
 
   /// Unique identifier for the person
-  personId String?
+  personId       String?
   /// Unique identifier for the organization
   organizationId String?
   /// Country ID for the phone number
-  countryId String
+  countryId      String
 
   /// Relation to the country
-  country Country @relation(fields: [countryId], references: [id])
+  country      Country       @relation(fields: [countryId], references: [id])
   /// Relation to the person
-  person Person? @relation(fields: [personId], references: [id])
+  person       Person?       @relation(fields: [personId], references: [id])
   /// Relation to the organization
   organization Organization? @relation(fields: [organizationId], references: [id])
 
   /// Ensure phone numbers are unique within a country
   @@unique([countryId, phoneNumber])
-
   // Map the model to the database table
   @@map("phone")
 }
@@ -154,37 +157,38 @@ model Phone {
 /// Account model for bank accounts
 model Account {
   /// Unique identifier for the account
-  id              String            @id @default(cuid())
+  id                String   @id @default(cuid())
   /// Date and time when the account was created
-  createdAt       DateTime          @default(now())
+  createdAt         DateTime @default(now())
   /// Date and time when the account was last updated
-  updatedAt       DateTime          @updatedAt
+  updatedAt         DateTime @updatedAt
   /// Type of the account (savings, checking, credit card, debit card, etc.)
-  type            String
+  type              String
   /// Name of the account as per issuer (Eg: BAWES FOR COMPUTER AND OPERATION COMPANY)
-  nameAsPerIssuer String
+  nameAsPerIssuer   String
   /// Account or credit card number as per issuer (Eg: 0603022881002)
   numberAsPerIssuer String
   /// IBAN of the account (if exists)
-  iban String?
+  iban              String?
   /// Label of the account, used for display and identification. optional (ie: BAWES01: For Plugn)
-  label           String?
+  label             String?
   /// Status of the account (active, inactive, closed, etc.)
-  status          String
+  status            String
   /// Currency of the account
-  currency        String
+  currency          String
   /// Balance of the account
-  balance         Decimal
+  balance           Decimal
   /// Indicates whether the account is deleted (soft delete)
-  isDeleted       Boolean           @default(false)
+  isDeleted         Boolean  @default(false)
 
   /// Optional reference to the associated bank
-  bankId          String?
+  bankId String?
 
   /// Optional relation to the bank
   bank            Bank?             @relation(fields: [bankId], references: [id])
   /// Account balances relation
   AccountBalances AccountBalances[]
+
   // Map the model to the database table
   @@map("account")
 }
@@ -192,19 +196,20 @@ model Account {
 /// Account balances model, used to store the balance of an account at a specific time when scraping from bank records
 model AccountBalances {
   /// Unique identifier for the account balance
-  id         String   @id @default(cuid())
+  id        String   @id @default(cuid())
   /// Date and time when the account balance was created
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
   /// Balance of the account
-  balance    Decimal
+  balance   Decimal
   /// Source of the account balance (eg: bank statement, bank API, scraper, etc.)
-  source     String
+  source    String
 
   /// Account ID
   accountId String
 
   /// Account Relation
-  account   Account @relation(fields: [accountId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
   // Map the model to the database table
   @@map("account_balances")
 }
@@ -212,45 +217,46 @@ model AccountBalances {
 /// Bank model
 model Bank {
   /// Unique identifier for the bank
-  id           String    @id @default(cuid())
+  id             String   @id @default(cuid())
   /// Date and time when the bank was created
-  createdAt    DateTime  @default(now())
+  createdAt      DateTime @default(now())
   /// Date and time when the bank was last updated
-  updatedAt    DateTime  @updatedAt
+  updatedAt      DateTime @updatedAt
   /// English name of the bank
-  nameEn       String
+  nameEn         String
   /// Arabic name of the bank
-  nameAr       String
+  nameAr         String
   /// IBAN (International Bank Account Number) code prefix of the bank
-  ibanCode     String    @unique
+  ibanCode       String   @unique
   /// SWIFT (Society for Worldwide Interbank Financial Telecommunication) code of the bank
-  swiftCode    String
+  swiftCode      String
   /// Abbreviated code for the bank (internal usage for ABK system)
-  codeAbk      Int?
+  codeAbk        Int?
   /// Address of the bank (headquarters or branch)
-  address      String
+  address        String
   /// Name of the branch (if exists)
-  branchName   String?
+  branchName     String?
   /// State of the bank (if exists)
-  state        String?
+  state          String?
   /// City of the bank (if exists)
-  city         String?
+  city           String?
   /// Postcode of the bank (if exists)
-  postcode     String?
+  postcode       String?
   /// Type of transfer the bank supports (e.g., LCL, TRF)
-  transferType String?
+  transferType   String?
   /// Additional information about the bank
   additionalInfo Json? // Example: { "ifscCode": "ICIC0003990", "mmid": "9229333" }
   /// Indicates whether the record is deleted (soft delete)
-  isDeleted    Boolean   @default(false)
+  isDeleted      Boolean  @default(false)
 
   /// Relation to country, which country is this bank in?
   countryId String
 
   /// Relation to country
-  country Country @relation(fields: [countryId], references: [id])  
+  country  Country   @relation(fields: [countryId], references: [id])
   /// Relation to accounts
-  accounts     Account[]
+  accounts Account[]
+
   // Map the model to the database table
   @@map("bank")
 }
@@ -258,26 +264,40 @@ model Bank {
 /// Country model to handle country-specific data
 model Country {
   /// Unique identifier for the country
-  id String @id @default(cuid())
+  id             String  @id @default(cuid())
   /// ISO 3166-1 alpha-2 code (e.g., US, GB, SA)
-  code String @unique
+  code           String  @unique
   /// English name of the country
-  nameEn String
+  nameEn         String
   /// Arabic name of the country
-  nameAr String
+  nameAr         String
   /// Phone country code (e.g., +1, +44, +966)
-  phoneCode String
+  phoneCode      String
   /// ISO 4217 currency code (e.g., USD, GBP, SAR)
-  currencyCode String
+  currencyCode   String
   /// Currency symbol (e.g., $, £, ﷼)
   currencySymbol String
   /// Indicates whether the country is deleted (soft delete)
-  isDeleted Boolean @default(false)
+  isDeleted      Boolean @default(false)
 
   /// Relation to banks in this country
-  banks Bank[]
+  banks  Bank[]
   /// Relation to phones in this country
   phones Phone[]
+
   // Map the model to the database table
   @@map("country")
+}
+
+model RefreshToken {
+  id        String   @id
+  personId  String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  person    Person   @relation(fields: [personId], references: [id])
+
+  @@index([personId])
+  @@index([expiresAt])
 }
