@@ -21,6 +21,10 @@ datasource db {
 model Organization {
   /// Unique identifier for the organization
   id String @id @default(cuid())
+  /// Date and time when the organization was created
+  createdAt DateTime @default(now())
+  /// Date and time when the organization was last updated
+  updatedAt DateTime @updatedAt
   /// English name of the organization
   nameEn String
   /// Arabic name of the organization
@@ -40,10 +44,24 @@ model Organization {
 model Person {
   /// Unique identifier for the person
   id String @id @default(cuid())
+  /// Date and time when the person was created
+  createdAt DateTime @default(now())
+  /// Date and time when the person was last updated
+  updatedAt DateTime @updatedAt
   /// English name of the person
   nameEn String?
   /// Arabic name of the person
   nameAr String?
+  /// Hashed password for authentication
+  passwordHash String?
+  /// Last login timestamp
+  lastLoginAt DateTime?
+  /// Account status (active, suspended, locked, etc.)
+  accountStatus String @default("active")
+  /// Password reset token
+  passwordResetToken String?
+  /// Password reset token expiry
+  passwordResetTokenExpiresAt DateTime?
   /// Indicates whether the person is deleted (soft delete)
   isDeleted Boolean @default(false)
 
