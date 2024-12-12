@@ -34,7 +34,7 @@ async function main() {
     newPkg.version = currentPkg.version;
     fs.writeFileSync(path.join(SDK_DIR, 'package.json'), JSON.stringify(newPkg, null, 2));
 
-    // Commit and tag changes
+    // Commit and tag changes 
     exec('git add .');
     try {
       exec('git commit -m "chore: update SDK"');
