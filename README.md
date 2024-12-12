@@ -6,8 +6,8 @@ BAWES ERP is a comprehensive enterprise resource planning system built with Nest
 ## Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/bawes/erp.git
-cd erp
+git clone https://github.com/plugnio/BAWES-ERP.git
+cd BAWES-ERP
 
 # Start the application
 docker compose up
