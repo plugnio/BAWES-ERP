@@ -86,17 +86,48 @@ jobs:
           
           # Build the SDK
           cd sdk-repo
+          
+          # Clean up any existing generated files in root
+          rm -f api.ts base.ts common.ts configuration.ts index.ts git_push.sh
+          
+          # Ensure src directory exists
+          mkdir -p src
+          
+          # Move all TypeScript files to src/
+          mv ../tmp-sdk/*.ts src/
+          
+          # Build the SDK
           npm run build
           
-          # Determine version bump type
+          # Get current version
+          CURRENT_VERSION=$(npm pkg get version | tr -d '"')
+          
+          # Function to increment version
+          increment_version() {
+            local version=$1
+            local major=$(echo $version | cut -d. -f1)
+            local minor=$(echo $version | cut -d. -f2)
+            local patch=$(echo $version | cut -d. -f3)
+            
+            if [ "$2" = "major" ]; then
+              echo "$((major + 1)).0.0"
+            else
+              echo "$major.$((minor + 1)).0"
+            fi
+          }
+          
+          # Determine and set new version
           if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-            npm version major
+            NEW_VERSION=$(increment_version $CURRENT_VERSION "major")
           else
-            npm version minor
+            NEW_VERSION=$(increment_version $CURRENT_VERSION "minor")
           fi
           
+          # Update package.json version
+          npm version $NEW_VERSION --no-git-tag-version
+          
           # Update CHANGELOG.md
-          echo "## [$(npm pkg get version | tr -d '"')] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
+          echo "## [$NEW_VERSION] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
             echo "### Breaking Changes" >> CHANGELOG.md
@@ -108,9 +139,16 @@ jobs:
           echo "" >> CHANGELOG.md
           cat CHANGELOG.md.tmp >> CHANGELOG.md
           
-          # Commit and push changes
+          # Commit changes
           git add .
-          git commit -m "chore: update SDK to version $(npm pkg get version | tr -d '"')"
+          git commit -m "chore: update SDK to version $NEW_VERSION"
+          
+          # Create and push tag if it doesn't exist
+          if ! git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then
+            git tag -a "v$NEW_VERSION" -m "$NEW_VERSION"
+          fi
+          
+          # Push changes and tags
           git push --follow-tags
         env:
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
