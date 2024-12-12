@@ -1,128 +1,141 @@
 # Security Documentation
 
-Welcome to the BAWES ERP security documentation. This section covers authentication, authorization, and security best practices.
+## Overview
 
-## Quick Start
+This documentation covers the security features and implementation details of the BAWES ERP system.
+
+## Implementation Phases
+
+1. [Core Security](./phase1-core/README.md)
+   - Basic authentication
+   - Session management
+   - Password policies
+   - Token handling
+
+2. [Role-Based Access Control](./phase2-roles/README.md)
+   - User roles
+   - Permissions
+   - Access control
+   - Role hierarchy
+
+3. [Integration Security](./phase3-integration/README.md)
+   - API security
+   - Third-party integration
+   - Data exchange
+   - Encryption
+
+## Technical Implementation
+
+For detailed technical implementation of the authentication system, see:
+- [Implementation Details](./IMPLEMENTATION.md)
+- [Authorization Guide](./authorization.md)
+- [Security Best Practices](./best-practices.md)
+
+## Security Features
 
 ### Authentication
-
-```typescript
-// Get JWT token
-const response = await fetch('https://api.bawes-erp.com/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    email: 'user@example.com',
-    password: 'your_password'
-  })
-});
-
-const { accessToken, refreshToken } = await response.json();
-```
-
-### Using Authentication
-
-```typescript
-// Make authenticated request
-const response = await fetch('https://api.bawes-erp.com/api/resource', {
-  headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
-});
-```
-
-## Contents
-
-- [Authentication Guide](./authentication.md) - Detailed authentication docs
-- [Authorization Guide](./authorization.md) - Access control and permissions
-- [Best Practices](./best-practices.md) - Security guidelines
-
-## Features
-
-### JWT Authentication
-- Access tokens for API requests
-- Refresh tokens for session management
-- Token rotation for security
-- Configurable expiration times
+- JWT-based authentication
+- Refresh token mechanism
+- Session management
+- MFA support
 
 ### Authorization
-- Role-based access control (RBAC)
-- Permission-based actions
-- Resource-level permissions
-- Hierarchical roles
+- Role-based access control
+- Permission management
+- Resource-level security
+- API authorization
 
-### Security Features
-- HTTPS everywhere
-- CORS protection
+### Data Protection
+- End-to-end encryption
+- Data at rest encryption
+- Secure key management
+- Data masking
+
+### API Security
 - Rate limiting
 - Input validation
-- SQL injection protection
-- XSS protection
+- CORS policies
+- API authentication
+
+### Audit & Compliance
+- Security logging
+- Audit trails
+- Compliance reporting
+- Security metrics
 
 ## Best Practices
 
-1. **Token Management**
-   - Store tokens securely
-   - Refresh before expiration
-   - Clear on logout
-   - Handle token errors
-
-2. **Password Security**
-   - Strong password requirements
-   - Secure password reset
-   - Account lockout
-   - 2FA when available
-
-3. **API Security**
-   - Always use HTTPS
-   - Validate all input
-   - Handle errors securely
-   - Follow least privilege
+See our [Security Best Practices](./best-practices.md) guide for:
+- Password policies
+- Key management
+- Access control
+- Security monitoring
 
 ## Implementation Guide
 
-### Setting Up Authentication
+For implementation details, see:
+1. [Core Security Setup](./phase1-core/README.md)
+2. [RBAC Implementation](./phase2-roles/README.md)
+3. [Integration Security](./phase3-integration/README.md)
 
-1. **Initialize SDK with Auth**
-   ```typescript
-   const client = new BawesErpClient({
-     baseUrl: 'YOUR_API_URL',
-     onTokenRefresh: async (refreshToken) => {
-       // Handle token refresh
-       const newToken = await refreshAccessToken(refreshToken);
-       return newToken;
-     }
-   });
-   ```
+## Security Tools
 
-2. **Handle Login**
-   ```typescript
-   try {
-     const { accessToken, refreshToken } = await client.auth.login({
-       email: 'user@example.com',
-       password: 'password'
-     });
-     // Store tokens securely
-   } catch (error) {
-     // Handle auth error
-   }
-   ```
+### Authentication
+```typescript
+import { AuthService } from '@bawes/auth';
 
-3. **Automatic Token Refresh**
-   ```typescript
-   client.setTokenRefreshCallback(async (refreshToken) => {
-     try {
-       const newToken = await client.auth.refresh(refreshToken);
-       return newToken;
-     } catch (error) {
-       // Handle refresh error
-       return null;
-     }
-   });
-   ```
+const authService = new AuthService({
+  tokenExpiry: '15m',
+  refreshTokenExpiry: '7d',
+  mfaEnabled: true
+});
+```
 
-## Related Documentation
+### Authorization
+```typescript
+import { RoleGuard } from '@bawes/auth';
 
-- [API Documentation](../api/README.md)
-- [SDK Guide](../sdk/README.md)
-- [Development Guide](../development/README.md) 
+@UseGuards(RoleGuard)
+@Roles('admin', 'manager')
+export class SecureController {
+  // Implementation
+}
+```
+
+### Encryption
+```typescript
+import { EncryptionService } from '@bawes/security';
+
+const encryptionService = new EncryptionService({
+  algorithm: 'aes-256-gcm',
+  keyRotationDays: 30
+});
+```
+
+## Security Checklist
+
+### Development
+- [ ] Enable strict TypeScript checks
+- [ ] Use security linting rules
+- [ ] Implement input validation
+- [ ] Add security tests
+
+### Deployment
+- [ ] Configure SSL/TLS
+- [ ] Set up firewalls
+- [ ] Enable security headers
+- [ ] Configure rate limiting
+
+### Monitoring
+- [ ] Set up security logging
+- [ ] Configure alerts
+- [ ] Monitor API usage
+- [ ] Track security metrics
+
+## Support
+
+For security-related issues:
+1. Check the implementation guides
+2. Review security best practices
+3. Contact security team
+4. Report security issues
