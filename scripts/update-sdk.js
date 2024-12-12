@@ -19,10 +19,19 @@ function exec(command) {
 
 async function main() {
   try {
+    // Debug: Log current directory and paths
+    console.log('Current directory:', process.cwd());
+    console.log('TMP_SDK_DIR:', TMP_SDK_DIR);
+    console.log('SDK_DIR:', SDK_DIR);
+
     // Ensure tmp-sdk exists
     if (!fs.existsSync(TMP_SDK_DIR)) {
+      console.error('tmp-sdk directory not found at:', TMP_SDK_DIR);
       throw new Error('tmp-sdk directory not found. Please run generate:sdk first');
     }
+
+    // Debug: Log tmp-sdk contents
+    console.log('tmp-sdk contents:', fs.readdirSync(TMP_SDK_DIR));
 
     // Clean up any existing SDK repo directory
     if (fs.existsSync(SDK_DIR)) {
@@ -34,27 +43,27 @@ async function main() {
     process.chdir(SDK_DIR);
     exec(`git checkout ${SDK_BRANCH}`);
 
+    // Debug: Log current directory after chdir
+    console.log('Current directory after chdir:', process.cwd());
+
     // Create src directory if it doesn't exist
     if (!fs.existsSync(path.join(SDK_DIR, 'src'))) {
       fs.mkdirSync(path.join(SDK_DIR, 'src'));
     }
 
-    // Copy TypeScript files from tmp-sdk to sdk-repo/src
+    // Debug: Log files to be copied
     const files = fs.readdirSync(TMP_SDK_DIR);
+    console.log('Files to copy:', files);
+
+    // Copy TypeScript files from tmp-sdk to sdk-repo/src
     files.forEach(file => {
       if (file.endsWith('.ts')) {
-        fs.copyFileSync(
-          path.join(TMP_SDK_DIR, file),
-          path.join(SDK_DIR, 'src', file)
-        );
+        const srcPath = path.join(TMP_SDK_DIR, file);
+        const destPath = path.join(SDK_DIR, 'src', file);
+        console.log(`Copying ${srcPath} to ${destPath}`);
+        fs.copyFileSync(srcPath, destPath);
       }
     });
-    
-    // Copy package.json but preserve version
-    const currentPkg = JSON.parse(fs.readFileSync(path.join(SDK_DIR, 'package.json'), 'utf8'));
-    const newPkg = JSON.parse(fs.readFileSync(path.join(TMP_SDK_DIR, 'package.json'), 'utf8'));
-    newPkg.version = currentPkg.version;
-    fs.writeFileSync(path.join(SDK_DIR, 'package.json'), JSON.stringify(newPkg, null, 2));
 
     // Commit and tag changes 
     exec('git add .');
