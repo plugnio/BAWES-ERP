@@ -59,7 +59,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          registry-url: 'https://npm.pkg.github.com'
 
       - name: Install dependencies
         run: npm install
@@ -80,82 +79,38 @@ jobs:
           npm run generate:sdk
           
           # Debug: Check what was generated
-          echo "Contents of tmp-sdk directory:"
           ls -la tmp-sdk
           
-          # Clone SDK repo
-          git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
-          cd sdk-repo
-          git checkout main
-          
-          # Copy new SDK files from tmp-sdk to sdk-repo
-          echo "Copying new SDK files..."
-          cp -rv ../tmp-sdk/* .
-          
-          echo "Contents of sdk-repo after copy:"
-          ls -la
+          # Update SDK
+          node scripts/update-sdk.js
           
           # Build the SDK
+          cd sdk-repo
           npm run build
           
-          echo "Git status before add:"
-          git status
-          
-          # Stage all changes
-          git add -A
-          
-          echo "Git status after add:"
-          git status
-          
-          # Check if there are any changes after staging
-          if git diff --staged --quiet; then
-            echo "No changes detected in the SDK files. Skipping version bump and publish."
-            exit 0
+          # Determine version bump type
+          if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+            npm version major
           else
-            echo "Changes detected in SDK files"
-            
-            # Commit the changes first
-            git commit -m "feat: update SDK files"
-            
-            # Now do the version bump
-            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-              npm version major
-            else
-              npm version minor
-            fi
-            
-            # Get the current version
-            VERSION=$(npm pkg get version | tr -d '"')
-            
-            # Create new CHANGELOG content
-            TEMP_CHANGELOG=$(mktemp)
-            echo "## [${VERSION}] - $(date +'%Y-%m-%d')" > "$TEMP_CHANGELOG"
-            echo "" >> "$TEMP_CHANGELOG"
-            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-              echo "### Breaking Changes" >> "$TEMP_CHANGELOG"
-              cat ../breaking-changes.txt >> "$TEMP_CHANGELOG"
-            else
-              echo "### Changes" >> "$TEMP_CHANGELOG"
-              echo "- Updated SDK based on latest API changes" >> "$TEMP_CHANGELOG"
-            fi
-            echo "" >> "$TEMP_CHANGELOG"
-            
-            # Prepend new content to existing CHANGELOG.md
-            if [ -f CHANGELOG.md ]; then
-              cat CHANGELOG.md >> "$TEMP_CHANGELOG"
-            fi
-            mv "$TEMP_CHANGELOG" CHANGELOG.md
-            
-            # Commit changelog
-            git add CHANGELOG.md
-            git commit -m "docs: update changelog"
-            
-            # Push all changes including version tag
-            git push --follow-tags
-            
-            # Publish to GitHub Packages
-            npm publish
+            npm version minor
           fi
+          
+          # Update CHANGELOG.md
+          echo "## [$(npm pkg get version | tr -d '"')] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+            echo "### Breaking Changes" >> CHANGELOG.md
+            cat ../breaking-changes.txt >> CHANGELOG.md
+          else
+            echo "### Changes" >> CHANGELOG.md
+            echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
+          fi
+          echo "" >> CHANGELOG.md
+          cat CHANGELOG.md.tmp >> CHANGELOG.md
+          
+          # Commit and push changes
+          git add .
+          git commit -m "chore: update SDK to version $(npm pkg get version | tr -d '"')"
+          git push --follow-tags
         env:
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
