@@ -89,33 +89,39 @@ jobs:
           cd sdk-repo
           npm run build
           
-          # Determine version bump type
-          if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-            npm version major
+          # Check if there are any changes
+          if [[ -n "$(git status --porcelain)" ]]; then
+            # Changes exist, proceed with version bump and publish
+            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+              npm version major
+            else
+              npm version minor
+            fi
+            
+            # Update CHANGELOG.md
+            echo "## [$(npm pkg get version | tr -d '"')] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+              echo "### Breaking Changes" >> CHANGELOG.md
+              cat ../breaking-changes.txt >> CHANGELOG.md
+            else
+              echo "### Changes" >> CHANGELOG.md
+              echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
+            fi
+            echo "" >> CHANGELOG.md
+            cat CHANGELOG.md.tmp >> CHANGELOG.md
+            
+            # Commit and push changes
+            git add .
+            git commit -m "chore: update SDK to version $(npm pkg get version | tr -d '"')"
+            git push --follow-tags
+            
+            # Publish to GitHub Packages
+            npm publish
           else
-            npm version minor
+            echo "No changes detected in the SDK. Skipping version bump and publish."
+            exit 0
           fi
-          
-          # Update CHANGELOG.md
-          echo "## [$(npm pkg get version | tr -d '"')] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-            echo "### Breaking Changes" >> CHANGELOG.md
-            cat ../breaking-changes.txt >> CHANGELOG.md
-          else
-            echo "### Changes" >> CHANGELOG.md
-            echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
-          fi
-          echo "" >> CHANGELOG.md
-          cat CHANGELOG.md.tmp >> CHANGELOG.md
-          
-          # Commit and push changes
-          git add .
-          git commit -m "chore: update SDK to version $(npm pkg get version | tr -d '"')"
-          git push --follow-tags
-          
-          # Publish to GitHub Packages
-          npm publish
         env:
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
