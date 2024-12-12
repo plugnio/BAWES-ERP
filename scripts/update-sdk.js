@@ -34,11 +34,21 @@ async function main() {
     process.chdir(SDK_DIR);
     exec(`git checkout ${SDK_BRANCH}`);
 
-    // Copy new SDK files
-    if (fs.existsSync(path.join(SDK_DIR, 'src'))) {
-      fs.rmSync(path.join(SDK_DIR, 'src'), { recursive: true, force: true });
+    // Create src directory if it doesn't exist
+    if (!fs.existsSync(path.join(SDK_DIR, 'src'))) {
+      fs.mkdirSync(path.join(SDK_DIR, 'src'));
     }
-    fs.cpSync(path.join(TMP_SDK_DIR, 'src'), path.join(SDK_DIR, 'src'), { recursive: true });
+
+    // Copy TypeScript files from tmp-sdk to sdk-repo/src
+    const files = fs.readdirSync(TMP_SDK_DIR);
+    files.forEach(file => {
+      if (file.endsWith('.ts')) {
+        fs.copyFileSync(
+          path.join(TMP_SDK_DIR, file),
+          path.join(SDK_DIR, 'src', file)
+        );
+      }
+    });
     
     // Copy package.json but preserve version
     const currentPkg = JSON.parse(fs.readFileSync(path.join(SDK_DIR, 'package.json'), 'utf8'));
