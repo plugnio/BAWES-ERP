@@ -1,0 +1,79 @@
+name: Update SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'swagger.json'
+      - 'src/**/*.ts'
+
+jobs:
+  check-breaking-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for breaking changes
+        id: check-breaking
+        run: |
+          CHANGES=$(npm run check:breaking-changes)
+          echo "::set-output name=has_breaking::$(echo $CHANGES | grep -c "BREAKING" || true)"
+          echo "$CHANGES" > breaking-changes.txt
+
+      - name: Create Issue for Breaking Changes
+        if: steps.check-breaking.outputs.has_breaking != '0'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const changes = fs.readFileSync('breaking-changes.txt', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Breaking Changes Detected in API',
+              body: `Breaking changes detected in the API:\n\n\`\`\`\n${changes}\n\`\`\`\n\nPlease review and update the major version number if proceeding with these changes.`,
+              labels: ['breaking-change']
+            });
+
+  update-sdk:
+    needs: check-breaking-changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SDK_DEPLOY_KEY }}
+
+      - name: Generate and update SDK
+        run: |
+          npm run generate:sdk
+          cd sdk-repo
+          git push --follow-tags
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"

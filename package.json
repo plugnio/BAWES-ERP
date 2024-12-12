@@ -1,12 +1,12 @@
 {
   "name": "bawes-erp",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "BAWES ERP Backend",
   "private": true,
   "license": "UNLICENSED",
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bawes/erp.git"
   },
   "scripts": {
     "build": "nest build",
@@ -26,7 +26,10 @@
     "seed:prod": "cross-env NODE_ENV=production prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "db:reset:dev": "cross-env NODE_ENV=development prisma migrate reset --force",
-    "db:reset:prod": "cross-env NODE_ENV=production prisma migrate reset --force"
+    "db:reset:prod": "cross-env NODE_ENV=production prisma migrate reset --force",
+    "generate:sdk": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o ./tmp-sdk && node scripts/update-sdk.js",
+    "build:sdk": "cd tmp-sdk && npm run build",
+    "check:breaking-changes": "ts-node scripts/check-breaking-changes.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -55,6 +58,7 @@
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.4.12",
+    "@openapitools/openapi-generator-cli": "^2.7.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
     "@types/node": "^20.17.9",
@@ -75,7 +79,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "openapi-diff": "^0.23.6"
   },
   "jest": {
     "moduleFileExtensions": [
