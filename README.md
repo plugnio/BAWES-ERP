@@ -25,6 +25,14 @@ npm run start:prod
 - 📊 Financial Reporting
 - 🔄 Workflow Management
 
+## API Documentation
+The API is documented using Swagger/OpenAPI. When running the application:
+1. Access the interactive API documentation at `/api`
+2. View comprehensive documentation guide at [API Documentation](docs/api-documentation.md)
+3. Test endpoints directly through the Swagger UI
+
+For detailed information about using and maintaining the API documentation, please refer to our [API Documentation Guide](docs/api-documentation.md).
+
 ## Testing
 ```bash
 # Run unit tests
