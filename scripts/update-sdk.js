@@ -2,14 +2,20 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const SDK_REPO = 'git@github.com:bawes/erp-sdk.git';
+const SDK_REPO = 'git@github.com:plugnio/BAWES-ERP-sdk.git';
+const SDK_REPO_DIR = path.join(process.cwd(), 'sdk-repo');
 const SDK_BRANCH = 'main';
 const TMP_SDK_DIR = path.join(__dirname, '../tmp-sdk');
 const SDK_DIR = path.join(__dirname, '../sdk-repo');
 
-function exec(command, options = {}) {
+function exec(command) {
   console.log(`Executing: ${command}`);
-  return execSync(command, { stdio: 'inherit', ...options });
+  try {
+    execSync(command, { stdio: 'inherit' });
+  } catch (error) {
+    console.error(`Error updating SDK: ${error}`);
+    process.exit(1);
+  }
 }
 
 async function main() {
@@ -19,9 +25,12 @@ async function main() {
       fs.rmSync(SDK_DIR, { recursive: true, force: true });
     }
 
-    // Clone the SDK repository
-    exec(`git clone ${SDK_REPO} ${SDK_DIR}`);
-    process.chdir(SDK_DIR);
+    // Clone SDK repository if it doesn't exist
+    if (!fs.existsSync(SDK_REPO_DIR)) {
+      exec(`git clone ${SDK_REPO} ${SDK_REPO_DIR}`);
+    }
+
+    process.chdir(SDK_REPO_DIR);
     exec(`git checkout ${SDK_BRANCH}`);
 
     // Copy new SDK files
