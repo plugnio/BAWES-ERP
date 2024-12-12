@@ -73,8 +73,12 @@ jobs:
 
       - name: Generate and update SDK
         run: |
-          # Generate the SDK (this will also run the update script)
+          # First generate the SDK
           npm run generate:sdk
+          # Debug: Check what was generated
+          ls -la tmp-sdk
+          # Then run the update script
+          node scripts/update-sdk.js
           # Build the SDK
           npm run build:sdk
           # Push changes

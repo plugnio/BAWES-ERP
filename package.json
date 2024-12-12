@@ -27,7 +27,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:reset:dev": "cross-env NODE_ENV=development prisma migrate reset --force",
     "db:reset:prod": "cross-env NODE_ENV=production prisma migrate reset --force",
-    "generate:sdk": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o ./tmp-sdk && node scripts/update-sdk.js",
+    "generate:sdk": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o ./tmp-sdk",
     "build:sdk": "cd tmp-sdk && npm run build",
     "check:breaking-changes": "ts-node scripts/check-breaking-changes.ts"
   },
