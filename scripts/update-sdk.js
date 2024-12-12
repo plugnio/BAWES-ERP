@@ -3,10 +3,9 @@ const fs = require('fs');
 const path = require('path');
 
 const SDK_REPO = 'git@github.com:plugnio/BAWES-ERP-sdk.git';
-const SDK_REPO_DIR = path.join(process.cwd(), 'sdk-repo');
 const SDK_BRANCH = 'main';
-const TMP_SDK_DIR = path.join(__dirname, '../tmp-sdk');
-const SDK_DIR = path.join(__dirname, '../sdk-repo');
+const TMP_SDK_DIR = path.join(process.cwd(), 'tmp-sdk');
+const SDK_DIR = path.join(process.cwd(), 'sdk-repo');
 
 function exec(command) {
   console.log(`Executing: ${command}`);
@@ -20,21 +19,25 @@ function exec(command) {
 
 async function main() {
   try {
+    // Ensure tmp-sdk exists
+    if (!fs.existsSync(TMP_SDK_DIR)) {
+      throw new Error('tmp-sdk directory not found. Please run generate:sdk first');
+    }
+
     // Clean up any existing SDK repo directory
     if (fs.existsSync(SDK_DIR)) {
       fs.rmSync(SDK_DIR, { recursive: true, force: true });
     }
 
-    // Clone SDK repository if it doesn't exist
-    if (!fs.existsSync(SDK_REPO_DIR)) {
-      exec(`git clone ${SDK_REPO} ${SDK_REPO_DIR}`);
-    }
-
-    process.chdir(SDK_REPO_DIR);
+    // Clone SDK repository
+    exec(`git clone ${SDK_REPO} ${SDK_DIR}`);
+    process.chdir(SDK_DIR);
     exec(`git checkout ${SDK_BRANCH}`);
 
     // Copy new SDK files
-    fs.rmSync(path.join(SDK_DIR, 'src'), { recursive: true, force: true });
+    if (fs.existsSync(path.join(SDK_DIR, 'src'))) {
+      fs.rmSync(path.join(SDK_DIR, 'src'), { recursive: true, force: true });
+    }
     fs.cpSync(path.join(TMP_SDK_DIR, 'src'), path.join(SDK_DIR, 'src'), { recursive: true });
     
     // Copy package.json but preserve version
@@ -53,14 +56,7 @@ async function main() {
       console.log('No changes to commit');
     }
 
-    // Clean up temporary directory
-    fs.rmSync(TMP_SDK_DIR, { recursive: true, force: true });
-
     console.log('SDK update complete!');
-    console.log('To publish changes:');
-    console.log('1. cd sdk-repo');
-    console.log('2. Review changes: git status');
-    console.log('3. Push changes: git push && git push --tags');
   } catch (error) {
     console.error('Error updating SDK:', error);
     process.exit(1);
