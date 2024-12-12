@@ -113,7 +113,11 @@ jobs:
             exit 0
           else
             echo "Changes detected in SDK files"
-            # Changes exist, proceed with version bump and publish
+            
+            # Commit the changes first
+            git commit -m "feat: update SDK files"
+            
+            # Now do the version bump
             if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
               npm version major
             else
@@ -133,9 +137,11 @@ jobs:
             echo "" >> CHANGELOG.md
             cat CHANGELOG.md.tmp >> CHANGELOG.md
             
-            # Commit and push changes
-            git add .
-            git commit -m "chore: update SDK to version $(npm pkg get version | tr -d '"')"
+            # Commit changelog
+            git add CHANGELOG.md
+            git commit -m "docs: update changelog"
+            
+            # Push all changes including version tag
             git push --follow-tags
             
             # Publish to GitHub Packages
