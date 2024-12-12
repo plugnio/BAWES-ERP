@@ -73,12 +73,11 @@ jobs:
 
       - name: Generate and update SDK
         run: |
-          # First generate the SDK
+          # Generate the SDK (this will also run the update script)
           npm run generate:sdk
-          # Then clone and update the SDK repo
-          git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
-          # Run the update script
-          node scripts/update-sdk.js
+          # Build the SDK
+          npm run build:sdk
+          # Push changes
           cd sdk-repo
           git push --follow-tags
         env:
