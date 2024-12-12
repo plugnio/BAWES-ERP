@@ -5,13 +5,16 @@ WORKDIR /usr/src/app
 # Install OpenSSL and procps - often needed for Prisma and process management
 RUN apt-get update && apt-get install -y openssl procps
 
-# Install OpenSSL - often needed for Prisma
-RUN apt-get update && apt-get install -y openssl
-
 # First copy only package files to leverage Docker cache
 COPY package*.json ./
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies for development)
 RUN npm install
+
+# Copy the rest of the application
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
 
 CMD ["npm", "run", "start:dev"] 
