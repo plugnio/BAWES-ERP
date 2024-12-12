@@ -89,8 +89,23 @@ jobs:
           cd sdk-repo
           npm run build
           
-          # Check if there are any changes
-          if [[ -n "$(git status --porcelain)" ]]; then
+          # Copy new SDK files (this step should be in your update-sdk.js script)
+          # Add debug output
+          echo "Current directory contents:"
+          ls -la
+          
+          echo "Git status before add:"
+          git status
+          
+          # Stage all changes
+          git add -A
+          
+          echo "Git status after add:"
+          git status
+          
+          # Check if there are any changes after staging
+          if [[ -n "$(git diff --cached --exit-code || echo 'changed')" ]]; then
+            echo "Changes detected in SDK files"
             # Changes exist, proceed with version bump and publish
             if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
               npm version major
@@ -119,7 +134,7 @@ jobs:
             # Publish to GitHub Packages
             npm publish
           else
-            echo "No changes detected in the SDK. Skipping version bump and publish."
+            echo "No changes detected in the SDK files. Skipping version bump and publish."
             exit 0
           fi
         env:
