@@ -124,18 +124,27 @@ jobs:
               npm version minor
             fi
             
-            # Update CHANGELOG.md
-            echo "## [$(npm pkg get version | tr -d '"')] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
+            # Get the current version
+            VERSION=$(npm pkg get version | tr -d '"')
+            
+            # Create new CHANGELOG content
+            TEMP_CHANGELOG=$(mktemp)
+            echo "## [${VERSION}] - $(date +'%Y-%m-%d')" > "$TEMP_CHANGELOG"
+            echo "" >> "$TEMP_CHANGELOG"
             if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-              echo "### Breaking Changes" >> CHANGELOG.md
-              cat ../breaking-changes.txt >> CHANGELOG.md
+              echo "### Breaking Changes" >> "$TEMP_CHANGELOG"
+              cat ../breaking-changes.txt >> "$TEMP_CHANGELOG"
             else
-              echo "### Changes" >> CHANGELOG.md
-              echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
+              echo "### Changes" >> "$TEMP_CHANGELOG"
+              echo "- Updated SDK based on latest API changes" >> "$TEMP_CHANGELOG"
             fi
-            echo "" >> CHANGELOG.md
-            cat CHANGELOG.md.tmp >> CHANGELOG.md
+            echo "" >> "$TEMP_CHANGELOG"
+            
+            # Prepend new content to existing CHANGELOG.md
+            if [ -f CHANGELOG.md ]; then
+              cat CHANGELOG.md >> "$TEMP_CHANGELOG"
+            fi
+            mv "$TEMP_CHANGELOG" CHANGELOG.md
             
             # Commit changelog
             git add CHANGELOG.md
