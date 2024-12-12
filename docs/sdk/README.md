@@ -97,12 +97,6 @@ async function example() {
 }
 ```
 
-## Contents
-
-- [Installation Guide](./installation.md) - Detailed installation instructions
-- [Usage Guide](./usage.md) - SDK usage examples and patterns
-- [API Reference](../api/README.md) - Complete API documentation
-
 ## Features
 
 - Full TypeScript support
@@ -152,9 +146,3 @@ The SDK is automatically updated when:
    - Monitor version tags
    - Review breaking changes
    - Test before upgrading
-
-## Related Documentation
-
-- [API Documentation](../api/README.md)
-- [Breaking Changes](../api/breaking-changes.md)
-- [Development Guide](../development/README.md)
