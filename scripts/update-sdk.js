@@ -65,12 +65,19 @@ async function main() {
       }
     });
 
-    // Commit and tag changes 
+    // First commit the SDK changes
     exec('git add .');
     try {
       exec('git commit -m "chore: update SDK"');
-      // Increment patch version
-      exec('npm version patch');
+      
+      // Then bump version in a separate commit
+      exec('npm --no-git-tag-version version patch');
+      exec('git add package.json');
+      exec('git commit -m "chore: bump version"');
+      
+      // Finally create the tag
+      const version = JSON.parse(fs.readFileSync('package.json')).version;
+      exec(`git tag v${version}`);
     } catch (e) {
       console.log('No changes to commit');
     }
