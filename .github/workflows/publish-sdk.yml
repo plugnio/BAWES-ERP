@@ -79,76 +79,93 @@ jobs:
           npm run generate:sdk
           
           # Debug: Check what was generated
+          echo "Generated SDK contents:"
           ls -la tmp-sdk
           
-          # Update SDK
-          node scripts/update-sdk.js
-          
-          # Build the SDK
+          # Clone and setup SDK repo
+          git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
           cd sdk-repo
+          git checkout main
           
-          # Clean up any existing generated files in root
+          # Clean up any existing generated files
           rm -f api.ts base.ts common.ts configuration.ts index.ts git_push.sh
+          rm -rf src/api.ts src/base.ts src/common.ts src/configuration.ts src/index.ts
           
           # Ensure src directory exists
           mkdir -p src
           
-          # Move all TypeScript files to src/
-          mv ../tmp-sdk/*.ts src/
+          # Copy new files
+          echo "Copying new SDK files to src directory..."
+          cp ../tmp-sdk/*.ts src/
+          
+          # Debug: Show current structure
+          echo "SDK repo structure after copy:"
+          ls -la
+          echo "src directory contents:"
+          ls -la src
           
           # Build the SDK
           npm run build
           
-          # Get current version
-          CURRENT_VERSION=$(npm pkg get version | tr -d '"')
-          
-          # Function to increment version
-          increment_version() {
-            local version=$1
-            local major=$(echo $version | cut -d. -f1)
-            local minor=$(echo $version | cut -d. -f2)
-            local patch=$(echo $version | cut -d. -f3)
+          # Check if there are changes
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Changes detected, proceeding with version update..."
             
-            if [ "$2" = "major" ]; then
-              echo "$((major + 1)).0.0"
+            # Get current version
+            CURRENT_VERSION=$(npm pkg get version | tr -d '"')
+            
+            # Function to increment version
+            increment_version() {
+              local version=$1
+              local major=$(echo $version | cut -d. -f1)
+              local minor=$(echo $version | cut -d. -f2)
+              local patch=$(echo $version | cut -d. -f3)
+              
+              if [ "$2" = "major" ]; then
+                echo "$((major + 1)).0.0"
+              else
+                echo "$major.$((minor + 1)).0"
+              fi
+            }
+            
+            # Determine and set new version
+            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+              NEW_VERSION=$(increment_version $CURRENT_VERSION "major")
             else
-              echo "$major.$((minor + 1)).0"
+              NEW_VERSION=$(increment_version $CURRENT_VERSION "minor")
             fi
-          }
-          
-          # Determine and set new version
-          if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-            NEW_VERSION=$(increment_version $CURRENT_VERSION "major")
+            
+            # Update package.json version
+            npm version $NEW_VERSION --no-git-tag-version
+            
+            # Update CHANGELOG.md
+            echo "## [$NEW_VERSION] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+              echo "### Breaking Changes" >> CHANGELOG.md
+              cat ../breaking-changes.txt >> CHANGELOG.md
+            else
+              echo "### Changes" >> CHANGELOG.md
+              echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
+            fi
+            echo "" >> CHANGELOG.md
+            if [ -f CHANGELOG.md.tmp ]; then
+              cat CHANGELOG.md.tmp >> CHANGELOG.md
+            fi
+            
+            # Commit changes
+            git add .
+            git commit -m "chore: update SDK to version $NEW_VERSION"
+            
+            # Create and push tag if it doesn't exist
+            if ! git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then
+              git tag -a "v$NEW_VERSION" -m "$NEW_VERSION"
+            fi
+            
+            # Push changes and tags
+            git push --follow-tags
           else
-            NEW_VERSION=$(increment_version $CURRENT_VERSION "minor")
+            echo "No changes detected in SDK files. Skipping version update."
           fi
-          
-          # Update package.json version
-          npm version $NEW_VERSION --no-git-tag-version
-          
-          # Update CHANGELOG.md
-          echo "## [$NEW_VERSION] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-            echo "### Breaking Changes" >> CHANGELOG.md
-            cat ../breaking-changes.txt >> CHANGELOG.md
-          else
-            echo "### Changes" >> CHANGELOG.md
-            echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
-          fi
-          echo "" >> CHANGELOG.md
-          cat CHANGELOG.md.tmp >> CHANGELOG.md
-          
-          # Commit changes
-          git add .
-          git commit -m "chore: update SDK to version $NEW_VERSION"
-          
-          # Create and push tag if it doesn't exist
-          if ! git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then
-            git tag -a "v$NEW_VERSION" -m "$NEW_VERSION"
-          fi
-          
-          # Push changes and tags
-          git push --follow-tags
         env:
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
