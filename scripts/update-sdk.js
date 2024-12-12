@@ -28,12 +28,18 @@ async function main() {
     // Copy SDK configuration files from backend repo
     fs.cpSync(SDK_CONFIG_DIR, SDK_DIR, { recursive: true });
 
+    // Create src directory if it doesn't exist
+    const srcDir = path.join(SDK_DIR, 'src');
+    if (!fs.existsSync(srcDir)) {
+      fs.mkdirSync(srcDir);
+    }
+
     // Copy TypeScript files from tmp-sdk to sdk-repo/src
     const files = fs.readdirSync(TMP_SDK_DIR);
     files.forEach(file => {
       if (file.endsWith('.ts')) {
         const srcPath = path.join(TMP_SDK_DIR, file);
-        const destPath = path.join(SDK_DIR, 'src', file);
+        const destPath = path.join(srcDir, file);
         fs.copyFileSync(srcPath, destPath);
       }
     });
