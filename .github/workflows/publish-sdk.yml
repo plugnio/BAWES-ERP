@@ -80,19 +80,23 @@ jobs:
           npm run generate:sdk
           
           # Debug: Check what was generated
+          echo "Contents of tmp-sdk directory:"
           ls -la tmp-sdk
           
-          # Update SDK
-          node scripts/update-sdk.js
+          # Clone SDK repo
+          git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
+          cd sdk-repo
+          git checkout main
+          
+          # Copy new SDK files from tmp-sdk to sdk-repo
+          echo "Copying new SDK files..."
+          cp -rv ../tmp-sdk/* .
+          
+          echo "Contents of sdk-repo after copy:"
+          ls -la
           
           # Build the SDK
-          cd sdk-repo
           npm run build
-          
-          # Copy new SDK files (this step should be in your update-sdk.js script)
-          # Add debug output
-          echo "Current directory contents:"
-          ls -la
           
           echo "Git status before add:"
           git status
@@ -104,7 +108,10 @@ jobs:
           git status
           
           # Check if there are any changes after staging
-          if [[ -n "$(git diff --cached --exit-code || echo 'changed')" ]]; then
+          if git diff --staged --quiet; then
+            echo "No changes detected in the SDK files. Skipping version bump and publish."
+            exit 0
+          else
             echo "Changes detected in SDK files"
             # Changes exist, proceed with version bump and publish
             if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
@@ -133,9 +140,6 @@ jobs:
             
             # Publish to GitHub Packages
             npm publish
-          else
-            echo "No changes detected in the SDK files. Skipping version bump and publish."
-            exit 0
           fi
         env:
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
