@@ -6,7 +6,7 @@ import { PermissionManagementService } from './permission-management.service';
 
 @Controller('admin/permissions')
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@RequirePermissions('system.manage_permissions')
+@RequirePermissions('Permission:Manage')
 export class PermissionManagementController {
   constructor(private permissionService: PermissionManagementService) {}
 

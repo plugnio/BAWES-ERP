@@ -5,10 +5,11 @@ export const categories = [
     description: 'User-related permissions',
     sortOrder: 1,
     permissions: [
-      { code: 'users.create', name: 'Create Users', description: 'Can create new users' },
-      { code: 'users.read', name: 'View Users', description: 'Can view user list and details' },
-      { code: 'users.update', name: 'Update Users', description: 'Can update user details' },
-      { code: 'users.delete', name: 'Delete Users', description: 'Can delete users' }
+      { code: 'User:Create', name: 'Create Users', description: 'Can create new users' },
+      { code: 'User:Read', name: 'View Users', description: 'Can view user list and details' },
+      { code: 'User:Update', name: 'Update Users', description: 'Can update user details' },
+      { code: 'User:Delete', name: 'Delete Users', description: 'Can delete users' },
+      { code: 'User:Invite', name: 'Invite Users', description: 'Can invite new users' }
     ]
   },
   {
@@ -16,10 +17,10 @@ export const categories = [
     description: 'Role and permission management',
     sortOrder: 2,
     permissions: [
-      { code: 'roles.create', name: 'Create Roles', description: 'Can create new roles' },
-      { code: 'roles.read', name: 'View Roles', description: 'Can view role list and details' },
-      { code: 'roles.update', name: 'Update Roles', description: 'Can update role details' },
-      { code: 'roles.delete', name: 'Delete Roles', description: 'Can delete roles' }
+      { code: 'Role:Create', name: 'Create Roles', description: 'Can create new roles' },
+      { code: 'Role:Read', name: 'View Roles', description: 'Can view role list and details' },
+      { code: 'Role:Update', name: 'Update Roles', description: 'Can update role details' },
+      { code: 'Role:Delete', name: 'Delete Roles', description: 'Can delete roles' }
     ]
   },
   {
@@ -27,10 +28,10 @@ export const categories = [
     description: 'System-level administrative permissions',
     sortOrder: 0,
     permissions: [
-      { code: 'system.manage_permissions', name: 'Manage Permissions', description: 'Can manage system permissions' },
-      { code: 'system.manage_roles', name: 'Manage Roles', description: 'Can manage system roles' },
-      { code: 'system.manage_users', name: 'Manage Users', description: 'Can manage system users' },
-      { code: 'system.view_audit_logs', name: 'View Audit Logs', description: 'Can view system audit logs' }
+      { code: 'Permission:Manage', name: 'Manage Permissions', description: 'Can manage system permissions' },
+      { code: 'Role:Manage', name: 'Manage Roles', description: 'Can manage system roles' },
+      { code: 'User:Manage', name: 'Manage Users', description: 'Can manage system users' },
+      { code: 'Audit:Read', name: 'View Audit Logs', description: 'Can view system audit logs' }
     ]
   }
 ];
@@ -51,11 +52,12 @@ export const roles = [
     isSystem: true,
     sortOrder: 1,
     permissions: [
-      'users.create',
-      'users.read',
-      'users.update',
-      'roles.read',
-      'system.view_audit_logs'
+      'User:Create',
+      'User:Read',
+      'User:Update',
+      'User:Invite',
+      'Role:Read',
+      'Audit:Read'
     ]
   },
   {
@@ -64,7 +66,7 @@ export const roles = [
     isSystem: true,
     sortOrder: 2,
     permissions: [
-      'users.read'
+      'User:Read'
     ]
   }
 ]; 

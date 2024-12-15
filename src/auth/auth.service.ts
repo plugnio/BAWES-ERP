@@ -146,7 +146,7 @@ export class AuthService {
     // Format permissions for JWT
     const permissions = personWithRoles.roles.flatMap(pr => 
       pr.role.permissions.map(rp => 
-        `${rp.permission.action}:${rp.permission.resource}`
+        rp.permission.code
       )
     );
 

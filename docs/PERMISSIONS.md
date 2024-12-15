@@ -60,7 +60,7 @@ DELETE /admin/roles/users/:userId/roles/:roleId  // Remove role
 
 ### 5. Permission Guards
 ```typescript
-@RequirePermissions('roles.create')  // Decorator for permission checks
+@RequirePermissions('Role:Create')  // Decorator for permission checks
 ```
 
 ## Permission Categories
