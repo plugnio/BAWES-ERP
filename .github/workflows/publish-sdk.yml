@@ -2,12 +2,17 @@ name: Update SDK
 
 on:
   push:
-    branches:
-      - main
     paths:
       - 'swagger.json'
       - 'src/**/*.ts'
   workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch name for SDK (defaults to source branch name)'
+        required: false
+  schedule:
+    # Run cleanup every Sunday at midnight
+    - cron: '0 0 * * 0'
 
 jobs:
   check-breaking-changes:
@@ -35,7 +40,7 @@ jobs:
           echo "$CHANGES" > breaking-changes.txt
 
       - name: Create Issue for Breaking Changes
-        if: steps.check-breaking.outputs.has_breaking != '0'
+        if: steps.check-breaking.outputs.has_breaking != '0' && github.ref == 'refs/heads/main'
         uses: actions/github-script@v6
         with:
           script: |
@@ -78,94 +83,139 @@ jobs:
           # Generate the SDK
           npm run generate:sdk
           
-          # Debug: Check what was generated
-          echo "Generated SDK contents:"
-          ls -la tmp-sdk
+          # Get branch name for SDK repo
+          BRANCH_NAME="${{ github.event.inputs.branch_name }}"
+          if [ -z "$BRANCH_NAME" ]; then
+            BRANCH_NAME="${{ github.ref_name }}"
+          fi
           
-          # Clone and setup SDK repo
+          # Clone SDK repo
           git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
           cd sdk-repo
-          git checkout main
           
-          # Clean up any existing generated files
-          rm -f api.ts base.ts common.ts configuration.ts index.ts git_push.sh
-          rm -rf src/api.ts src/base.ts src/common.ts src/configuration.ts src/index.ts
+          # Create or switch to branch
+          if git ls-remote --heads origin $BRANCH_NAME | grep -q $BRANCH_NAME; then
+            git checkout $BRANCH_NAME
+          else
+            git checkout -b $BRANCH_NAME
+          fi
           
-          # Ensure src directory exists
+          # Clean existing files
+          rm -rf src/
           mkdir -p src
           
           # Copy new files
-          echo "Copying new SDK files to src directory..."
           cp ../tmp-sdk/*.ts src/
           
-          # Debug: Show current structure
-          echo "SDK repo structure after copy:"
-          ls -la
-          echo "src directory contents:"
-          ls -la src
-          
-          # Build the SDK
+          # Build SDK
           npm run build
           
-          # Check if there are changes
+          # Check for changes
           if [[ -n "$(git status --porcelain)" ]]; then
-            echo "Changes detected, proceeding with version update..."
+            # Generate version based on branch and timestamp
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
             
-            # Get current version
-            CURRENT_VERSION=$(npm pkg get version | tr -d '"')
-            
-            # Function to increment version
-            increment_version() {
-              local version=$1
-              local major=$(echo $version | cut -d. -f1)
-              local minor=$(echo $version | cut -d. -f2)
-              local patch=$(echo $version | cut -d. -f3)
+            if [ "$BRANCH_NAME" = "main" ]; then
+              # Get current version for main branch
+              CURRENT_VERSION=$(npm pkg get version | tr -d '"')
               
-              if [ "$2" = "major" ]; then
-                echo "$((major + 1)).0.0"
+              # Increment version based on breaking changes
+              if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+                major=$(echo $CURRENT_VERSION | cut -d. -f1)
+                NEW_VERSION="$((major + 1)).0.0"
               else
-                echo "$major.$((minor + 1)).0"
+                minor=$(echo $CURRENT_VERSION | cut -d. -f2)
+                NEW_VERSION="$(echo $CURRENT_VERSION | cut -d. -f1).$((minor + 1)).0"
               fi
-            }
-            
-            # Determine and set new version
-            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-              NEW_VERSION=$(increment_version $CURRENT_VERSION "major")
             else
-              NEW_VERSION=$(increment_version $CURRENT_VERSION "minor")
+              # For any other branch, use timestamp-based version
+              NEW_VERSION="0.0.0-${TIMESTAMP}"
             fi
             
             # Update package.json version
-            npm version $NEW_VERSION --no-git-tag-version
+            npm version $NEW_VERSION --no-git-tag-version --allow-same-version
             
-            # Update CHANGELOG.md
-            echo "## [$NEW_VERSION] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-              echo "### Breaking Changes" >> CHANGELOG.md
-              cat ../breaking-changes.txt >> CHANGELOG.md
-            else
-              echo "### Changes" >> CHANGELOG.md
-              echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
-            fi
-            echo "" >> CHANGELOG.md
-            if [ -f CHANGELOG.md.tmp ]; then
-              cat CHANGELOG.md.tmp >> CHANGELOG.md
+            # Update CHANGELOG.md for main branch
+            if [ "$BRANCH_NAME" = "main" ]; then
+              echo "## [$NEW_VERSION] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
+              echo "" >> CHANGELOG.md
+              if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
+                echo "### Breaking Changes" >> CHANGELOG.md
+                cat ../breaking-changes.txt >> CHANGELOG.md
+              else
+                echo "### Changes" >> CHANGELOG.md
+                echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
+              fi
+              echo "" >> CHANGELOG.md
+              if [ -f CHANGELOG.md.tmp ]; then
+                cat CHANGELOG.md.tmp >> CHANGELOG.md
+              fi
             fi
             
-            # Commit changes
+            # Commit and push changes
             git add .
-            git commit -m "chore: update SDK to version $NEW_VERSION"
+            git commit -m "feat(sdk): Update SDK to version $NEW_VERSION"
             
-            # Create and push tag if it doesn't exist
-            if ! git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then
+            if [ "$BRANCH_NAME" = "main" ]; then
               git tag -a "v$NEW_VERSION" -m "$NEW_VERSION"
+              git push --follow-tags
+            else
+              git push -u origin $BRANCH_NAME
             fi
             
-            # Push changes and tags
-            git push --follow-tags
+            echo "SDK updated on branch: $BRANCH_NAME with version: $NEW_VERSION"
           else
-            echo "No changes detected in SDK files. Skipping version update."
+            echo "No changes detected in SDK files"
           fi
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+
+  cleanup-sdk-branches:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SDK_DEPLOY_KEY }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Cleanup stale SDK branches
+        run: |
+          # Clone SDK repo
+          git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
+          cd sdk-repo
+          
+          # Get list of all remote branches except main
+          BRANCHES=$(git branch -r | grep -v 'main' | sed 's/origin\///')
+          
+          # Get list of branches from main repo that are still active
+          ACTIVE_BRANCHES=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/branches" | \
+            jq -r '.[].name')
+          
+          # For each SDK branch
+          for branch in $BRANCHES; do
+            # Check if branch exists in main repo
+            if ! echo "$ACTIVE_BRANCHES" | grep -q "^${branch}$"; then
+              echo "Removing stale branch: $branch"
+              
+              # Get last commit date of the branch
+              LAST_COMMIT=$(git log -1 --format=%ct origin/$branch)
+              CURRENT_TIME=$(date +%s)
+              DAYS_OLD=$(( ($CURRENT_TIME - $LAST_COMMIT) / 86400 ))
+              
+              # If branch is older than 30 days and doesn't exist in main repo
+              if [ $DAYS_OLD -gt 30 ]; then
+                # Delete the remote branch
+                git push origin --delete $branch
+                echo "Deleted branch $branch (${DAYS_OLD} days old)"
+              fi
+            fi
+          done
         env:
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"

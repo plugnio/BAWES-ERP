@@ -8,6 +8,31 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
 - Keep code scalable and easy to scale
 - Test your work and confirm it works before presenting it
 
+# SDK Development Workflow
+1. Feature Branch Development:
+   - Create feature branch: `git checkout -b feature/my-feature`
+   - SDK automatically generated on push
+   - SDK branch matches feature branch name
+   - Version format: `0.0.0-feature-name-timestamp`
+
+2. SDK Testing:
+   - Frontend can use branch-specific SDK
+   - SDK updates on every push to feature branch
+   - No interference with production SDK
+   - Manual SDK generation via workflow dispatch
+
+3. Branch Strategy:
+   - feature/* -> Creates matching SDK branch
+   - dev -> Updates dev SDK branch
+   - main -> Updates production SDK with versioning
+   - Each branch gets its own SDK branch
+
+4. Version Management:
+   - Feature branches: `0.0.0-branch-timestamp`
+   - Dev branch: `0.0.0-dev-timestamp`
+   - Main branch: Semantic versioning
+   - Breaking changes trigger major version bump
+
 # FinancialGuidelines
 - All financial calculations must use decimal.js library
 - Never use native JavaScript floating-point arithmetic for monetary values
