@@ -1,3 +1,5 @@
+Keep in mind that this project is a Nestjs backend, for frontends in other projects. No frontend will be implemented in this project.
+
 # Development Guidelines
 - Keep changes small and focused and incremental
 - Keep code clean and readable, simple and easy to understand
