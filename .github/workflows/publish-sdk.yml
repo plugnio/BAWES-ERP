@@ -88,11 +88,9 @@ jobs:
           npm run generate:sdk
           
           # Get branch name from git ref
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.ref }}" ]; then
-            # For manual triggers, use the selected branch
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.head_ref }}" ]; then
+            BRANCH_NAME="${{ github.head_ref }}"
           else
-            # For other events, use ref_name
             BRANCH_NAME="${{ github.ref_name }}"
           fi
           
@@ -102,14 +100,28 @@ jobs:
           git clone git@github.com:plugnio/BAWES-ERP-sdk.git sdk-repo
           cd sdk-repo
           
-          # Create or switch to branch
+          # Fetch all branches
+          git fetch origin
+          
+          # Debug remote branches
+          echo "Available remote branches:"
+          git branch -r
+          
+          # Create or switch to branch with error handling
           if git ls-remote --heads origin $BRANCH_NAME | grep -q $BRANCH_NAME; then
             echo "Checking out existing branch: ${BRANCH_NAME}"
-            git checkout $BRANCH_NAME
+            git checkout $BRANCH_NAME || {
+              echo "Failed to checkout existing branch, creating new one"
+              git checkout -b $BRANCH_NAME
+            }
           else
             echo "Creating new branch: ${BRANCH_NAME}"
             git checkout -b $BRANCH_NAME
           fi
+          
+          # Verify current branch
+          echo "Current branch:"
+          git branch --show-current
           
           # Clean existing files
           rm -rf src/
@@ -163,17 +175,29 @@ jobs:
               fi
             fi
             
-            # Commit and push changes
+            # Commit and push changes with error handling
             git add .
             git commit -m "feat(sdk): Update SDK to version $NEW_VERSION"
             
+            # Push changes with error handling and debug info
+            echo "Pushing changes to branch: ${BRANCH_NAME}"
             if [ "$BRANCH_NAME" = "main" ]; then
               git tag -a "v$NEW_VERSION" -m "$NEW_VERSION"
-              git push --follow-tags
+              git push --follow-tags || {
+                echo "Failed to push to main branch"
+                exit 1
+              }
             else
-              echo "Pushing to branch: ${BRANCH_NAME}"
-              git push -u origin $BRANCH_NAME --force
+              git push -u origin $BRANCH_NAME --force || {
+                echo "Failed to push to branch: ${BRANCH_NAME}"
+                echo "Attempting push with set-upstream"
+                git push --set-upstream origin $BRANCH_NAME --force
+              }
             fi
+            
+            # Verify remote branches after push
+            echo "Remote branches after push:"
+            git ls-remote --heads origin
             
             echo "SDK updated on branch: $BRANCH_NAME with version: $NEW_VERSION"
           else
