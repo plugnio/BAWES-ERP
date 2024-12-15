@@ -72,6 +72,9 @@ model Person {
   phones       Phone[]
   RefreshToken RefreshToken[]
 
+  /// Relation to person roles
+  roles        PersonRole[]
+
   // Map the model to the database table
   @@map("person")
 }
@@ -322,4 +325,99 @@ model RefreshToken {
 
   // Map the model to the database table
   @@map("refresh_token")
+}
+
+/// Permission Category model to group permissions
+model PermissionCategory {
+  /// Unique identifier for the category
+  id          String   @id @default(cuid())
+  /// Name of the category (e.g., "User Management", "Content Management")
+  name        String   @unique
+  /// Description of the category
+  description String?
+  /// Sort order for display
+  sortOrder   Int      @default(0)
+
+  /// Relations
+  permissions Permission[]
+
+  @@map("permission_category")
+}
+
+/// Permission model for dynamic permission management
+model Permission {
+  /// Unique identifier for the permission
+  id          String   @id @default(cuid())
+  /// Unique code for the permission (e.g., "users.create")
+  code        String   @unique
+  /// Name of the permission
+  name        String
+  /// Description of what the permission allows
+  description String?
+  /// Bitfield value for the permission
+  bitfield    BigInt   @unique
+  
+  /// Category ID
+  categoryId  String
+  /// Category relation
+  category    PermissionCategory @relation(fields: [categoryId], references: [id])
+
+  /// Relations
+  roles       RolePermission[]
+
+  @@map("permission")
+}
+
+/// Role model for dynamic role management
+model Role {
+  /// Unique identifier for the role
+  id          String   @id @default(cuid())
+  /// Name of the role
+  name        String   @unique
+  /// Description of the role
+  description String?
+  /// Is this a system role that cannot be modified/deleted
+  isSystem    Boolean  @default(false)
+  /// Sort order for display
+  sortOrder   Int      @default(0)
+
+  /// Relations
+  permissions RolePermission[]
+  users       PersonRole[]
+
+  @@map("role")
+}
+
+/// Junction table for Role-Permission many-to-many relationship
+model RolePermission {
+  /// Role ID
+  roleId       String
+  /// Permission ID
+  permissionId String
+  /// Date and time when the permission was granted
+  grantedAt    DateTime @default(now())
+
+  /// Relations
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+/// Junction table for Person-Role many-to-many relationship
+model PersonRole {
+  /// Person ID
+  personId  String
+  /// Role ID
+  roleId    String
+  /// Date and time when the role was assigned
+  assignedAt DateTime @default(now())
+
+  /// Relations
+  person    Person    @relation(fields: [personId], references: [id])
+  role      Role      @relation(fields: [roleId], references: [id])
+
+  @@id([personId, roleId])
+  @@map("person_role")
 }

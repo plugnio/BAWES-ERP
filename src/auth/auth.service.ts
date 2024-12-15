@@ -5,6 +5,8 @@ import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
+import { PrismaClient } from '@prisma/client';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -118,8 +120,43 @@ export class AuthService {
   }
 
   private async generateTokens(personId: string, req: Request) {
-    // Generate access token
-    const accessTokenPayload = { sub: personId };
+    // Get person's permissions through roles
+    const personWithRoles = await this.prisma.person.findUnique({
+      where: { id: personId },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        emails: {
+          where: { isPrimary: true }
+        }
+      }
+    });
+
+    // Format permissions for JWT
+    const permissions = personWithRoles.roles.flatMap(pr => 
+      pr.role.permissions.map(rp => 
+        `${rp.permission.action}:${rp.permission.resource}`
+      )
+    );
+
+    // Generate access token with permissions
+    const accessTokenPayload: JwtPayload = { 
+      sub: personId,
+      email: personWithRoles.emails[0]?.email,
+      permissions,
+    };
+    
     const accessToken = this.jwtService.sign(accessTokenPayload, {
       expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m'
     });

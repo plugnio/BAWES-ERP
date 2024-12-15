@@ -29,7 +29,11 @@
     "db:reset:prod": "cross-env NODE_ENV=production prisma migrate reset --force",
     "generate:sdk": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o ./tmp-sdk",
     "build:sdk": "cd tmp-sdk && npm run build",
-    "check:breaking-changes": "ts-node scripts/check-breaking-changes.ts"
+    "check:breaking-changes": "ts-node scripts/check-breaking-changes.ts",
+    "create-admin": "ts-node src/scripts/create-admin.ts",
+    "permissions:list": "ts-node src/scripts/list-permissions.ts",
+    "permissions:add": "ts-node src/scripts/add-permission.ts",
+    "permissions:audit": "ts-node src/scripts/audit-permissions.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

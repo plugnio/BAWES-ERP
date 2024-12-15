@@ -6,6 +6,112 @@ async function main() {
     const nodeEnv = process.env.NODE_ENV || 'development';
     console.log(`Seeding database for ${nodeEnv} environment...`);
 
+    // Seed RBAC
+    const { categories, roles } = await import(`./data/${nodeEnv}/rbac`);
+    
+    // Create categories and their permissions
+    for (const category of categories) {
+        const createdCategory = await prisma.permissionCategory.upsert({
+            where: { name: category.name },
+            update: {
+                description: category.description,
+                sortOrder: category.sortOrder
+            },
+            create: {
+                name: category.name,
+                description: category.description,
+                sortOrder: category.sortOrder
+            }
+        });
+
+        // Create permissions for this category
+        for (const [index, permission] of category.permissions.entries()) {
+            await prisma.permission.upsert({
+                where: { code: permission.code },
+                update: {
+                    name: permission.name,
+                    description: permission.description,
+                    categoryId: createdCategory.id
+                },
+                create: {
+                    code: permission.code,
+                    name: permission.name,
+                    description: permission.description,
+                    bitfield: BigInt(1) << BigInt(index),
+                    categoryId: createdCategory.id
+                }
+            });
+        }
+    }
+
+    // Create roles and assign permissions
+    for (const role of roles) {
+        const createdRole = await prisma.role.upsert({
+            where: { name: role.name },
+            update: {
+                description: role.description,
+                isSystem: role.isSystem,
+                sortOrder: role.sortOrder
+            },
+            create: {
+                name: role.name,
+                description: role.description,
+                isSystem: role.isSystem,
+                sortOrder: role.sortOrder
+            }
+        });
+
+        // Handle permission assignment
+        if (role.permissions === '*') {
+            // Assign all permissions to this role
+            const allPermissions = await prisma.permission.findMany();
+            await Promise.all(
+                allPermissions.map(permission =>
+                    prisma.rolePermission.upsert({
+                        where: {
+                            roleId_permissionId: {
+                                roleId: createdRole.id,
+                                permissionId: permission.id
+                            }
+                        },
+                        update: {},
+                        create: {
+                            roleId: createdRole.id,
+                            permissionId: permission.id
+                        }
+                    })
+                )
+            );
+        } else if (Array.isArray(role.permissions)) {
+            // Assign specific permissions
+            const permissions = await prisma.permission.findMany({
+                where: {
+                    code: {
+                        in: role.permissions
+                    }
+                }
+            });
+
+            await Promise.all(
+                permissions.map(permission =>
+                    prisma.rolePermission.upsert({
+                        where: {
+                            roleId_permissionId: {
+                                roleId: createdRole.id,
+                                permissionId: permission.id
+                            }
+                        },
+                        update: {},
+                        create: {
+                            roleId: createdRole.id,
+                            permissionId: permission.id
+                        }
+                    })
+                )
+            );
+        }
+    }
+
     // Seed countries based on environment
     const countryCount = await prisma.country.count();
     if (countryCount === 0) {
