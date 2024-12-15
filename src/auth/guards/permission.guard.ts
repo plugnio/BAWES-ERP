@@ -26,11 +26,14 @@ export class PermissionGuard implements CanActivate {
       return false;
     }
 
-    const hasPermission = await this.permissionService.hasPermissions(
-      user.id,
-      requiredPermissions
+    // Check all required permissions
+    const checks = await Promise.all(
+      requiredPermissions.map(permission =>
+        this.permissionService.hasPermission(user.id, permission)
+      )
     );
 
-    return hasPermission;
+    // User must have all permissions
+    return checks.every(Boolean);
   }
 } 

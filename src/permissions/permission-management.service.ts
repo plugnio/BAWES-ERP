@@ -138,9 +138,7 @@ export class PermissionManagementService {
       data: {
         name: data.name,
         description: data.description,
-        color: data.color,
         isSystem: false,
-        // Get max sortOrder and add 1
         sortOrder: await this.getNextRolePosition()
       }
     });
