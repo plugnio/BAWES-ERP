@@ -1,6 +1,8 @@
 Keep in mind that this project is a Nestjs backend, for frontends in other projects. No frontend will be implemented in this project.
 
 # Development Guidelines
+- We use Github actions for publishing swagger as SDK for frontend usage
+- SDK publishing is to a regular github repo, no registry, not github packages or npm registry
 - Keep changes small and focused and incremental
 - Keep code clean and readable, simple and easy to understand
 - Keep code scalable and easy to scale
