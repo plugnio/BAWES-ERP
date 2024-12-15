@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { PermissionManagementService } from './permission-management.service';
-import { PermissionManagementController } from './permission-management.controller';
+import { RoleManagementController } from './role-management.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { RedisCacheModule } from '../cache/redis-cache.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    RedisCacheModule
+  ],
+  controllers: [RoleManagementController],
   providers: [PermissionManagementService],
-  controllers: [PermissionManagementController],
   exports: [PermissionManagementService]
 })
 export class PermissionsModule {} 
