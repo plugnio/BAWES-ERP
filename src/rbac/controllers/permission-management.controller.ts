@@ -53,7 +53,7 @@ export class PermissionManagementController {
       code: string;
       name: string;
       description?: string;
-      categoryId: string;
+      category: string;
     },
   ) {
     return this.permissionService.createPermission(data);
