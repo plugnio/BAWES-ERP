@@ -9,11 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionGuard } from '../auth/guards/permission.guard';
-import { RequirePermissions } from '../auth/decorators/permissions.decorator';
-import { PermissionManagementService } from './permission-management.service';
-import { CreateRoleDto } from './dto/create-role.dto';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { PermissionGuard } from '../guards/permission.guard';
+import { RequirePermission } from '../decorators/require-permission.decorator';
+import { PermissionManagementService } from '../services/permission-management.service';
+import { CreateRoleDto } from '../dto/create-role.dto';
 
 @ApiTags('Role Management')
 @Controller('admin/roles')
@@ -23,21 +23,21 @@ export class RoleManagementController {
 
   @Get()
   @ApiOperation({ summary: 'Get all roles with their permissions' })
-  @RequirePermissions('Role:Read')
+  @RequirePermission('Role:Read')
   async getRoles() {
     return this.permissionService.getRoles(true);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
-  @RequirePermissions('Role:Create')
+  @RequirePermission('Role:Create')
   async createRole(@Body() data: CreateRoleDto) {
     return this.permissionService.createRole(data);
   }
 
   @Patch(':roleId/permissions')
   @ApiOperation({ summary: 'Toggle permissions for a role' })
-  @RequirePermissions('Role:Update')
+  @RequirePermission('Role:Update')
   async togglePermissions(
     @Param('roleId') roleId: string,
     @Body()
@@ -55,7 +55,7 @@ export class RoleManagementController {
 
   @Patch(':roleId/position')
   @ApiOperation({ summary: 'Update role position (for drag-and-drop)' })
-  @RequirePermissions('Role:Update')
+  @RequirePermission('Role:Update')
   async updatePosition(
     @Param('roleId') roleId: string,
     @Body() data: { position: number },
@@ -65,7 +65,7 @@ export class RoleManagementController {
 
   @Post('users/:userId/roles')
   @ApiOperation({ summary: 'Assign role to user' })
-  @RequirePermissions('Role:Assign')
+  @RequirePermission('Role:Assign')
   async assignRole(
     @Param('userId') userId: string,
     @Body() data: { roleId: string },
@@ -75,7 +75,7 @@ export class RoleManagementController {
 
   @Delete('users/:userId/roles/:roleId')
   @ApiOperation({ summary: 'Remove role from user' })
-  @RequirePermissions('Role:Assign')
+  @RequirePermission('Role:Assign')
   async removeRole(
     @Param('userId') userId: string,
     @Param('roleId') roleId: string,

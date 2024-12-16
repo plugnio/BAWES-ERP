@@ -3,11 +3,12 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateRoleDto } from './dto/create-role.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateRoleDto } from '../dto/create-role.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Inject } from '@nestjs/common';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class PermissionManagementService {
@@ -17,14 +18,26 @@ export class PermissionManagementService {
   ) {}
 
   async getPermissionCategories() {
-    return this.prisma.permissionCategory.findMany({
-      include: {
-        permissions: {
-          orderBy: { code: 'asc' },
-        },
-      },
-      orderBy: { sortOrder: 'asc' },
+    const permissions = await this.prisma.permission.findMany({
+      orderBy: [
+        { category: 'asc' },
+        { sortOrder: 'asc' }
+      ],
     });
+
+    // Group permissions by category
+    return Object.entries(
+      permissions.reduce((acc, permission) => {
+        if (!acc[permission.category]) {
+          acc[permission.category] = [];
+        }
+        acc[permission.category].push(permission);
+        return acc;
+      }, {} as Record<string, typeof permissions>)
+    ).map(([category, permissions]) => ({
+      name: category,
+      permissions
+    }));
   }
 
   async createPermissionCategory(data: {
@@ -32,23 +45,29 @@ export class PermissionManagementService {
     description?: string;
     sortOrder?: number;
   }) {
-    return this.prisma.permissionCategory.create({ data });
+    // Since categories are just strings in the Permission model,
+    // we'll return the category info without creating a record
+    return { 
+      name: data.name,
+      description: data.description,
+      sortOrder: data.sortOrder,
+      permissions: []
+    };
   }
 
   async createPermission(data: {
     code: string;
     name: string;
     description?: string;
-    categoryId: string;
+    category: string;
   }) {
-    // Auto-generate next available bitfield
     const lastPermission = await this.prisma.permission.findFirst({
       orderBy: { bitfield: 'desc' },
     });
 
-    const bitfield = lastPermission
-      ? lastPermission.bitfield << BigInt(1)
-      : BigInt(1);
+    const bitfield = lastPermission 
+      ? new Decimal(lastPermission.bitfield).mul(2)
+      : new Decimal(1);
 
     return this.prisma.permission.create({
       data: { ...data, bitfield },
@@ -114,14 +133,14 @@ export class PermissionManagementService {
       },
     });
 
-    // Combine all permission bitfields
+    // Combine all permission bitfields using Decimal
     return person.roles.reduce((acc, role) => {
       const roleBitfield = role.role.permissions.reduce(
-        (roleAcc, perm) => roleAcc | perm.permission.bitfield,
-        BigInt(0),
+        (roleAcc, perm) => roleAcc.add(new Decimal(perm.permission.bitfield)),
+        new Decimal(0),
       );
-      return acc | roleBitfield;
-    }, BigInt(0));
+      return acc.add(roleBitfield);
+    }, new Decimal(0));
   }
 
   async hasPermission(
@@ -139,7 +158,8 @@ export class PermissionManagementService {
       return false;
     }
 
-    return (userPermissions & permission.bitfield) === permission.bitfield;
+    const permissionBitfield = new Decimal(permission.bitfield);
+    return userPermissions.dividedBy(permissionBitfield).modulo(2).equals(1);
   }
 
   async createRole(data: CreateRoleDto) {

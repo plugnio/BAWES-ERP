@@ -7,14 +7,14 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionGuard } from '../auth/guards/permission.guard';
-import { RequirePermissions } from '../auth/decorators/permissions.decorator';
-import { PermissionManagementService } from './permission-management.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { PermissionGuard } from '../guards/permission.guard';
+import { RequirePermission } from '../decorators/require-permission.decorator';
+import { PermissionManagementService } from '../services/permission-management.service';
 
 @Controller('admin/permissions')
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@RequirePermissions('Permission:Manage')
+@RequirePermission('Permission:Manage')
 export class PermissionManagementController {
   constructor(private permissionService: PermissionManagementService) {}
 
