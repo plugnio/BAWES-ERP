@@ -108,15 +108,19 @@ export class PermissionGuard implements CanActivate {
       // Calculate combined permission bitfield (using bitwise OR)
       const userBits = person.roles.reduce((acc, pr) => {
         const roleBits = pr.role.permissions.reduce(
-          (roleAcc, rp) => roleAcc.add(rp.permission.bitfield),
+          (roleAcc, rp) => roleAcc.plus(new Decimal(rp.permission.bitfield)),
           new Decimal(0),
         );
-        return acc.add(roleBits);
+        return acc.plus(roleBits);
       }, new Decimal(0));
 
-      // Check if user has the required permission using bitwise AND
+      // Check if user has the required permission using bitwise operations
       const permissionBitfield = new Decimal(permission.bitfield);
-      hasPermission = userBits.and(permissionBitfield).eq(permissionBitfield);
+      // For bitwise operations with Decimal, we need to use modulo 2 division to simulate AND
+      hasPermission = userBits
+        .dividedToIntegerBy(permissionBitfield)
+        .modulo(2)
+        .equals(1);
 
       // Cache the result
       await this.cacheManager.set(
