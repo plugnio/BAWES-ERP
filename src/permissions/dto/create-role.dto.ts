@@ -16,9 +16,12 @@ export class CreateRoleDto {
   @IsOptional()
   color?: string;
 
-  @ApiProperty({ description: 'Initial permission codes to assign', required: false })
+  @ApiProperty({
+    description: 'Initial permission codes to assign',
+    required: false,
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
   permissions?: string[];
-} 
+}

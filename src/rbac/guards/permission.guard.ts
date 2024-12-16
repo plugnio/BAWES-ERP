@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
@@ -36,7 +42,7 @@ export class PermissionGuard implements CanActivate {
       // Try to get permissions from cache
       const cacheKey = `permissions:${personId}`;
       let hasPermission = await this.cacheManager.get<boolean>(
-        `${cacheKey}:${requiredPermission}`
+        `${cacheKey}:${requiredPermission}`,
       );
 
       if (hasPermission !== undefined) {
@@ -46,11 +52,13 @@ export class PermissionGuard implements CanActivate {
       // Get permission bitfield from database
       const permission = await this.prisma.permission.findUnique({
         where: { code: requiredPermission },
-        select: { bitfield: true, isDeprecated: true }
+        select: { bitfield: true, isDeprecated: true },
       });
 
       if (!permission || permission.isDeprecated) {
-        this.logger.warn(`Permission not found or deprecated: ${requiredPermission}`);
+        this.logger.warn(
+          `Permission not found or deprecated: ${requiredPermission}`,
+        );
         return false;
       }
 
@@ -67,16 +75,16 @@ export class PermissionGuard implements CanActivate {
                       permission: {
                         select: {
                           bitfield: true,
-                          isDeprecated: true
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                          isDeprecated: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!person) {
@@ -84,12 +92,14 @@ export class PermissionGuard implements CanActivate {
       }
 
       // Super admin check
-      const isSuperAdmin = person.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
+      const isSuperAdmin = person.roles.some(
+        (pr) => pr.role.name === 'SUPER_ADMIN',
+      );
       if (isSuperAdmin) {
         await this.cacheManager.set(
           `${cacheKey}:${requiredPermission}`,
           true,
-          this.CACHE_TTL
+          this.CACHE_TTL,
         );
         return true;
       }
@@ -97,10 +107,11 @@ export class PermissionGuard implements CanActivate {
       // Calculate combined permission bitfield
       const userBits = person.roles.reduce((acc, pr) => {
         const roleBits = pr.role.permissions.reduce(
-          (roleAcc, rp) => !rp.permission.isDeprecated ? 
-            roleAcc | rp.permission.bitfield : 
-            roleAcc,
-          BigInt(0)
+          (roleAcc, rp) =>
+            !rp.permission.isDeprecated
+              ? roleAcc | rp.permission.bitfield
+              : roleAcc,
+          BigInt(0),
         );
         return acc | roleBits;
       }, BigInt(0));
@@ -112,18 +123,23 @@ export class PermissionGuard implements CanActivate {
       await this.cacheManager.set(
         `${cacheKey}:${requiredPermission}`,
         hasPermission,
-        this.CACHE_TTL
+        this.CACHE_TTL,
       );
 
       if (!hasPermission) {
-        this.logger.warn(`Permission denied: ${requiredPermission} for user ${personId}`);
+        this.logger.warn(
+          `Permission denied: ${requiredPermission} for user ${personId}`,
+        );
         throw new UnauthorizedException('Insufficient permissions');
       }
 
       return hasPermission;
     } catch (error) {
-      this.logger.error(`Permission check failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Permission check failed: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
-} 
+}

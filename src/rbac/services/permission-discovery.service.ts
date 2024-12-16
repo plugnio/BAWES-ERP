@@ -29,20 +29,26 @@ export class PermissionDiscoveryService implements OnModuleInit {
   private async syncPermissions() {
     try {
       const codePermissions = await this.discoverPermissions();
-      this.logger.log(`Discovered ${codePermissions.length} permissions from code`);
-      
+      this.logger.log(
+        `Discovered ${codePermissions.length} permissions from code`,
+      );
+
       await this.prisma.$transaction(async (tx) => {
         // Get existing permissions from DB
         const dbPermissions = await tx.permission.findMany();
-        this.logger.log(`Found ${dbPermissions.length} existing permissions in database`);
-        
+        this.logger.log(
+          `Found ${dbPermissions.length} existing permissions in database`,
+        );
+
         // Add new permissions found in code
         const newPermissions = codePermissions.filter(
-          cp => !dbPermissions.some(dp => dp.code === cp.code)
+          (cp) => !dbPermissions.some((dp) => dp.code === cp.code),
         );
-        
+
         if (newPermissions.length > 0) {
-          this.logger.log(`Adding ${newPermissions.length} new permissions: ${newPermissions.map(p => p.code).join(', ')}`);
+          this.logger.log(
+            `Adding ${newPermissions.length} new permissions: ${newPermissions.map((p) => p.code).join(', ')}`,
+          );
           await tx.permission.createMany({
             data: newPermissions,
             skipDuplicates: true,
@@ -50,20 +56,20 @@ export class PermissionDiscoveryService implements OnModuleInit {
 
           // If SUPER_ADMIN exists, grant new permissions automatically
           const superAdmin = await tx.role.findUnique({
-            where: { name: 'SUPER_ADMIN' }
+            where: { name: 'SUPER_ADMIN' },
           });
 
           if (superAdmin) {
             const createdPermissions = await tx.permission.findMany({
               where: {
                 code: {
-                  in: newPermissions.map(p => p.code)
-                }
-              }
+                  in: newPermissions.map((p) => p.code),
+                },
+              },
             });
 
             await tx.rolePermission.createMany({
-              data: createdPermissions.map(p => ({
+              data: createdPermissions.map((p) => ({
                 roleId: superAdmin.id,
                 permissionId: p.id,
               })),
@@ -74,25 +80,27 @@ export class PermissionDiscoveryService implements OnModuleInit {
 
         // Mark deprecated permissions
         const obsoletePermissions = dbPermissions.filter(
-          dp => !codePermissions.some(cp => cp.code === dp.code)
+          (dp) => !codePermissions.some((cp) => cp.code === dp.code),
         );
-        
+
         if (obsoletePermissions.length > 0) {
-          this.logger.warn(`Found ${obsoletePermissions.length} deprecated permissions: ${obsoletePermissions.map(p => p.code).join(', ')}`);
+          this.logger.warn(
+            `Found ${obsoletePermissions.length} deprecated permissions: ${obsoletePermissions.map((p) => p.code).join(', ')}`,
+          );
           await tx.permission.updateMany({
             where: {
               code: {
-                in: obsoletePermissions.map(p => p.code)
-              }
+                in: obsoletePermissions.map((p) => p.code),
+              },
             },
             data: {
-              isDeprecated: true
-            }
+              isDeprecated: true,
+            },
           });
         }
 
         // Log categories
-        const categories = [...new Set(codePermissions.map(p => p.category))];
+        const categories = [...new Set(codePermissions.map((p) => p.category))];
         this.logger.log(`Permission categories: ${categories.join(', ')}`);
       });
     } catch (error) {
@@ -101,10 +109,14 @@ export class PermissionDiscoveryService implements OnModuleInit {
         // Handle specific Prisma errors
         switch (error.code) {
           case 'P2002':
-            this.logger.error('Unique constraint violation during permission sync');
+            this.logger.error(
+              'Unique constraint violation during permission sync',
+            );
             break;
           default:
-            this.logger.error(`Database error during permission sync: ${error.code}`);
+            this.logger.error(
+              `Database error during permission sync: ${error.code}`,
+            );
         }
       }
       throw error;
@@ -119,43 +131,55 @@ export class PermissionDiscoveryService implements OnModuleInit {
 
       // Get last permission to calculate next bitfield
       const lastPermission = await this.prisma.permission.findFirst({
-        orderBy: { bitfield: 'desc' }
+        orderBy: { bitfield: 'desc' },
       });
       let nextBitfield = lastPermission ? lastPermission.bitfield : BigInt(0);
 
-      controllers.forEach(wrapper => {
+      controllers.forEach((wrapper) => {
         const { instance } = wrapper;
         if (!instance) return;
 
         const prototype = Object.getPrototypeOf(instance);
-        this.metadataScanner.scanFromPrototype(instance, prototype, method => {
-          try {
-            const handler = instance[method];
-            const permission = Reflect.getMetadata(PERMISSION_KEY, handler);
-            
-            if (permission) {
-              const [category, action] = permission.split('.');
-              if (!category || !action) {
-                this.logger.warn(`Invalid permission format: ${permission} in ${instance.constructor.name}.${method}`);
-                return;
-              }
+        this.metadataScanner.scanFromPrototype(
+          instance,
+          prototype,
+          (method) => {
+            try {
+              const handler = instance[method];
+              const permission = Reflect.getMetadata(PERMISSION_KEY, handler);
 
-              nextBitfield = nextBitfield === BigInt(0) ? BigInt(1) : nextBitfield << BigInt(1);
-              
-              permissions.push({
-                code: permission,
-                name: this.formatPermissionName(action),
-                category: this.formatCategoryName(category),
-                description: `Can ${action.toLowerCase()} ${category.toLowerCase()}`,
-                sortOrder: sortOrder++,
-                isDeprecated: false,
-                bitfield: nextBitfield
-              });
+              if (permission) {
+                const [category, action] = permission.split('.');
+                if (!category || !action) {
+                  this.logger.warn(
+                    `Invalid permission format: ${permission} in ${instance.constructor.name}.${method}`,
+                  );
+                  return;
+                }
+
+                nextBitfield =
+                  nextBitfield === BigInt(0)
+                    ? BigInt(1)
+                    : nextBitfield << BigInt(1);
+
+                permissions.push({
+                  code: permission,
+                  name: this.formatPermissionName(action),
+                  category: this.formatCategoryName(category),
+                  description: `Can ${action.toLowerCase()} ${category.toLowerCase()}`,
+                  sortOrder: sortOrder++,
+                  isDeprecated: false,
+                  bitfield: nextBitfield,
+                });
+              }
+            } catch (error) {
+              this.logger.error(
+                `Failed to process permission in ${instance.constructor.name}.${method}`,
+                error.stack,
+              );
             }
-          } catch (error) {
-            this.logger.error(`Failed to process permission in ${instance.constructor.name}.${method}`, error.stack);
-          }
-        });
+          },
+        );
       });
 
       // Sort permissions by category and name
@@ -174,14 +198,14 @@ export class PermissionDiscoveryService implements OnModuleInit {
   private formatPermissionName(str: string): string {
     return str
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   }
 
   private formatCategoryName(str: string): string {
     return str
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   }
 
@@ -190,22 +214,22 @@ export class PermissionDiscoveryService implements OnModuleInit {
     try {
       const permissions = await this.prisma.permission.findMany({
         where: { isDeprecated: false },
-        orderBy: [
-          { category: 'asc' },
-          { sortOrder: 'asc' }
-        ]
+        orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
       });
 
-      return permissions.reduce((acc, permission) => {
-        if (!acc[permission.category]) {
-          acc[permission.category] = [];
-        }
-        acc[permission.category].push(permission);
-        return acc;
-      }, {} as Record<string, typeof permissions>);
+      return permissions.reduce(
+        (acc, permission) => {
+          if (!acc[permission.category]) {
+            acc[permission.category] = [];
+          }
+          acc[permission.category].push(permission);
+          return acc;
+        },
+        {} as Record<string, typeof permissions>,
+      );
     } catch (error) {
       this.logger.error('Failed to get permissions by category', error.stack);
       throw error;
     }
   }
-} 
+}

@@ -35,4 +35,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       nameAr: person.nameAr,
     };
   }
-} 
+}

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -9,17 +13,17 @@ import { Inject } from '@nestjs/common';
 export class PermissionManagementService {
   constructor(
     private prisma: PrismaService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async getPermissionCategories() {
     return this.prisma.permissionCategory.findMany({
       include: {
         permissions: {
-          orderBy: { code: 'asc' }
-        }
+          orderBy: { code: 'asc' },
+        },
       },
-      orderBy: { sortOrder: 'asc' }
+      orderBy: { sortOrder: 'asc' },
     });
   }
 
@@ -39,41 +43,43 @@ export class PermissionManagementService {
   }) {
     // Auto-generate next available bitfield
     const lastPermission = await this.prisma.permission.findFirst({
-      orderBy: { bitfield: 'desc' }
+      orderBy: { bitfield: 'desc' },
     });
 
-    const bitfield = lastPermission 
+    const bitfield = lastPermission
       ? lastPermission.bitfield << BigInt(1)
       : BigInt(1);
 
     return this.prisma.permission.create({
-      data: { ...data, bitfield }
+      data: { ...data, bitfield },
     });
   }
 
   async getRoles(includePermissions = false) {
     return this.prisma.role.findMany({
       include: {
-        permissions: includePermissions ? {
-          include: { permission: true }
-        } : false
+        permissions: includePermissions
+          ? {
+              include: { permission: true },
+            }
+          : false,
       },
-      orderBy: { sortOrder: 'asc' }
+      orderBy: { sortOrder: 'asc' },
     });
   }
 
   async updateRolePermissions(roleId: string, permissionIds: string[]) {
     // Delete existing permissions
     await this.prisma.rolePermission.deleteMany({
-      where: { roleId }
+      where: { roleId },
     });
 
     // Add new permissions
     await this.prisma.rolePermission.createMany({
-      data: permissionIds.map(permissionId => ({
+      data: permissionIds.map((permissionId) => ({
         roleId,
-        permissionId
-      }))
+        permissionId,
+      })),
     });
 
     return this.getRoleWithPermissions(roleId);
@@ -84,9 +90,9 @@ export class PermissionManagementService {
       where: { id: roleId },
       include: {
         permissions: {
-          include: { permission: true }
-        }
-      }
+          include: { permission: true },
+        },
+      },
     });
   }
 
@@ -99,31 +105,34 @@ export class PermissionManagementService {
             role: {
               include: {
                 permissions: {
-                  include: { permission: true }
-                }
-              }
-            }
-          }
-        }
-      }
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     // Combine all permission bitfields
     return person.roles.reduce((acc, role) => {
       const roleBitfield = role.role.permissions.reduce(
         (roleAcc, perm) => roleAcc | perm.permission.bitfield,
-        BigInt(0)
+        BigInt(0),
       );
       return acc | roleBitfield;
     }, BigInt(0));
   }
 
-  async hasPermission(personId: string, permissionCode: string): Promise<boolean> {
+  async hasPermission(
+    personId: string,
+    permissionCode: string,
+  ): Promise<boolean> {
     const [userPermissions, permission] = await Promise.all([
       this.calculateEffectivePermissions(personId),
       this.prisma.permission.findUnique({
-        where: { code: permissionCode }
-      })
+        where: { code: permissionCode },
+      }),
     ]);
 
     if (!permission) {
@@ -139,24 +148,24 @@ export class PermissionManagementService {
         name: data.name,
         description: data.description,
         isSystem: false,
-        sortOrder: await this.getNextRolePosition()
-      }
+        sortOrder: await this.getNextRolePosition(),
+      },
     });
 
     if (data.permissions?.length) {
       const permissions = await this.prisma.permission.findMany({
         where: {
           code: {
-            in: data.permissions
-          }
-        }
+            in: data.permissions,
+          },
+        },
       });
 
       await this.prisma.rolePermission.createMany({
-        data: permissions.map(permission => ({
+        data: permissions.map((permission) => ({
           roleId: role.id,
-          permissionId: permission.id
-        }))
+          permissionId: permission.id,
+        })),
       });
     }
 
@@ -166,10 +175,10 @@ export class PermissionManagementService {
   async toggleRolePermission(
     roleId: string,
     permissionCode: string,
-    enabled: boolean
+    enabled: boolean,
   ) {
     const role = await this.prisma.role.findUnique({
-      where: { id: roleId }
+      where: { id: roleId },
     });
 
     if (!role) {
@@ -181,7 +190,7 @@ export class PermissionManagementService {
     }
 
     const permission = await this.prisma.permission.findUnique({
-      where: { code: permissionCode }
+      where: { code: permissionCode },
     });
 
     if (!permission) {
@@ -192,15 +201,15 @@ export class PermissionManagementService {
       await this.prisma.rolePermission.create({
         data: {
           roleId,
-          permissionId: permission.id
-        }
+          permissionId: permission.id,
+        },
       });
     } else {
       await this.prisma.rolePermission.deleteMany({
         where: {
           roleId,
-          permissionId: permission.id
-        }
+          permissionId: permission.id,
+        },
       });
     }
 
@@ -212,7 +221,7 @@ export class PermissionManagementService {
 
   async updateRolePosition(roleId: string, newPosition: number) {
     const roles = await this.prisma.role.findMany({
-      orderBy: { sortOrder: 'asc' }
+      orderBy: { sortOrder: 'asc' },
     });
 
     const updates = roles.map((role, index) => {
@@ -225,7 +234,7 @@ export class PermissionManagementService {
 
       return this.prisma.role.update({
         where: { id: role.id },
-        data: { sortOrder }
+        data: { sortOrder },
       });
     });
 
@@ -235,7 +244,7 @@ export class PermissionManagementService {
 
   async assignRoleToUser(userId: string, roleId: string) {
     const role = await this.prisma.role.findUnique({
-      where: { id: roleId }
+      where: { id: roleId },
     });
 
     if (!role) {
@@ -245,8 +254,8 @@ export class PermissionManagementService {
     await this.prisma.personRole.create({
       data: {
         personId: userId,
-        roleId
-      }
+        roleId,
+      },
     });
 
     // Clear user's permission cache
@@ -260,9 +269,9 @@ export class PermissionManagementService {
       where: {
         personId_roleId: {
           personId: userId,
-          roleId
-        }
-      }
+          roleId,
+        },
+      },
     });
 
     // Clear user's permission cache
@@ -273,20 +282,18 @@ export class PermissionManagementService {
 
   private async getNextRolePosition(): Promise<number> {
     const maxRole = await this.prisma.role.findFirst({
-      orderBy: { sortOrder: 'desc' }
+      orderBy: { sortOrder: 'desc' },
     });
     return (maxRole?.sortOrder ?? -1) + 1;
   }
 
   private async clearPermissionCache(roleId: string) {
     const usersWithRole = await this.prisma.personRole.findMany({
-      where: { roleId }
+      where: { roleId },
     });
 
     await Promise.all(
-      usersWithRole.map(ur => 
-        this.clearUserPermissionCache(ur.personId)
-      )
+      usersWithRole.map((ur) => this.clearUserPermissionCache(ur.personId)),
     );
   }
 
@@ -304,14 +311,14 @@ export class PermissionManagementService {
               include: {
                 permissions: {
                   include: {
-                    permission: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
   }
-} 
+}

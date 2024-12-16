@@ -6,13 +6,13 @@ import { PermissionManagementService } from '../../permissions/permission-manage
 export class PermissionGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private permissionService: PermissionManagementService
+    private permissionService: PermissionManagementService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.get<string[]>(
       'permissions',
-      context.getHandler()
+      context.getHandler(),
     );
 
     if (!requiredPermissions) {
@@ -28,12 +28,12 @@ export class PermissionGuard implements CanActivate {
 
     // Check all required permissions
     const checks = await Promise.all(
-      requiredPermissions.map(permission =>
-        this.permissionService.hasPermission(user.id, permission)
-      )
+      requiredPermissions.map((permission) =>
+        this.permissionService.hasPermission(user.id, permission),
+      ),
     );
 
     // User must have all permissions
     return checks.every(Boolean);
   }
-} 
+}

@@ -13,13 +13,7 @@ import { CacheModule } from '@nestjs/cache-manager';
       ttl: 300, // 5 minutes
     }),
   ],
-  providers: [
-    PermissionDiscoveryService,
-    PermissionGuard,
-  ],
-  exports: [
-    PermissionDiscoveryService,
-    PermissionGuard,
-  ],
+  providers: [PermissionDiscoveryService, PermissionGuard],
+  exports: [PermissionDiscoveryService, PermissionGuard],
 })
-export class RbacModule {} 
+export class RbacModule {}

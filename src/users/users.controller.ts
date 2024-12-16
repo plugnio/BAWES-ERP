@@ -1,22 +1,33 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  NotImplementedException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionGuard } from '../auth/guards/permission.guard';
-import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { PermissionGuard } from '../rbac/guards/permission.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { InviteUserDto } from './dto/invite-user.dto';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class UsersController {
   @Post('invite')
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermissions('User:Invite')
-  async inviteUser(@Body() inviteDto: InviteUserDto) {
-    // Only users with User:Invite permission can access this endpoint
+  @RequirePermission('users.invite')
+  async inviteUser(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Body() inviteDto: InviteUserDto,
+  ) {
+    // TODO: Implement user invitation
+    throw new NotImplementedException();
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @RequirePermissions('User:Read')
+  @RequirePermission('users.read')
   async getUsers() {
-    // Only users with User:Read permission can access this endpoint
+    // TODO: Implement get users
+    throw new NotImplementedException();
   }
-} 
+}

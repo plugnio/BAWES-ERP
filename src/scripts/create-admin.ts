@@ -14,13 +14,14 @@ async function createAdmin() {
       { code: 'system.manage_permissions', name: 'Manage Permissions' },
       { code: 'system.manage_roles', name: 'Manage Roles' },
       { code: 'system.manage_users', name: 'Manage Users' },
-      { code: 'system.view_audit_logs', name: 'View Audit Logs' }
+      { code: 'system.view_audit_logs', name: 'View Audit Logs' },
     ];
 
     let nextBitfield = BigInt(0);
     const createdPermissions = await Promise.all(
       permissions.map(async (perm) => {
-        nextBitfield = nextBitfield === BigInt(0) ? BigInt(1) : nextBitfield << BigInt(1);
+        nextBitfield =
+          nextBitfield === BigInt(0) ? BigInt(1) : nextBitfield << BigInt(1);
         return prisma.permission.upsert({
           where: { code: perm.code },
           update: {},
@@ -31,10 +32,10 @@ async function createAdmin() {
             category: 'System',
             sortOrder: 0,
             isDeprecated: false,
-            bitfield: nextBitfield
-          }
+            bitfield: nextBitfield,
+          },
         });
-      })
+      }),
     );
 
     // Create super admin role
@@ -45,47 +46,47 @@ async function createAdmin() {
         name: 'SUPER_ADMIN',
         description: 'Super Administrator with all permissions',
         isSystem: true,
-        sortOrder: 0
-      }
+        sortOrder: 0,
+      },
     });
 
     // Assign all permissions to super admin role
     await Promise.all(
-      createdPermissions.map(perm =>
+      createdPermissions.map((perm) =>
         prisma.rolePermission.upsert({
           where: {
             roleId_permissionId: {
               roleId: superAdminRole.id,
-              permissionId: perm.id
-            }
+              permissionId: perm.id,
+            },
           },
           update: {},
           create: {
             roleId: superAdminRole.id,
-            permissionId: perm.id
-          }
-        })
-      )
+            permissionId: perm.id,
+          },
+        }),
+      ),
     );
 
     // Create admin user
     const hashedPassword = await bcrypt.hash(password, 12);
-    
+
     const adminPerson = await prisma.person.upsert({
       where: {
-        id: 'admin' // Fixed ID for the system admin
+        id: 'admin', // Fixed ID for the system admin
       },
       update: {
         nameEn,
         passwordHash: hashedPassword,
-        accountStatus: 'active'
+        accountStatus: 'active',
       },
       create: {
         id: 'admin',
         nameEn,
         passwordHash: hashedPassword,
-        accountStatus: 'active'
-      }
+        accountStatus: 'active',
+      },
     });
 
     // Create admin email
@@ -94,14 +95,14 @@ async function createAdmin() {
       update: {
         isPrimary: true,
         isVerified: true,
-        personId: adminPerson.id
+        personId: adminPerson.id,
       },
       create: {
         email,
         isPrimary: true,
         isVerified: true,
-        personId: adminPerson.id
-      }
+        personId: adminPerson.id,
+      },
     });
 
     // Assign super admin role
@@ -109,21 +110,20 @@ async function createAdmin() {
       where: {
         personId_roleId: {
           personId: adminPerson.id,
-          roleId: superAdminRole.id
-        }
+          roleId: superAdminRole.id,
+        },
       },
       update: {},
       create: {
         personId: adminPerson.id,
-        roleId: superAdminRole.id
-      }
+        roleId: superAdminRole.id,
+      },
     });
 
     console.log('Successfully created admin user with super admin permissions');
     console.log('Email:', email);
     console.log('Password:', password);
     console.log('Please change the password after first login');
-
   } catch (error) {
     console.error('Error creating admin:', error);
     process.exit(1);
@@ -132,4 +132,4 @@ async function createAdmin() {
   }
 }
 
-createAdmin(); 
+createAdmin();

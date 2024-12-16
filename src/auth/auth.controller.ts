@@ -1,4 +1,11 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
@@ -20,7 +27,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto, @Req() req: Request) {
-    return this.authService.validateLogin(loginDto.email, loginDto.password, req);
+    return this.authService.validateLogin(
+      loginDto.email,
+      loginDto.password,
+      req,
+    );
   }
 
   @Public()
@@ -39,7 +50,10 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refresh(@Body() refreshTokenDto: RefreshTokenDto, @Req() req: Request) {
-    return this.authService.refreshAccessToken(refreshTokenDto.refresh_token, req);
+    return this.authService.refreshAccessToken(
+      refreshTokenDto.refresh_token,
+      req,
+    );
   }
 
   @Post('logout')
@@ -56,6 +70,9 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
   @ApiResponse({ status: 400, description: 'Invalid verification code' })
   async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return this.authService.verifyEmail(verifyEmailDto.email, verifyEmailDto.code);
+    return this.authService.verifyEmail(
+      verifyEmailDto.email,
+      verifyEmailDto.code,
+    );
   }
-} 
+}

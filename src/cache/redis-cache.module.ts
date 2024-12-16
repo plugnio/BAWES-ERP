@@ -1,13 +1,12 @@
-import { Module, Global } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import * as redisStore from 'cache-manager-redis-store';
+import { redisStore } from 'cache-manager-redis-store';
 import type { RedisClientOptions } from 'redis';
 
-@Global()
 @Module({
   imports: [
-    CacheModule.registerAsync({
+    CacheModule.registerAsync<RedisClientOptions>({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         store: redisStore as any,
@@ -23,4 +22,4 @@ import type { RedisClientOptions } from 'redis';
   ],
   exports: [CacheModule],
 })
-export class RedisCacheModule {} 
+export class RedisCacheModule {}

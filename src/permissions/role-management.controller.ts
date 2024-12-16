@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
@@ -31,15 +40,16 @@ export class RoleManagementController {
   @RequirePermissions('Role:Update')
   async togglePermissions(
     @Param('roleId') roleId: string,
-    @Body() data: {
+    @Body()
+    data: {
       permissionCode: string;
       enabled: boolean;
-    }
+    },
   ) {
     return this.permissionService.toggleRolePermission(
       roleId,
       data.permissionCode,
-      data.enabled
+      data.enabled,
     );
   }
 
@@ -48,7 +58,7 @@ export class RoleManagementController {
   @RequirePermissions('Role:Update')
   async updatePosition(
     @Param('roleId') roleId: string,
-    @Body() data: { position: number }
+    @Body() data: { position: number },
   ) {
     return this.permissionService.updateRolePosition(roleId, data.position);
   }
@@ -58,7 +68,7 @@ export class RoleManagementController {
   @RequirePermissions('Role:Assign')
   async assignRole(
     @Param('userId') userId: string,
-    @Body() data: { roleId: string }
+    @Body() data: { roleId: string },
   ) {
     return this.permissionService.assignRoleToUser(userId, data.roleId);
   }
@@ -68,8 +78,8 @@ export class RoleManagementController {
   @RequirePermissions('Role:Assign')
   async removeRole(
     @Param('userId') userId: string,
-    @Param('roleId') roleId: string
+    @Param('roleId') roleId: string,
   ) {
     return this.permissionService.removeRoleFromUser(userId, roleId);
   }
-} 
+}

@@ -16,8 +16,11 @@ export class InviteUserDto {
   @IsOptional()
   nameAr?: string;
 
-  @ApiProperty({ description: 'Initial role to assign to the user', required: false })
+  @ApiProperty({
+    description: 'Initial role to assign to the user',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   role?: string;
-} 
+}
