@@ -10,6 +10,7 @@ import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class AuthService {
@@ -172,12 +173,12 @@ export class AuthService {
       const roleBits = pr.role.permissions.reduce(
         (roleAcc, rp) =>
           !rp.permission.isDeprecated
-            ? roleAcc | rp.permission.bitfield
+            ? roleAcc.add(new Decimal(rp.permission.bitfield))
             : roleAcc,
-        BigInt(0),
+        new Decimal(0),
       );
-      return acc | roleBits;
-    }, BigInt(0));
+      return acc.add(roleBits);
+    }, new Decimal(0));
 
     // Generate access token with permissions
     const accessTokenPayload: JwtPayload = {
@@ -301,12 +302,12 @@ export class AuthService {
         const roleBits = pr.role.permissions.reduce(
           (roleAcc, rp) =>
             !rp.permission.isDeprecated
-              ? roleAcc | rp.permission.bitfield
+              ? roleAcc.add(new Decimal(rp.permission.bitfield))
               : roleAcc,
-          BigInt(0),
+          new Decimal(0),
         );
-        return acc | roleBits;
-      }, BigInt(0));
+        return acc.add(roleBits);
+      }, new Decimal(0));
 
       // Generate new access token with updated permissions
       const accessTokenPayload: JwtPayload = {
