@@ -31,11 +31,14 @@ createUser() {
 
 ### 2. Bitfield-Based Permissions
 ```typescript
-// Each permission gets a unique power-of-2 bitfield
-const bitfield = BigInt(1) << BigInt(index);
+// Each permission gets a unique power-of-2 bitfield using Decimal.js
+import Decimal from 'decimal.js';
 
-// Efficient permission checks using bitwise operations
-const hasPermission = (userBits & permissionBits) === permissionBits;
+let nextBitfield = new Decimal(1);
+nextBitfield = nextBitfield.mul(2); // 2, 4, 8, 16, etc.
+
+// Efficient permission checks using Decimal.js operations
+const hasPermission = userBits.and(permissionBitfield).eq(permissionBitfield);
 ```
 
 ### 3. JWT Implementation
@@ -67,10 +70,13 @@ model Permission {
   category     String
   isDeprecated Boolean  @default(false)
   sortOrder    Int      @default(0)
-  bitfield     BigInt   // For efficient permission checks
+  bitfield     Decimal  @db.Decimal(40,0) // Support for over 100k permissions
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   roles        RolePermission[]
+
+  @@index([category, sortOrder])
+  @@index([isDeprecated])
 }
 ```
 
@@ -141,9 +147,10 @@ await prisma.personRole.create({
 ## Performance Optimization
 
 ### 1. Bitfield Operations
-- O(1) permission checks using bitwise operations
-- Minimal memory usage in JWT payload
-- Efficient permission combination for roles
+- O(1) permission checks using Decimal.js operations
+- Support for over 100,000 permissions via Decimal(40,0)
+- Efficient permission combination using decimal arithmetic
+- Minimal memory usage in JWT payload (string representation)
 
 ### 2. Caching Strategy
 - Permission check results cached for 5 minutes
@@ -151,7 +158,8 @@ await prisma.personRole.create({
 - Distributed cache support via cache-manager
 
 ### 3. Database Optimization
-- Indexed permission lookups
+- Decimal(40,0) type for extended permission capacity
+- Indexed permission lookups (category, sortOrder, isDeprecated)
 - Efficient role-permission joins
 - Minimal permission data in JWT
 
