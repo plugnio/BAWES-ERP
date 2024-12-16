@@ -11,6 +11,7 @@ import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -104,20 +105,18 @@ export class PermissionGuard implements CanActivate {
         return true;
       }
 
-      // Calculate combined permission bitfield
+      // Calculate combined permission bitfield (using bitwise OR)
       const userBits = person.roles.reduce((acc, pr) => {
         const roleBits = pr.role.permissions.reduce(
-          (roleAcc, rp) =>
-            !rp.permission.isDeprecated
-              ? roleAcc | rp.permission.bitfield
-              : roleAcc,
-          BigInt(0),
+          (roleAcc, rp) => roleAcc.add(rp.permission.bitfield),
+          new Decimal(0),
         );
-        return acc | roleBits;
-      }, BigInt(0));
+        return acc.add(roleBits);
+      }, new Decimal(0));
 
       // Check if user has the required permission using bitwise AND
-      hasPermission = (userBits & permission.bitfield) === permission.bitfield;
+      const permissionBitfield = new Decimal(permission.bitfield);
+      hasPermission = userBits.and(permissionBitfield).eq(permissionBitfield);
 
       // Cache the result
       await this.cacheManager.set(

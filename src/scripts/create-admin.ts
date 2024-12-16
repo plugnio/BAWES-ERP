@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import Decimal from 'decimal.js';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,7 @@ async function createAdmin() {
   const nameEn = process.env.ADMIN_NAME || 'System Administrator';
 
   try {
-    // Create system permissions
+    // Create system permissions with bitfield powers of 2
     const permissions = [
       { code: 'system.manage_permissions', name: 'Manage Permissions' },
       { code: 'system.manage_roles', name: 'Manage Roles' },
@@ -17,12 +18,10 @@ async function createAdmin() {
       { code: 'system.view_audit_logs', name: 'View Audit Logs' },
     ];
 
-    let nextBitfield = BigInt(0);
+    let nextBitfield = new Decimal(1); // Start with 2^0
     const createdPermissions = await Promise.all(
       permissions.map(async (perm) => {
-        nextBitfield =
-          nextBitfield === BigInt(0) ? BigInt(1) : nextBitfield << BigInt(1);
-        return prisma.permission.upsert({
+        const result = await prisma.permission.upsert({
           where: { code: perm.code },
           update: {},
           create: {
@@ -35,6 +34,8 @@ async function createAdmin() {
             bitfield: nextBitfield,
           },
         });
+        nextBitfield = nextBitfield.mul(2); // Next power of 2
+        return result;
       }),
     );
 

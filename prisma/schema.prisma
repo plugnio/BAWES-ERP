@@ -343,8 +343,8 @@ model Permission {
   isDeprecated Boolean  @default(false)
   /// Sort order for UI display within category
   sortOrder    Int      @default(0)
-  /// Bitfield for efficient permission checks in JWT
-  bitfield     BigInt
+  /// Bitfield for efficient permission checks in JWT, using Decimal for larger capacity
+  bitfield     Decimal  @db.Decimal(40,0) // 40 digits, no decimal places
   /// Date and time when the permission was created
   createdAt    DateTime @default(now())
   /// Date and time when the permission was last updated

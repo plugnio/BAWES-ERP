@@ -3,6 +3,7 @@ import { DiscoveryService, MetadataScanner } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
 import { Prisma } from '@prisma/client';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class PermissionDiscoveryService implements OnModuleInit {
@@ -133,7 +134,7 @@ export class PermissionDiscoveryService implements OnModuleInit {
       const lastPermission = await this.prisma.permission.findFirst({
         orderBy: { bitfield: 'desc' },
       });
-      let nextBitfield = lastPermission ? lastPermission.bitfield : BigInt(0);
+      let nextBitfield = lastPermission ? new Decimal(lastPermission.bitfield).mul(2) : new Decimal(1);
 
       controllers.forEach((wrapper) => {
         const { instance } = wrapper;
@@ -157,11 +158,6 @@ export class PermissionDiscoveryService implements OnModuleInit {
                   return;
                 }
 
-                nextBitfield =
-                  nextBitfield === BigInt(0)
-                    ? BigInt(1)
-                    : nextBitfield << BigInt(1);
-
                 permissions.push({
                   code: permission,
                   name: this.formatPermissionName(action),
@@ -171,6 +167,8 @@ export class PermissionDiscoveryService implements OnModuleInit {
                   isDeprecated: false,
                   bitfield: nextBitfield,
                 });
+                
+                nextBitfield = nextBitfield.mul(2); // Double for next power of 2
               }
             } catch (error) {
               this.logger.error(
