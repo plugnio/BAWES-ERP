@@ -27,11 +27,10 @@ export class PermissionDiscoveryService implements OnModuleInit {
   }
 
   private async syncPermissions() {
-    const codePermissions = this.discoverPermissions();
-    this.logger.log(`Discovered ${codePermissions.length} permissions from code`);
-    
     try {
-      // Use transaction to ensure data consistency
+      const codePermissions = await this.discoverPermissions();
+      this.logger.log(`Discovered ${codePermissions.length} permissions from code`);
+      
       await this.prisma.$transaction(async (tx) => {
         // Get existing permissions from DB
         const dbPermissions = await tx.permission.findMany();
@@ -112,11 +111,17 @@ export class PermissionDiscoveryService implements OnModuleInit {
     }
   }
 
-  private discoverPermissions(): Prisma.PermissionCreateInput[] {
+  private async discoverPermissions(): Promise<Prisma.PermissionCreateInput[]> {
     try {
       const permissions: Prisma.PermissionCreateInput[] = [];
       const controllers = this.discoveryService.getControllers();
       let sortOrder = 0;
+
+      // Get last permission to calculate next bitfield
+      const lastPermission = await this.prisma.permission.findFirst({
+        orderBy: { bitfield: 'desc' }
+      });
+      let nextBitfield = lastPermission ? lastPermission.bitfield : BigInt(0);
 
       controllers.forEach(wrapper => {
         const { instance } = wrapper;
@@ -135,6 +140,8 @@ export class PermissionDiscoveryService implements OnModuleInit {
                 return;
               }
 
+              nextBitfield = nextBitfield === BigInt(0) ? BigInt(1) : nextBitfield << BigInt(1);
+              
               permissions.push({
                 code: permission,
                 name: this.formatPermissionName(action),
@@ -142,6 +149,7 @@ export class PermissionDiscoveryService implements OnModuleInit {
                 description: `Can ${action.toLowerCase()} ${category.toLowerCase()}`,
                 sortOrder: sortOrder++,
                 isDeprecated: false,
+                bitfield: nextBitfield
               });
             }
           } catch (error) {

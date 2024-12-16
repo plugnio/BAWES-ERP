@@ -17,8 +17,10 @@ async function createAdmin() {
       { code: 'system.view_audit_logs', name: 'View Audit Logs' }
     ];
 
+    let nextBitfield = BigInt(0);
     const createdPermissions = await Promise.all(
-      permissions.map(async (perm, index) => {
+      permissions.map(async (perm) => {
+        nextBitfield = nextBitfield === BigInt(0) ? BigInt(1) : nextBitfield << BigInt(1);
         return prisma.permission.upsert({
           where: { code: perm.code },
           update: {},
@@ -27,9 +29,9 @@ async function createAdmin() {
             name: perm.name,
             description: `System permission: ${perm.name}`,
             category: 'System',
-            sortOrder: index,
+            sortOrder: 0,
             isDeprecated: false,
-            bitfield: BigInt(1) << BigInt(index)
+            bitfield: nextBitfield
           }
         });
       })
