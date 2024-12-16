@@ -12,7 +12,7 @@ The permission system implements a Discord-like Role-Based Access Control (RBAC)
 - **System Roles**: Protected roles that cannot be modified (isSystem flag)
 
 ### 2. Permission Implementation
-- **Bitfield-Based**: Uses BigInt for efficient permission calculations
+- **Bitfield-Based**: Uses Decimal.js for efficient permission calculations with support for over 100k unique permissions
 - **Category Organization**: Permissions are grouped into categories
 - **Dynamic Generation**: New permissions auto-generate appropriate bitfields
 
@@ -81,10 +81,11 @@ const role = await permissionService.createRole({
 
 ### 2. Permission Checking
 ```typescript
-const hasPermission = await permissionService.hasPermission(
-  userId,
-  "users.write"
-);
+// Using Decimal.js for precise permission checks
+const hasPermission = userBits
+  .dividedBy(permissionBitfield)
+  .modulo(2)
+  .equals(1);
 ```
 
 ### 3. Role Assignment
@@ -101,7 +102,7 @@ await permissionService.assignRoleToUser(userId, roleId);
 
 ## Performance Optimization
 
-1. **Bitfield Operations**: O(1) permission checks using bitwise operations
+1. **Bitfield Operations**: O(1) permission checks using Decimal.js operations
 2. **Caching**: Reduces database queries for permission checks
 3. **Bulk Operations**: Uses transaction for role position updates
 4. **Indexed Queries**: Database indexes on frequently queried fields

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import Decimal from 'decimal.js';
 
 const prisma = new PrismaClient();
 
@@ -9,21 +10,8 @@ async function main() {
     // Seed RBAC
     const { categories, roles } = await import(`./data/${nodeEnv}/rbac`);
     
-    // Create categories and their permissions
+    // Create permissions by category
     for (const category of categories) {
-        const createdCategory = await prisma.permissionCategory.upsert({
-            where: { name: category.name },
-            update: {
-                description: category.description,
-                sortOrder: category.sortOrder
-            },
-            create: {
-                name: category.name,
-                description: category.description,
-                sortOrder: category.sortOrder
-            }
-        });
-
         // Create permissions for this category
         for (const [index, permission] of category.permissions.entries()) {
             await prisma.permission.upsert({
@@ -31,14 +19,14 @@ async function main() {
                 update: {
                     name: permission.name,
                     description: permission.description,
-                    categoryId: createdCategory.id
+                    category: category.name
                 },
                 create: {
                     code: permission.code,
                     name: permission.name,
                     description: permission.description,
-                    bitfield: BigInt(1) << BigInt(index),
-                    categoryId: createdCategory.id
+                    bitfield: new Decimal(2).pow(index).toString(),
+                    category: category.name
                 }
             });
         }
