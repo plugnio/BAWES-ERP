@@ -17,7 +17,15 @@ import { RoleManagementController } from './controllers/role-management.controll
     }),
   ],
   controllers: [PermissionManagementController, RoleManagementController],
-  providers: [PermissionDiscoveryService, PermissionManagementService, PermissionGuard],
-  exports: [PermissionDiscoveryService, PermissionManagementService, PermissionGuard],
+  providers: [
+    PermissionDiscoveryService,
+    PermissionManagementService,
+    PermissionGuard,
+  ],
+  exports: [
+    PermissionDiscoveryService,
+    PermissionManagementService,
+    PermissionGuard,
+  ],
 })
 export class RbacModule {}
