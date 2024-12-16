@@ -130,7 +130,12 @@ export class AuthService {
               include: {
                 permissions: {
                   include: {
-                    permission: true
+                    permission: {
+                      select: {
+                        bitfield: true,
+                        isDeprecated: true
+                      }
+                    }
                   }
                 }
               }
@@ -143,18 +148,22 @@ export class AuthService {
       }
     });
 
-    // Format permissions for JWT
-    const permissions = personWithRoles.roles.flatMap(pr => 
-      pr.role.permissions.map(rp => 
-        rp.permission.code
-      )
-    );
+    // Calculate combined permission bitfield
+    const permissionBits = personWithRoles.roles.reduce((acc, pr) => {
+      const roleBits = pr.role.permissions.reduce(
+        (roleAcc, rp) => !rp.permission.isDeprecated ? 
+          roleAcc | rp.permission.bitfield : 
+          roleAcc,
+        BigInt(0)
+      );
+      return acc | roleBits;
+    }, BigInt(0));
 
     // Generate access token with permissions
     const accessTokenPayload: JwtPayload = { 
       sub: personId,
       email: personWithRoles.emails[0]?.email,
-      permissions,
+      permissionBits: permissionBits.toString(),
     };
     
     const accessToken = this.jwtService.sign(accessTokenPayload, {

@@ -43,6 +43,17 @@ export class PermissionGuard implements CanActivate {
         return hasPermission;
       }
 
+      // Get permission bitfield from database
+      const permission = await this.prisma.permission.findUnique({
+        where: { code: requiredPermission },
+        select: { bitfield: true, isDeprecated: true }
+      });
+
+      if (!permission || permission.isDeprecated) {
+        this.logger.warn(`Permission not found or deprecated: ${requiredPermission}`);
+        return false;
+      }
+
       // Get person with roles and their permissions
       const person = await this.prisma.person.findUnique({
         where: { id: personId },
@@ -55,7 +66,7 @@ export class PermissionGuard implements CanActivate {
                     include: {
                       permission: {
                         select: {
-                          code: true,
+                          bitfield: true,
                           isDeprecated: true
                         }
                       }
@@ -83,12 +94,19 @@ export class PermissionGuard implements CanActivate {
         return true;
       }
 
-      // Check specific permissions
-      hasPermission = person.roles.some(pr => 
-        pr.role.permissions.some(rp => 
-          rp.permission.code === requiredPermission && !rp.permission.isDeprecated
-        )
-      );
+      // Calculate combined permission bitfield
+      const userBits = person.roles.reduce((acc, pr) => {
+        const roleBits = pr.role.permissions.reduce(
+          (roleAcc, rp) => !rp.permission.isDeprecated ? 
+            roleAcc | rp.permission.bitfield : 
+            roleAcc,
+          BigInt(0)
+        );
+        return acc | roleBits;
+      }, BigInt(0));
+
+      // Check if user has the required permission using bitwise AND
+      hasPermission = (userBits & permission.bitfield) === permission.bitfield;
 
       // Cache the result
       await this.cacheManager.set(

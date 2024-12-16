@@ -9,17 +9,6 @@ async function createAdmin() {
   const nameEn = process.env.ADMIN_NAME || 'System Administrator';
 
   try {
-    // Create admin category if it doesn't exist
-    const adminCategory = await prisma.permissionCategory.upsert({
-      where: { name: 'System Administration' },
-      update: {},
-      create: {
-        name: 'System Administration',
-        description: 'System-level administrative permissions',
-        sortOrder: 0
-      }
-    });
-
     // Create system permissions
     const permissions = [
       { code: 'system.manage_permissions', name: 'Manage Permissions' },
@@ -37,8 +26,10 @@ async function createAdmin() {
             code: perm.code,
             name: perm.name,
             description: `System permission: ${perm.name}`,
-            bitfield: BigInt(1) << BigInt(index),
-            categoryId: adminCategory.id
+            category: 'System',
+            sortOrder: index,
+            isDeprecated: false,
+            bitfield: BigInt(1) << BigInt(index)
           }
         });
       })
