@@ -8,9 +8,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // CORS Configuration
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3001')
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS || 'http://localhost:3001'
+  )
     .split(',')
-    .map(origin => origin.trim());
+    .map((origin) => origin.trim());
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -19,7 +21,10 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        allowedOrigins.includes('*')
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

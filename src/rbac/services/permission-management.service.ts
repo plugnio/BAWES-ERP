@@ -19,24 +19,24 @@ export class PermissionManagementService {
 
   async getPermissionCategories() {
     const permissions = await this.prisma.permission.findMany({
-      orderBy: [
-        { category: 'asc' },
-        { sortOrder: 'asc' }
-      ],
+      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
     });
 
     // Group permissions by category
     return Object.entries(
-      permissions.reduce((acc, permission) => {
-        if (!acc[permission.category]) {
-          acc[permission.category] = [];
-        }
-        acc[permission.category].push(permission);
-        return acc;
-      }, {} as Record<string, typeof permissions>)
+      permissions.reduce(
+        (acc, permission) => {
+          if (!acc[permission.category]) {
+            acc[permission.category] = [];
+          }
+          acc[permission.category].push(permission);
+          return acc;
+        },
+        {} as Record<string, typeof permissions>,
+      ),
     ).map(([category, permissions]) => ({
       name: category,
-      permissions
+      permissions,
     }));
   }
 
@@ -47,11 +47,11 @@ export class PermissionManagementService {
   }) {
     // Since categories are just strings in the Permission model,
     // we'll return the category info without creating a record
-    return { 
+    return {
       name: data.name,
       description: data.description,
       sortOrder: data.sortOrder,
-      permissions: []
+      permissions: [],
     };
   }
 
@@ -65,7 +65,7 @@ export class PermissionManagementService {
       orderBy: { bitfield: 'desc' },
     });
 
-    const bitfield = lastPermission 
+    const bitfield = lastPermission
       ? new Decimal(lastPermission.bitfield).mul(2)
       : new Decimal(1);
 
