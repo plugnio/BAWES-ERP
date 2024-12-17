@@ -16,7 +16,7 @@ services:
         condition: service_healthy
     command: ["npm", "run", "start:dev"]
     environment:
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://erpuser:erppassword@postgres:5432/erp_db?schema=public
 
   postgres:
     image: postgres:latest
