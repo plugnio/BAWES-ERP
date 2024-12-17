@@ -1,54 +1,62 @@
 # BAWES ERP System
 
 ## Overview
+
 BAWES ERP is a comprehensive enterprise resource planning system built with NestJS, designed to handle business operations including banking, accounting, and workflow management.
 
-## Quick Start
+## Getting Started
+
+See our [Getting Started Guide](docs/GETTING_STARTED.md) for detailed setup instructions.
+
+Quick start for existing users:
+
 ```bash
 # Clone the repository
 git clone https://github.com/plugnio/BAWES-ERP.git
 cd BAWES-ERP
 
-# Start the application
-docker compose up
+# Open in VS Code
+code .
+
+# Click "Reopen in Container" when prompted
 ```
 
-The application will be available at:
-- API: http://localhost:3000
-- API Documentation: http://localhost:3000/api
-
 ## Core Features
+
 - 🏦 Banking Integration
 - 🔐 Centralized Authentication
 - 💼 Multi-currency Support
 - 📊 Financial Reporting
 - 🔄 Workflow Management
 
-## Development Setup
-For local development setup and guidelines, see [Development Guide](docs/development/README.md)
+## Documentation Structure
 
-## Production Deployment
-For production deployment instructions, see [Development Guide](docs/development/README.md#production)
+### Development
 
-## Documentation
-All documentation is available in the [docs](docs) directory:
-
-### Core Documentation
-- [Getting Started](docs/core/getting-started.md)
-- [Architecture](docs/core/architecture.md)
+- [Getting Started Guide](docs/GETTING_STARTED.md) - Start here
+- [Development Standards](docs/development/README.md) - Coding guidelines
+- [Testing Guide](docs/development/testing.md) - Testing practices
 
 ### API & SDK
-- [API Documentation](docs/api/README.md)
-- [SDK Guide](docs/sdk/README.md)
 
-### Security
-- [Authentication](docs/security/README.md)
-- [Authorization](docs/security/authorization.md)
+- [API Documentation](docs/api/README.md) - API endpoints and usage
+- [SDK Guide](docs/sdk/README.md) - SDK integration
 
-### Integrations
-- [Banking Integration](docs/integrations/banking/README.md)
+### Core Concepts
 
-For full documentation structure, see our [Documentation Hub](docs/README.md).
+- [Architecture](docs/core/architecture.md) - System design
+- [Security](docs/security/README.md) - Security practices
+- [Banking Integration](docs/integrations/banking/README.md) - Banking setup
+
+For full documentation, see our [Documentation Hub](docs/README.md).
+
+## Contributing
+
+1. Create a feature branch (`git checkout -b feature/name`)
+2. Make your changes
+3. Push to the branch (`git push origin feature/name`)
+4. Create a Pull Request
 
 ## License
+
 Proprietary - All rights reserved

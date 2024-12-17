@@ -1,133 +1,109 @@
-# Development Guide
+# Development Standards
 
-Welcome to the BAWES ERP development documentation. This guide covers everything you need to know about developing for BAWES ERP.
+This guide outlines the core development standards for the BAWES-ERP project.
 
-## Quick Start
+## Quick Links
+- [Getting Started Guide](../GETTING_STARTED.md)
+- [Style Guide](./style-guide.md)
+- [Testing Guide](./testing.md)
+- [Contributing Guide](./contributing.md)
 
-### Setup Development Environment
+## Core Standards
 
-```bash
-# Clone repositories
-git clone git@github.com:plugnio/BAWES-ERP.git
-git clone git@github.com:plugnio/BAWES-ERP-sdk.git
+### Code Quality
+- Use TypeScript strict mode
+- Follow ESLint and Prettier configuration
+- Write unit tests for new features
+- Document API endpoints with Swagger
+- Keep functions small and focused
+- Use meaningful variable names
+- Follow SOLID principles
+- Use dependency injection
 
-# Install dependencies
-cd BAWES-ERP
-npm install
+### Financial Code
+- Always use decimal.js for monetary values
+- Never use native JavaScript floating-point arithmetic
+- Validate decimal places (max 2 for standard currency)
+- Cache Decimal instances outside loops
+- Handle currency conversions with care
+- Test all financial calculations thoroughly
+- Document all financial logic
+- Use BigInt for large integer calculations
 
-# Start development server
-npm run start:dev
-```
+### Database
+- Use Prisma for all database operations
+- Write and test migrations carefully
+- Never modify the database schema directly
+- Keep migrations reversible
+- Document schema changes
+- Use transactions where appropriate
+- Implement proper indexing
+- Write efficient queries
 
-### Running Tests
+### Security
+- Follow authentication best practices
+- Implement proper authorization
+- Validate all inputs
+- Sanitize all outputs
+- Use environment variables for secrets
+- Keep dependencies updated
+- Implement rate limiting
+- Use proper session management
+- Follow OWASP guidelines
 
-```bash
-# Run unit tests
-npm run test
+### Performance
+- Optimize database queries
+- Use appropriate indexes
+- Implement caching where necessary
+- Monitor API response times
+- Profile code when needed
+- Use pagination for large datasets
+- Implement proper error handling
+- Use async/await correctly
 
-# Run e2e tests
-npm run test:e2e
+### Version Control
+- Use feature branches
+- Write meaningful commit messages
+- Follow conventional commits
+- Keep changes focused
+- Review code before merging
+- No direct commits to main
+- Tag releases properly
+- Update changelog
 
-# Run with coverage
-npm run test:cov
-```
+### SDK Development
+- Follow semantic versioning
+- Document breaking changes
+- Test SDK thoroughly
+- Provide usage examples
+- Keep backwards compatibility
+- Generate TypeScript types
+- Publish documentation
+- Version lock dependencies
 
-## Contents
+### Error Handling
+- Use custom error classes
+- Implement proper logging
+- Handle edge cases
+- Provide meaningful error messages
+- Use HTTP status codes correctly
+- Implement global error handling
+- Log errors appropriately
+- Monitor error rates
 
-- [Setup Guide](./setup.md) - Development environment setup
-- [Contributing Guide](./contributing.md) - How to contribute
-- [Style Guide](./style-guide.md) - Coding standards
-- [Testing Guide](./testing.md) - Testing practices
+### CI/CD
+- Automated testing
+- Code quality checks
+- Security scanning
+- Performance testing
+- Automated deployments
+- Environment management
+- Rollback procedures
+- Monitoring and alerts
 
-## Development Process
-
-### 1. Code Standards
-- TypeScript for type safety
-- NestJS for backend
-- Clean Architecture principles
-- Test-Driven Development
-- Comprehensive documentation
-
-### 2. Version Control
-- Feature branches
-- Pull request workflow
-- Semantic versioning
-- Automated CI/CD
-
-### 3. Testing Requirements
-- Unit tests required
-- E2E tests for critical paths
-- Integration tests
-- Test coverage requirements
-
-## Best Practices
-
-### 1. Code Quality
-- Follow style guide
-- Write clean, readable code
-- Add comments when needed
-- Keep functions small
-- Use meaningful names
-
-### 2. Testing
-- Write tests first (TDD)
-- Test edge cases
-- Mock external services
-- Keep tests maintainable
-
-### 3. Documentation
-- Document as you code
-- Keep docs up to date
-- Include examples
-- Write clear commit messages
-
-## Development Workflow
-
-1. **Starting New Feature**
-   ```bash
-   # Create feature branch
-   git checkout -b feature/your-feature
-   
-   # Make changes and test
-   npm run test
-   
-   # Commit with conventional commits
-   git commit -m "feat: add new feature"
-   ```
-
-2. **Submitting Changes**
-   ```bash
-   # Push to remote
-   git push origin feature/your-feature
-   
-   # Create pull request
-   gh pr create
-   ```
-
-3. **Review Process**
-   - Code review required
-   - Tests must pass
-   - Style guide compliance
-   - Documentation updated
-
-## Tools and Technologies
-
-### Core Stack
-- TypeScript
-- NestJS
-- PostgreSQL
-- Prisma ORM
-- Jest for testing
-
-### Development Tools
-- VS Code (recommended)
-- ESLint
-- Prettier
-- Git
-- Docker
-
-## Related Documentation
-
-- [API Documentation](../api/README.md)
-- [SDK Guide](../sdk/README.md)
-- [Security Guide](../security/README.md) 
+## Additional Resources
+- [Architecture Overview](../core/architecture.md)
+- [API Guidelines](../api/README.md)
+- [Security Guidelines](../security/README.md)
+- [Testing Strategy](./testing.md)
+- [Contributing Guidelines](./contributing.md)
