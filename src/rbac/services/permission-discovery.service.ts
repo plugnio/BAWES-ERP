@@ -37,10 +37,7 @@ export class PermissionDiscoveryService implements OnModuleInit {
       await this.prisma.$transaction(async (tx) => {
         // Get existing permissions from DB
         const dbPermissions = await tx.permission.findMany();
-        this.logger.log(
-          `Found ${dbPermissions.length} existing permissions in database`,
-        );
-
+        
         // Add new permissions found in code
         const newPermissions = codePermissions.filter(
           (cp) => !dbPermissions.some((dp) => dp.code === cp.code),
@@ -76,7 +73,11 @@ export class PermissionDiscoveryService implements OnModuleInit {
               })),
               skipDuplicates: true,
             });
+            
+            this.logger.log('Granted new permissions to SUPER_ADMIN role');
           }
+        } else {
+          this.logger.log('All permissions are up to date');
         }
 
         // Mark deprecated permissions
@@ -100,9 +101,20 @@ export class PermissionDiscoveryService implements OnModuleInit {
           });
         }
 
-        // Log categories
-        const categories = [...new Set(codePermissions.map((p) => p.category))];
-        this.logger.log(`Permission categories: ${categories.join(', ')}`);
+        // Log summary
+        const summary = [
+          `${codePermissions.length} total permissions`,
+          newPermissions.length > 0 ? `${newPermissions.length} added` : 'none added',
+          obsoletePermissions.length > 0 ? `${obsoletePermissions.length} deprecated` : 'none deprecated',
+          `${dbPermissions.length + newPermissions.length - obsoletePermissions.length} active in database`
+        ].join(', ');
+        this.logger.log(`Permission sync summary: ${summary}`);
+
+        // Only log categories if there were changes
+        if (newPermissions.length > 0 || obsoletePermissions.length > 0) {
+          const categories = [...new Set(codePermissions.map((p) => p.category))];
+          this.logger.log(`Permission categories: ${categories.join(', ')}`);
+        }
       });
     } catch (error) {
       this.logger.error('Failed to sync permissions', error.stack);
@@ -142,6 +154,28 @@ export class PermissionDiscoveryService implements OnModuleInit {
         const { instance } = wrapper;
         if (!instance) return;
 
+        // Only process actual controller instances
+        const isController = instance.constructor.name.includes('Controller');
+        if (!isController) return;
+
+        // Check class-level permissions first
+        const classPermission = Reflect.getMetadata(PERMISSION_KEY, instance.constructor);
+        if (classPermission) {
+          const [category, action] = classPermission.split('.');
+          if (category && action && !permissions.some(p => p.code === classPermission)) {
+            permissions.push({
+              code: classPermission,
+              name: this.formatPermissionName(action),
+              category: this.formatCategoryName(category),
+              description: `Can ${action.toLowerCase()} ${category.toLowerCase()}`,
+              sortOrder: sortOrder++,
+              isDeprecated: false,
+              bitfield: nextBitfield,
+            });
+            nextBitfield = nextBitfield.mul(2);
+          }
+        }
+
         const prototype = Object.getPrototypeOf(instance);
         this.metadataScanner.scanFromPrototype(
           instance,
@@ -157,6 +191,11 @@ export class PermissionDiscoveryService implements OnModuleInit {
                   this.logger.warn(
                     `Invalid permission format: ${permission} in ${instance.constructor.name}.${method}`,
                   );
+                  return;
+                }
+
+                // Skip if this permission code already exists
+                if (permissions.some(p => p.code === permission)) {
                   return;
                 }
 
