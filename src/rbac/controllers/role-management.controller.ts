@@ -23,21 +23,21 @@ export class RoleManagementController {
 
   @Get()
   @ApiOperation({ summary: 'Get all roles with their permissions' })
-  @RequirePermission('Role:Read')
+  @RequirePermission('roles.read')
   async getRoles() {
     return this.permissionService.getRoles(true);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
-  @RequirePermission('Role:Create')
+  @RequirePermission('roles.create')
   async createRole(@Body() data: CreateRoleDto) {
     return this.permissionService.createRole(data);
   }
 
   @Patch(':roleId/permissions')
   @ApiOperation({ summary: 'Toggle permissions for a role' })
-  @RequirePermission('Role:Update')
+  @RequirePermission('roles.update')
   async togglePermissions(
     @Param('roleId') roleId: string,
     @Body()
@@ -55,7 +55,7 @@ export class RoleManagementController {
 
   @Patch(':roleId/position')
   @ApiOperation({ summary: 'Update role position (for drag-and-drop)' })
-  @RequirePermission('Role:Update')
+  @RequirePermission('roles.update')
   async updatePosition(
     @Param('roleId') roleId: string,
     @Body() data: { position: number },
@@ -65,7 +65,7 @@ export class RoleManagementController {
 
   @Post('users/:userId/roles')
   @ApiOperation({ summary: 'Assign role to user' })
-  @RequirePermission('Role:Assign')
+  @RequirePermission('roles.assign')
   async assignRole(
     @Param('userId') userId: string,
     @Body() data: { roleId: string },
@@ -75,7 +75,7 @@ export class RoleManagementController {
 
   @Delete('users/:userId/roles/:roleId')
   @ApiOperation({ summary: 'Remove role from user' })
-  @RequirePermission('Role:Assign')
+  @RequirePermission('roles.assign')
   async removeRole(
     @Param('userId') userId: string,
     @Param('roleId') roleId: string,
