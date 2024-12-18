@@ -13,19 +13,19 @@ import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { PermissionGuard } from '../auth/guards/permission.guard';
+import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { Person } from './entities/person.entity';
 
 @ApiTags('persons')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('persons')
 export class PersonController {
   constructor(private readonly personService: PersonService) {}
 
   @Post()
-  @RequirePermissions('persons.create')
+  @RequirePermission('persons.create')
   @ApiOperation({ summary: 'Create a new person' })
   @ApiResponse({ status: 201, type: Person })
   create(@Body() createPersonDto: CreatePersonDto) {
@@ -33,7 +33,7 @@ export class PersonController {
   }
 
   @Get()
-  @RequirePermissions('persons.read')
+  @RequirePermission('persons.read')
   @ApiOperation({ summary: 'Get all persons' })
   @ApiResponse({ status: 200, type: [Person] })
   findAll() {
@@ -41,7 +41,7 @@ export class PersonController {
   }
 
   @Get(':id')
-  @RequirePermissions('persons.read')
+  @RequirePermission('persons.read')
   @ApiOperation({ summary: 'Get a person by id' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
@@ -50,7 +50,7 @@ export class PersonController {
   }
 
   @Patch(':id')
-  @RequirePermissions('persons.update')
+  @RequirePermission('persons.update')
   @ApiOperation({ summary: 'Update a person' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
@@ -59,7 +59,7 @@ export class PersonController {
   }
 
   @Delete(':id')
-  @RequirePermissions('persons.delete')
+  @RequirePermission('persons.delete')
   @ApiOperation({ summary: 'Soft delete a person' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
