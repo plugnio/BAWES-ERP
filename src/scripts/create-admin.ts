@@ -1,41 +1,53 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as prompts from 'prompts';
+import * as chalk from 'chalk';
 
 const prisma = new PrismaClient();
 
 async function createAdmin() {
-  const email = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const password = process.env.ADMIN_PASSWORD || 'changeme123';
-  const nameEn = process.env.ADMIN_NAME || 'System Administrator';
+  console.log(chalk.blue('\n🔧 Admin Account Setup\n'));
+
+  const response = await prompts([
+    {
+      type: 'text',
+      name: 'email',
+      message: 'Enter admin email:',
+      validate: value => value.includes('@') ? true : 'Please enter a valid email'
+    },
+    {
+      type: 'password',
+      name: 'password',
+      message: 'Enter admin password:',
+      validate: value => value.length >= 8 ? true : 'Password must be at least 8 characters'
+    },
+    {
+      type: 'text',
+      name: 'nameEn',
+      message: 'Enter admin name:',
+      validate: value => value.length > 0 ? true : 'Name is required'
+    }
+  ]);
+
+  if (!response.email || !response.password || !response.nameEn) {
+    console.log(chalk.red('\n❌ Setup cancelled\n'));
+    process.exit(0);
+  }
 
   try {
-    // Create super admin role
-    const superAdminRole = await prisma.role.upsert({
-      where: { name: 'SUPER_ADMIN' },
-      update: {},
-      create: {
-        name: 'SUPER_ADMIN',
-        description: 'Super Administrator with all permissions',
-        isSystem: true,
-        sortOrder: 0,
-      },
-    });
-
     // Create admin user
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(response.password, 12);
 
     const adminPerson = await prisma.person.upsert({
-      where: {
-        id: 'admin', // Fixed ID for the system admin
-      },
+      where: { id: 'admin' },
       update: {
-        nameEn,
+        nameEn: response.nameEn,
         passwordHash: hashedPassword,
         accountStatus: 'active',
       },
       create: {
         id: 'admin',
-        nameEn,
+        nameEn: response.nameEn,
         passwordHash: hashedPassword,
         accountStatus: 'active',
       },
@@ -43,21 +55,29 @@ async function createAdmin() {
 
     // Create admin email
     await prisma.email.upsert({
-      where: { email },
+      where: { email: response.email },
       update: {
         isPrimary: true,
         isVerified: true,
         personId: adminPerson.id,
       },
       create: {
-        email,
+        email: response.email,
         isPrimary: true,
         isVerified: true,
         personId: adminPerson.id,
       },
     });
 
-    // Assign super admin role
+    // Assign super admin role (which should already exist from seeds)
+    const superAdminRole = await prisma.role.findUnique({
+      where: { name: 'SUPER_ADMIN' }
+    });
+
+    if (!superAdminRole) {
+      throw new Error('SUPER_ADMIN role not found. Please run database migrations and seeds first.');
+    }
+
     await prisma.personRole.upsert({
       where: {
         personId_roleId: {
@@ -72,12 +92,12 @@ async function createAdmin() {
       },
     });
 
-    console.log('Successfully created admin user with super admin permissions');
-    console.log('Email:', email);
-    console.log('Password:', password);
-    console.log('Please change the password after first login');
+    console.log(chalk.green('\n✅ Successfully created admin user!\n'));
+    console.log('Email:', chalk.cyan(response.email));
+    console.log('Password:', chalk.cyan(response.password));
+    console.log(chalk.yellow('\n⚠️  Please change the password after first login\n'));
   } catch (error) {
-    console.error('Error creating admin:', error);
+    console.error(chalk.red('\n❌ Error creating admin:'), error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
