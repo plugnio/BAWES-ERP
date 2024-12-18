@@ -113,3 +113,63 @@ await permissionService.assignRoleToUser(userId, roleId);
 2. **Forbidden**: ForbiddenException for system role modifications
 3. **Validation**: Automatic DTO validation using class-validator
 4. **Cache Errors**: Graceful fallback to database on cache failures
+
+## CLI Tools
+
+### Permission Management Scripts
+
+The system includes several CLI tools for permission management:
+
+#### 1. List Permissions
+```bash
+npm run permissions:list
+```
+Lists all permissions in the system with detailed information:
+- System overview (total permissions, roles, system roles)
+- Permissions organized by category
+- Role assignments and their permissions
+
+#### 2. Add Permissions
+```bash
+npm run permissions:add -- <code> <name> <category> [description]
+
+# Example
+npm run permissions:add -- "users:create" "Create User" "Users" "Allows creating new users"
+```
+Adds new permissions to the system:
+- Creates category if it doesn't exist
+- Assigns unique bitfield automatically
+- Grants permission to SUPER_ADMIN role
+- Validates permission format
+
+#### 3. Audit Permissions
+```bash
+npm run permissions:audit
+```
+Generates comprehensive permission audit report:
+- Permission distribution analysis
+- Role permission coverage
+- Unused permission detection
+- Security recommendations
+- High-risk permission combinations
+- Empty category detection
+
+### Best Practices for CLI Usage
+
+1. **Regular Auditing**
+   - Run permission audit regularly
+   - Review unused permissions
+   - Check for security issues
+   - Monitor permission distribution
+
+2. **Permission Management**
+   - Use standard naming conventions
+   - Document new permissions
+   - Review before adding
+   - Keep categories organized
+
+3. **Security Considerations**
+   - Audit high-risk permissions
+   - Review role assignments
+   - Check permission inheritance
+   - Monitor system roles
