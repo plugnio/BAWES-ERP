@@ -17,15 +17,15 @@ import { PermissionGuard } from '../auth/guards/permission.guard';
 import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
 import { Person } from './entities/person.entity';
 
-@ApiTags('persons')
+@ApiTags('people')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@Controller('persons')
+@Controller('people')
 export class PersonController {
   constructor(private readonly personService: PersonService) {}
 
   @Post()
-  @RequirePermission('persons.create')
+  @RequirePermission('people.create')
   @ApiOperation({ summary: 'Create a new person' })
   @ApiResponse({ status: 201, type: Person })
   create(@Body() createPersonDto: CreatePersonDto) {
@@ -33,15 +33,15 @@ export class PersonController {
   }
 
   @Get()
-  @RequirePermission('persons.read')
-  @ApiOperation({ summary: 'Get all persons' })
+  @RequirePermission('people.read')
+  @ApiOperation({ summary: 'Get all people' })
   @ApiResponse({ status: 200, type: [Person] })
   findAll() {
     return this.personService.findAll();
   }
 
   @Get(':id')
-  @RequirePermission('persons.read')
+  @RequirePermission('people.read')
   @ApiOperation({ summary: 'Get a person by id' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
@@ -50,7 +50,7 @@ export class PersonController {
   }
 
   @Patch(':id')
-  @RequirePermission('persons.update')
+  @RequirePermission('people.update')
   @ApiOperation({ summary: 'Update a person' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
@@ -59,7 +59,7 @@ export class PersonController {
   }
 
   @Delete(':id')
-  @RequirePermission('persons.delete')
+  @RequirePermission('people.delete')
   @ApiOperation({ summary: 'Soft delete a person' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
