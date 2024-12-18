@@ -8,6 +8,7 @@ datasource db {
 }
 
 // TODO: 
+// - Ability to know which person/org was added by, updated by, and deleted by, and when + activity logs
 // - Connect bank to country, for transfers to India etc.
 // - Add account number and iban to account?
 // - Orgs ability to have multiple orgs, people being part of multiple orgs, 
