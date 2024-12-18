@@ -36,32 +36,6 @@ This guide helps you set up your development environment for BAWES-ERP.
    ```bash
    cp .env.sample .env
    ```
-   
-   Configure your .env file with appropriate values:
-   ```env
-   # Database Configuration
-   DATABASE_HOST=localhost
-   DATABASE_USER=erpuser
-   DATABASE_PASSWORD=erppassword
-   DATABASE_NAME=erp_db
-   DATABASE_PORT=5432
-   DATABASE_URL="postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=public"
-
-   # JWT Configuration
-   JWT_SECRET=your-super-secret-key-change-in-production
-   JWT_ACCESS_TOKEN_EXPIRY=15m
-   JWT_REFRESH_TOKEN_EXPIRY=7d
-
-   # CORS Configuration
-   ALLOWED_ORIGINS=http://localhost:3001,http://localhost:3000
-
-   # Redis Configuration
-   REDIS_HOST=redis
-   REDIS_PORT=6379
-   REDIS_PASSWORD=
-   REDIS_TTL=3600
-   REDIS_MAX_MEMORY=2gb
-   ```
 
 4. **Start Infrastructure**
    ```bash
