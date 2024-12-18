@@ -21,23 +21,36 @@ This guide will help you set up your development environment and create your fir
 
 ## Setup Steps
 
-1. **Install Dependencies**   ```bash
-   npm install   ```
+1. **Install Dependencies**   
+```bash
+   npm install   
+   ```
 
-2. **Set Up Environment**   ```bash
-   cp .env.sample .env   ```
+2. **Set Up Environment**   
+```bash
+   cp .env.sample .env   
+   ```
    Edit `.env` file with your database credentials and other configurations.
 
-3. **Database Setup**   ```bash
+3. **Database Setup**   
+```bash
    # Run migrations to create database schema
    npx prisma migrate dev
 
    # Run seeds to populate initial data (including RBAC setup)
-   npx prisma db seed   ```
+   npx prisma db seed   
+   ```
 
-4. **Create Admin User**   ```bash
-   npm run create:admin   ```
+4. **Create Admin User**  
+ ```bash
+   npm run create:admin   
+   ```
    Follow the interactive prompts to create your admin account.
+
+5. **Start Development Server**  
+ ```bash
+   npm run start:dev   
+   ```
 
 ## Understanding RBAC (Role-Based Access Control)
 
