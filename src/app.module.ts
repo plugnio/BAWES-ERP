@@ -6,9 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { PrismaModule } from './prisma/prisma.module';
 import { RbacModule } from './rbac/rbac.module';
+import { PersonModule } from './person/person.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, RbacModule],
+  imports: [AuthModule, PrismaModule, RbacModule, PersonModule],
   controllers: [AppController],
   providers: [
     AppService,
