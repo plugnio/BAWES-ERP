@@ -152,7 +152,7 @@
         ]
       }
     },
-    "/admin/permissions/dashboard": {
+    "/permissions/dashboard": {
       "get": {
         "operationId": "PermissionManagementController_getPermissionDashboard",
         "parameters": [],
@@ -166,7 +166,7 @@
         ]
       }
     },
-    "/admin/permissions/categories": {
+    "/permissions/categories": {
       "post": {
         "operationId": "PermissionManagementController_createCategory",
         "parameters": [],
@@ -180,7 +180,7 @@
         ]
       }
     },
-    "/admin/permissions/permissions": {
+    "/permissions/permissions": {
       "post": {
         "operationId": "PermissionManagementController_createPermission",
         "parameters": [],
@@ -194,7 +194,7 @@
         ]
       }
     },
-    "/admin/permissions/roles/{id}/permissions": {
+    "/permissions/roles/{id}/permissions": {
       "put": {
         "operationId": "PermissionManagementController_updateRolePermissions",
         "parameters": [
@@ -217,7 +217,7 @@
         ]
       }
     },
-    "/admin/permissions/roles/{id}": {
+    "/permissions/roles/{id}": {
       "get": {
         "operationId": "PermissionManagementController_getRole",
         "parameters": [
@@ -240,7 +240,7 @@
         ]
       }
     },
-    "/admin/roles": {
+    "/roles": {
       "get": {
         "operationId": "RoleManagementController_getRoles",
         "parameters": [],
@@ -278,7 +278,7 @@
         ]
       }
     },
-    "/admin/roles/{roleId}/permissions": {
+    "/roles/{roleId}/permissions": {
       "patch": {
         "operationId": "RoleManagementController_togglePermissions",
         "parameters": [
@@ -302,7 +302,7 @@
         ]
       }
     },
-    "/admin/roles/{roleId}/position": {
+    "/roles/{roleId}/position": {
       "patch": {
         "operationId": "RoleManagementController_updatePosition",
         "parameters": [
@@ -326,7 +326,7 @@
         ]
       }
     },
-    "/admin/roles/users/{userId}/roles": {
+    "/roles/users/{userId}/roles": {
       "post": {
         "operationId": "RoleManagementController_assignRole",
         "parameters": [
@@ -350,7 +350,7 @@
         ]
       }
     },
-    "/admin/roles/users/{userId}/roles/{roleId}": {
+    "/roles/users/{userId}/roles/{roleId}": {
       "delete": {
         "operationId": "RoleManagementController_removeRole",
         "parameters": [

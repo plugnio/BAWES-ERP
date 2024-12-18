@@ -12,7 +12,7 @@ import { PermissionGuard } from '../guards/permission.guard';
 import { RequirePermission } from '../decorators/require-permission.decorator';
 import { PermissionManagementService } from '../services/permission-management.service';
 
-@Controller('admin/permissions')
+@Controller('permissions')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @RequirePermission('permissions.manage')
 export class PermissionManagementController {

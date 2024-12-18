@@ -16,7 +16,7 @@ import { PermissionManagementService } from '../services/permission-management.s
 import { CreateRoleDto } from '../dto/create-role.dto';
 
 @ApiTags('Role Management')
-@Controller('admin/roles')
+@Controller('roles')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class RoleManagementController {
   constructor(private permissionService: PermissionManagementService) {}
