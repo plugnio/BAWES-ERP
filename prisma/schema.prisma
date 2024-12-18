@@ -378,7 +378,7 @@ model Role {
 
   /// Relations
   permissions RolePermission[]
-  users       PersonRole[]
+  people       PersonRole[]
 
   /// Indexes for performance
   @@index([isSystem])
