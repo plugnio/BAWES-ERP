@@ -381,6 +381,194 @@
           "Role Management"
         ]
       }
+    },
+    "/people": {
+      "post": {
+        "operationId": "PersonController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new person",
+        "tags": [
+          "people"
+        ]
+      },
+      "get": {
+        "operationId": "PersonController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all people",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/people/{id}": {
+      "get": {
+        "operationId": "PersonController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a person by id",
+        "tags": [
+          "people"
+        ]
+      },
+      "patch": {
+        "operationId": "PersonController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a person",
+        "tags": [
+          "people"
+        ]
+      },
+      "delete": {
+        "operationId": "PersonController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete a person",
+        "tags": [
+          "people"
+        ]
+      }
     }
   },
   "info": {
@@ -505,6 +693,54 @@
         "required": [
           "name"
         ]
+      },
+      "CreatePersonDto": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "description": "English name of the person"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name of the person"
+          },
+          "passwordHash": {
+            "type": "string",
+            "description": "Password hash for authentication"
+          },
+          "accountStatus": {
+            "type": "string",
+            "description": "Account status",
+            "default": "active"
+          }
+        },
+        "required": [
+          "passwordHash",
+          "accountStatus"
+        ]
+      },
+      "Person": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePersonDto": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "description": "English name of the person"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name of the person"
+          },
+          "accountStatus": {
+            "type": "string",
+            "description": "Account status",
+            "default": "active"
+          }
+        }
       }
     }
   }
