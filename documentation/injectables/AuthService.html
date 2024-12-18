@@ -1,0 +1,1703 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>bawes-erp documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">bawes-erp documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content injectable">
+                   <div class="content-data">
+
+
+
+
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Injectables</li>
+  <li class="breadcrumb-item" >AuthService</li>
+</ol>
+
+<ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a href="#info" 
+                class="nav-link"
+                class="nav-link active"
+                role="tab" id="info-tab" data-bs-toggle="tab" data-link="info">Info</a>
+        </li>
+        <li class="nav-item">
+            <a href="#source" 
+                class="nav-link"
+                
+                role="tab" id="source-tab" data-bs-toggle="tab" data-link="source">Source</a>
+        </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="info">
+        <p class="comment">
+            <h3>File</h3>
+        </p>
+        <p class="comment">
+            <code>src/auth/auth.service.ts</code>
+        </p>
+
+
+
+
+
+            <section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Methods</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#cleanupExpiredTokens" >cleanupExpiredTokens</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                <a href="#extractRefreshTokenFromCookie" >extractRefreshTokenFromCookie</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                    <span class="modifier">Async</span>
+                                <a href="#generateTokens" >generateTokens</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                <a href="#getDurationInMs" >getDurationInMs</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                <a href="#getRefreshTokenExpiryDate" >getRefreshTokenExpiryDate</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#refreshToken" >refreshToken</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#register" >register</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#revokeAllUserTokens" >revokeAllUserTokens</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#revokeRefreshToken" >revokeRefreshToken</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#revokeTokensByDevice" >revokeTokensByDevice</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#validateLogin" >validateLogin</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#verifyEmail" >verifyEmail</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+            <section data-compodoc="block-constructor">
+    <h3 id="constructor">Constructor</h3>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+<code>constructor(prisma: <a href="../injectables/PrismaService.html" target="_self">PrismaService</a>, jwtService: JwtService, configService: ConfigService)</code>
+                    </td>
+                </tr>
+                        <tr>
+                            <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="16" class="link-to-prism">src/auth/auth.service.ts:16</a></div>
+                            </td>
+                        </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                            <div>
+                                    <b>Parameters :</b>
+                                    <table class="params">
+                                        <thead>
+                                            <tr>
+                                                <td>Name</td>
+                                                    <td>Type</td>
+                                                <td>Optional</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                                <tr>
+                                                        <td>prisma</td>
+                                                  
+                                                        <td>
+                                                                        <code><a href="../injectables/PrismaService.html" target="_self" >PrismaService</a></code>
+                                                        </td>
+                                                  
+                                                    <td>
+                                                            No
+                                                    </td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                        <td>jwtService</td>
+                                                  
+                                                        <td>
+                                                                    <code>JwtService</code>
+                                                        </td>
+                                                  
+                                                    <td>
+                                                            No
+                                                    </td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                        <td>configService</td>
+                                                  
+                                                        <td>
+                                                                    <code>ConfigService</code>
+                                                        </td>
+                                                  
+                                                    <td>
+                                                            No
+                                                    </td>
+                                                    
+                                                </tr>
+                                        </tbody>
+                                    </table>
+                            </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+</section>
+
+            <section data-compodoc="block-methods">
+    
+    <h3 id="methods">
+        Methods
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="cleanupExpiredTokens"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>cleanupExpiredTokens</b></span>
+                        <a href="#cleanupExpiredTokens"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>cleanupExpiredTokens()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="388"
+                                    class="link-to-prism">src/auth/auth.service.ts:388</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="extractRefreshTokenFromCookie"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                        <span ><b>extractRefreshTokenFromCookie</b></span>
+                        <a href="#extractRefreshTokenFromCookie"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>extractRefreshTokenFromCookie(req: Request)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="45"
+                                    class="link-to-prism">src/auth/auth.service.ts:45</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Extract refresh token from cookie</p>
+</div>
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>req</td>
+                                            <td>
+                                                        <code>Request</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>string | null</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="generateTokens"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                            <span class="modifier">Async</span>
+                        <span ><b>generateTokens</b></span>
+                        <a href="#generateTokens"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>generateTokens(personId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, req: Request)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="142"
+                                    class="link-to-prism">src/auth/auth.service.ts:142</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>personId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>req</td>
+                                            <td>
+                                                        <code>Request</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getDurationInMs"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                        <span ><b>getDurationInMs</b></span>
+                        <a href="#getDurationInMs"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>getDurationInMs(duration: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="26"
+                                    class="link-to-prism">src/auth/auth.service.ts:26</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Convert duration string (e.g., &#39;7d&#39;, &#39;15m&#39;) to milliseconds</p>
+</div>
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>duration</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getRefreshTokenExpiryDate"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                        <span ><b>getRefreshTokenExpiryDate</b></span>
+                        <a href="#getRefreshTokenExpiryDate"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>getRefreshTokenExpiryDate()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="33"
+                                    class="link-to-prism">src/auth/auth.service.ts:33</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Get refresh token expiry date based on JWT_REFRESH_TOKEN_EXPIRY</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="refreshToken"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>refreshToken</b></span>
+                        <a href="#refreshToken"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>refreshToken(req: Request)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="258"
+                                    class="link-to-prism">src/auth/auth.service.ts:258</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>req</td>
+                                            <td>
+                                                        <code>Request</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="register"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>register</b></span>
+                        <a href="#register"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>register(data: literal type)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="87"
+                                    class="link-to-prism">src/auth/auth.service.ts:87</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>data</td>
+                                            <td>
+                                                        <code>literal type</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="revokeAllUserTokens"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>revokeAllUserTokens</b></span>
+                        <a href="#revokeAllUserTokens"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>revokeAllUserTokens(personId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, reason: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="354"
+                                    class="link-to-prism">src/auth/auth.service.ts:354</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                                <td>Default value</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>personId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>reason</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                                    <code>&#x27;Manual revocation of all tokens&#x27;</code>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="revokeRefreshToken"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>revokeRefreshToken</b></span>
+                        <a href="#revokeRefreshToken"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>revokeRefreshToken(refreshToken: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, reason: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="336"
+                                    class="link-to-prism">src/auth/auth.service.ts:336</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                                <td>Default value</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>refreshToken</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>reason</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                                    <code>&#x27;Manual logout&#x27;</code>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="revokeTokensByDevice"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>revokeTokensByDevice</b></span>
+                        <a href="#revokeTokensByDevice"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>revokeTokensByDevice(personId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, deviceDetails: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, reason: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="370"
+                                    class="link-to-prism">src/auth/auth.service.ts:370</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                                <td>Default value</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>personId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>deviceDetails</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>reason</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                                    <code>&#x27;Manual device revocation&#x27;</code>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="validateLogin"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>validateLogin</b></span>
+                        <a href="#validateLogin"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>validateLogin(email: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, password: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, req: Request)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="50"
+                                    class="link-to-prism">src/auth/auth.service.ts:50</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>email</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>password</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>req</td>
+                                            <td>
+                                                        <code>Request</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="verifyEmail"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>verifyEmail</b></span>
+                        <a href="#verifyEmail"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>verifyEmail(email: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, code: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="410"
+                                    class="link-to-prism">src/auth/auth.service.ts:410</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>email</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>code</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+    </div>
+
+
+    <div class="tab-pane fade  tab-source-code" id="source">
+        <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from &#x27;@nestjs/common&#x27;;
+import { JwtService } from &#x27;@nestjs/jwt&#x27;;
+import { PrismaService } from &#x27;../prisma/prisma.service&#x27;;
+import * as bcrypt from &#x27;bcrypt&#x27;;
+import { Request } from &#x27;express&#x27;;
+import { ConfigService } from &#x27;@nestjs/config&#x27;;
+import ms from &#x27;ms&#x27;;
+import { JwtPayload } from &#x27;./interfaces/jwt-payload.interface&#x27;;
+import Decimal from &#x27;decimal.js&#x27;;
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
+
+  /**
+   * Convert duration string (e.g., &#x27;7d&#x27;, &#x27;15m&#x27;) to milliseconds
+   */
+  private getDurationInMs(duration: string): number {
+    return ms(duration);
+  }
+
+  /**
+   * Get refresh token expiry date based on JWT_REFRESH_TOKEN_EXPIRY
+   */
+  private getRefreshTokenExpiryDate(): Date {
+    const duration &#x3D; this.configService.get&lt;string&gt;(
+      &#x27;JWT_REFRESH_TOKEN_EXPIRY&#x27;,
+      &#x27;7d&#x27;,
+    );
+    const durationMs &#x3D; this.getDurationInMs(duration);
+    return new Date(Date.now() + durationMs);
+  }
+
+  /**
+   * Extract refresh token from cookie
+   */
+  private extractRefreshTokenFromCookie(req: Request): string | null {
+    const refreshToken &#x3D; req.cookies?.refresh_token;
+    return refreshToken || null;
+  }
+
+  async validateLogin(email: string, password: string, req: Request) {
+    // Find the email record
+    const emailRecord &#x3D; await this.prisma.email.findUnique({
+      where: { email },
+      include: { person: true },
+    });
+
+    if (!emailRecord || !emailRecord.person || !emailRecord.isVerified) {
+      throw new UnauthorizedException(
+        &#x27;Invalid credentials or unverified email&#x27;,
+      );
+    }
+
+    const person &#x3D; emailRecord.person;
+
+    if (!person.passwordHash) {
+      throw new UnauthorizedException(&#x27;Password not set&#x27;);
+    }
+
+    if (person.accountStatus !&#x3D;&#x3D; &#x27;active&#x27;) {
+      throw new UnauthorizedException(&#x27;Account is not active&#x27;);
+    }
+
+    const isPasswordValid &#x3D; await bcrypt.compare(password, person.passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException(&#x27;Invalid credentials&#x27;);
+    }
+
+    // Update last login
+    await this.prisma.person.update({
+      where: { id: person.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    return this.generateTokens(person.id, req);
+  }
+
+  async register(data: {
+    email: string;
+    password: string;
+    nameEn?: string;
+    nameAr?: string;
+  }) {
+    // Check if email exists
+    const existingEmail &#x3D; await this.prisma.email.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingEmail) {
+      throw new BadRequestException(&#x27;Email already exists&#x27;);
+    }
+
+    const passwordHash &#x3D; await bcrypt.hash(data.password, 10);
+
+    // Create person and email in a transaction
+    const result &#x3D; await this.prisma.$transaction(async (prisma) &#x3D;&gt; {
+      const person &#x3D; await prisma.person.create({
+        data: {
+          nameEn: data.nameEn,
+          nameAr: data.nameAr,
+          passwordHash,
+          accountStatus: &#x27;active&#x27;,
+        },
+      });
+
+      const verificationCode &#x3D; Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
+      const email &#x3D; await prisma.email.create({
+        data: {
+          email: data.email,
+          isPrimary: true,
+          verificationCode,
+          verificationCodeExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          person: {
+            connect: { id: person.id },
+          },
+        },
+      });
+
+      return { person, email };
+    });
+
+    // TODO: Send verification email with verificationCode
+
+    return {
+      message: &#x27;Registration successful. Please verify your email.&#x27;,
+      personId: result.person.id,
+    };
+  }
+
+  private async generateTokens(personId: string, req: Request) {
+    // Get person&#x27;s permissions through roles
+    const personWithRoles &#x3D; await this.prisma.person.findUnique({
+      where: { id: personId },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: {
+                      select: {
+                        bitfield: true,
+                        isDeprecated: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        emails: {
+          where: { isPrimary: true },
+        },
+      },
+    });
+
+    // Calculate combined permission bitfield
+    const permissionBits &#x3D; personWithRoles.roles.reduce((acc, pr) &#x3D;&gt; {
+      const roleBits &#x3D; pr.role.permissions.reduce(
+        (roleAcc, rp) &#x3D;&gt;
+          !rp.permission.isDeprecated
+            ? roleAcc.add(new Decimal(rp.permission.bitfield))
+            : roleAcc,
+        new Decimal(0),
+      );
+      return acc.add(roleBits);
+    }, new Decimal(0));
+
+    // Generate access token with permissions
+    const accessTokenPayload: JwtPayload &#x3D; {
+      sub: personId,
+      email: personWithRoles.emails[0]?.email,
+      permissionBits: permissionBits.toString(),
+    };
+
+    const accessToken &#x3D; this.jwtService.sign(accessTokenPayload, {
+      expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY || &#x27;15m&#x27;,
+    });
+
+    // Create refresh token record to get CUID
+    const expiresAt &#x3D; this.getRefreshTokenExpiryDate();
+    const { id: tokenId } &#x3D; await this.prisma.refreshToken.create({
+      select: { id: true },
+      data: {
+        personId,
+        hashedToken: &#x27;pending&#x27;, // Temporary value
+        deviceDetails: req.headers[&#x27;user-agent&#x27;] || &#x27;Unknown Device&#x27;,
+        ipAddress: req.ip || req.socket.remoteAddress || &#x27;Unknown IP&#x27;,
+        expiresAt,
+        isRevoked: true, // Temporarily revoked until we update with real values
+      },
+    });
+
+    // Generate refresh token with the CUID
+    const refreshTokenPayload &#x3D; {
+      sub: personId,
+      jti: tokenId,
+    };
+
+    const refreshToken &#x3D; this.jwtService.sign(refreshTokenPayload, {
+      expiresIn: this.configService.get&lt;string&gt;(
+        &#x27;JWT_REFRESH_TOKEN_EXPIRY&#x27;,
+        &#x27;7d&#x27;,
+      ),
+    });
+
+    // Hash the refresh token
+    const hashedToken &#x3D; await bcrypt.hash(refreshToken, 10);
+
+    // Update the record with actual values using upsert to ensure atomicity
+    await this.prisma.refreshToken.upsert({
+      where: { id: tokenId },
+      create: {
+        id: tokenId,
+        personId,
+        hashedToken,
+        deviceDetails: req.headers[&#x27;user-agent&#x27;] || &#x27;Unknown Device&#x27;,
+        ipAddress: req.ip || req.socket.remoteAddress || &#x27;Unknown IP&#x27;,
+        expiresAt,
+        isRevoked: false,
+        lastUsedAt: new Date(),
+      },
+      update: {
+        hashedToken,
+        deviceDetails: req.headers[&#x27;user-agent&#x27;] || &#x27;Unknown Device&#x27;,
+        ipAddress: req.ip || req.socket.remoteAddress || &#x27;Unknown IP&#x27;,
+        expiresAt,
+        isRevoked: false,
+        lastUsedAt: new Date(),
+      },
+    });
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: &#x27;Bearer&#x27;,
+      expires_in:
+        this.getDurationInMs(
+          this.configService.get&lt;string&gt;(&#x27;JWT_ACCESS_TOKEN_EXPIRY&#x27;, &#x27;15m&#x27;),
+        ) / 1000, // Convert ms to seconds
+    };
+  }
+
+  async refreshToken(req: Request) {
+    try {
+      const refreshToken &#x3D; this.extractRefreshTokenFromCookie(req);
+      if (!refreshToken) {
+        throw new UnauthorizedException(&#x27;No refresh token provided&#x27;);
+      }
+
+      const payload &#x3D; await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get&lt;string&gt;(&#x27;JWT_REFRESH_SECRET&#x27;),
+      });
+
+      const user &#x3D; await this.prisma.person.findUnique({
+        where: { id: payload.sub },
+        include: {
+          roles: {
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      permission: {
+                        select: {
+                          bitfield: true,
+                          isDeprecated: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          emails: {
+            where: { isPrimary: true },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException(&#x27;User no longer exists&#x27;);
+      }
+
+      // Calculate combined permission bitfield
+      const permissionBits &#x3D; user.roles.reduce((acc, pr) &#x3D;&gt; {
+        const roleBits &#x3D; pr.role.permissions.reduce(
+          (roleAcc, rp) &#x3D;&gt;
+            !rp.permission.isDeprecated
+              ? roleAcc.add(new Decimal(rp.permission.bitfield))
+              : roleAcc,
+          new Decimal(0),
+        );
+        return acc.add(roleBits);
+      }, new Decimal(0));
+
+      // Generate new access token with updated permissions
+      const accessTokenPayload: JwtPayload &#x3D; {
+        sub: user.id,
+        email: user.emails[0]?.email,
+        permissionBits: permissionBits.toString(),
+      };
+
+      const accessToken &#x3D; this.jwtService.sign(accessTokenPayload, {
+        expiresIn: this.configService.get(&#x27;JWT_ACCESS_TOKEN_EXPIRY&#x27;, &#x27;15m&#x27;),
+      });
+
+      return {
+        access_token: accessToken,
+        token_type: &#x27;Bearer&#x27;,
+        expires_in:
+          this.getDurationInMs(
+            this.configService.get(&#x27;JWT_ACCESS_TOKEN_EXPIRY&#x27;, &#x27;15m&#x27;),
+          ) / 1000, // Convert ms to seconds
+      };
+    } catch {
+      throw new UnauthorizedException(&#x27;Invalid refresh token&#x27;);
+    }
+  }
+
+  async revokeRefreshToken(
+    refreshToken: string,
+    reason: string &#x3D; &#x27;Manual logout&#x27;,
+  ) {
+    try {
+      const decoded &#x3D; this.jwtService.verify(refreshToken);
+      await this.prisma.refreshToken.update({
+        where: { id: decoded.jti },
+        data: {
+          isRevoked: true,
+          revokedReason: reason,
+        },
+      });
+    } catch {
+      throw new UnauthorizedException(&#x27;Invalid refresh token&#x27;);
+    }
+  }
+
+  async revokeAllUserTokens(
+    personId: string,
+    reason: string &#x3D; &#x27;Manual revocation of all tokens&#x27;,
+  ) {
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        personId,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedReason: reason,
+      },
+    });
+  }
+
+  async revokeTokensByDevice(
+    personId: string,
+    deviceDetails: string,
+    reason: string &#x3D; &#x27;Manual device revocation&#x27;,
+  ) {
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        personId,
+        deviceDetails,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedReason: reason,
+      },
+    });
+  }
+
+  async cleanupExpiredTokens() {
+    const now &#x3D; new Date();
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        expiresAt: { lt: now },
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedReason: &#x27;Token expired during cleanup&#x27;,
+      },
+    });
+
+    // Optional: Delete very old tokens (e.g., expired more than 30 days ago)
+    const thirtyDaysAgo &#x3D; new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        expiresAt: { lt: thirtyDaysAgo },
+      },
+    });
+  }
+
+  async verifyEmail(email: string, code: string) {
+    try {
+      const emailRecord &#x3D; await this.prisma.email.findUnique({
+        where: { email },
+      });
+
+      if (
+        !emailRecord ||
+        !emailRecord.verificationCode ||
+        emailRecord.verificationCode !&#x3D;&#x3D; code ||
+        emailRecord.verificationCodeExpiresAt &lt; new Date()
+      ) {
+        throw new BadRequestException(&#x27;Invalid or expired verification code&#x27;);
+      }
+
+      await this.prisma.email.update({
+        where: { id: emailRecord.id },
+        data: {
+          isVerified: true,
+          verificationCode: null,
+          verificationCodeExpiresAt: null,
+        },
+      });
+
+      return { message: &#x27;Email verified successfully&#x27; };
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
+      throw new BadRequestException(&#x27;Failed to verify email&#x27;);
+    }
+  }
+}
+</code></pre>
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'injectable';
+            var COMPODOC_CURRENT_PAGE_URL = 'AuthService.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>
