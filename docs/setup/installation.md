@@ -1,6 +1,6 @@
-# Getting Started with BAWES-ERP
+# Initial Setup Guide
 
-This guide helps you set up your development environment for BAWES-ERP.
+This guide will help you set up your development environment and create your first admin user.
 
 ## Prerequisites
 
@@ -19,42 +19,64 @@ This guide helps you set up your development environment for BAWES-ERP.
      - DotENV
    - PostgreSQL client (optional)
 
-## Development Setup
+## Setup Steps
 
-1. **Clone Repository**
-   ```bash
-   git clone [repository-url]
-   cd BAWES-ERP
-   ```
+1. **Install Dependencies**   ```bash
+   npm install   ```
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+2. **Set Up Environment**   ```bash
+   cp .env.sample .env   ```
+   Edit `.env` file with your database credentials and other configurations.
 
-3. **Environment Setup**
-   ```bash
-   cp .env.sample .env
-   ```
-
-4. **Start Infrastructure**
-   ```bash
-   docker compose up -d
-   ```
-
-5. **Database Setup**
-   ```bash
-   # Generate Prisma client
-   npx prisma generate
-
-   # Run migrations
+3. **Database Setup**   ```bash
+   # Run migrations to create database schema
    npx prisma migrate dev
-   ```
 
-6. **Start Development Server**
-   ```bash
-   npm run start:dev
-   ```
+   # Run seeds to populate initial data (including RBAC setup)
+   npx prisma db seed   ```
+
+4. **Create Admin User**   ```bash
+   npm run create:admin   ```
+   Follow the interactive prompts to create your admin account.
+
+## Understanding RBAC (Role-Based Access Control)
+
+Our RBAC system is designed to be flexible and scalable:
+
+- **Permissions** are automatically discovered and managed
+- **Super Admin** role is created during seeding and has all permissions
+- New permissions are automatically added when detected
+- Permissions use efficient bitfield storage for fast checking
+
+### Permission Structure
+
+Permissions follow the format: `category.action`
+Examples:
+- `users.create`
+- `roles.update`
+- `permissions.manage`
+
+### Key Files
+
+- `prisma/data/production/rbac.ts` - Production RBAC seeds
+- `prisma/data/development/rbac.ts` - Development RBAC seeds
+- `src/rbac/` - RBAC implementation
+
+## Development Workflow
+
+1. **Start Development Server**   ```bash
+   npm run start:dev   ```
+
+2. **Access API Documentation**
+   - Swagger UI: http://localhost:3000/api
+   - OpenAPI JSON: http://localhost:3000/api-json
+
+3. **Testing**   ```bash
+   # Run unit tests
+   npm run test
+
+   # Run e2e tests
+   npm run test:e2e   ```
 
 ## Development Workflow
 
@@ -136,26 +158,6 @@ npm audit fix
    - Use branch-specific SDK in frontend
    - Test thoroughly before merging
 
-## Project Structure
-
-```
-├── src/                # Source code
-│   ├── auth/          # Authentication & authorization
-│   │   ├── guards/    # Auth guards
-│   │   └── strategies/# Auth strategies
-│   ├── users/         # User management
-│   ├── rbac/          # Role-based access control
-│   └── cache/         # Caching implementation
-├── prisma/            # Database schema and migrations
-│   ├── schema.prisma  # Database schema
-│   └── migrations/    # Migration files
-├── test/             # Test files
-│   ├── e2e/         # End-to-end tests
-│   └── unit/        # Unit tests
-├── docs/            # Documentation
-└── scripts/        # Utility scripts
-```
-
 ## Troubleshooting
 
 ### Common Issues
@@ -201,3 +203,34 @@ npm audit fix
 - [Testing Guide](./development/testing.md)
 - [API Documentation](./api/README.md)
 - [Architecture Overview](./core/architecture.md)
+
+
+## Common Tasks
+
+### Adding New Permissions
+
+1. Create your new endpoint with `@RequirePermission('category.action')` decorator
+2. Permissions are automatically discovered and added on next server start
+3. Assign the new permission to roles as needed
+
+### Managing Roles
+
+- Super Admin role is system-managed and cannot be modified via API
+- Other roles can be managed through the roles API endpoints
+- Role changes trigger permission cache clearing
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. Ensure database migrations are up to date   ```bash
+   npm run migrate:dev   ```
+
+2. Refresh seeds   ```bash
+   npm run seed   ```
+
+3. Clear permission cache   ```bash
+   # Via API endpoint (requires admin access)
+   POST /api/permissions/cache/clear   ```
+
+For more detailed information, check the other documentation files in the `/docs` directory. 

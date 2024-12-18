@@ -1,111 +1,57 @@
 # BAWES ERP Documentation
 
-Welcome to the BAWES ERP documentation. This documentation is organized by topic to help you find what you need quickly.
+Welcome to the BAWES ERP documentation. This documentation is organized to help you find what you need quickly.
 
-## 📚 Documentation Structure
+## 📚 Getting Started
 
-### Core
-- [Getting Started](./core/getting-started.md)
-- [Architecture](./core/architecture.md)
-- [Roadmap](./core/roadmap.md)
-
-### API & SDK
-- [API Reference](./api/README.md)
-- [SDK Guide](./sdk/README.md)
-- [Breaking Changes](./api/breaking-changes.md)
-
-### Development
-- [Setup Guide](./development/README.md)
-- [Contributing](./development/contributing.md)
-- [Style Guide](./development/style-guide.md)
-- [Testing](./development/testing.md)
-
-### Security
-- [Authentication](./security/README.md)
-- [Authorization](./security/authorization.md)
-- [Best Practices](./security/best-practices.md)
-
-### Integrations
-- [Banking Overview](./integrations/banking/README.md)
-- [Bank Statements](./integrations/banking/statements.md)
-- [ABK Accounts](./integrations/banking/abk-accounts.md)
-
-## 🚀 Quick Start
+### For New Developers
+1. [Installation Guide](./setup/installation.md) - Set up your development environment
+2. [Configuration Guide](./setup/configuration.md) - Configure your installation
+3. [Development Workflow](./development/workflow.md) - Daily development process
 
 ### For API Consumers
-1. [API Quick Start](./api/README.md#quick-start)
-2. [Authentication](./security/README.md#getting-started)
-3. [SDK Installation](./sdk/README.md#installation)
-4. [Error Handling](./api/README.md#error-handling)
+1. [API Documentation](./api/README.md) - API reference and usage
+2. [SDK Guide](./sdk/README.md) - Using the generated SDK
+3. [Authentication](./security/authentication.md) - Security setup
 
-### For Developers
-1. [Local Setup](./development/README.md#setup)
-2. [Contributing](./development/contributing.md)
-3. [Code Style](./development/style-guide.md)
-4. [Testing](./development/testing.md)
+## 📁 Documentation Structure
 
-## 📁 Directory Structure
-```
-docs/
-├── README.md                    # This file
-│
-├── core/                        # Core Documentation
-│   ├── README.md               # Core concepts overview
-│   ├── getting-started.md      # Getting started guide
-│   ├── architecture.md         # System architecture
-│   └── roadmap.md             # Development roadmap
-│
-├── api/                        # API Documentation
-│   ├── README.md              # API overview & reference
-│   ├── endpoints.md           # Detailed endpoint docs
-│   └── breaking-changes.md    # Breaking changes guide
-│
-├── sdk/                        # SDK Documentation
-│   ├── README.md              # SDK overview
-│   ├── installation.md        # Installation guide
-│   └── usage.md              # Usage examples
-│
-├── security/                   # Security Documentation
-│   ├── README.md              # Security overview
-│   ├── authentication.md      # Authentication guide
-│   ├── authorization.md       # Authorization guide
-│   └── best-practices.md     # Security best practices
-│
-├── development/               # Developer Documentation
-│   ├── README.md             # Development overview
-│   ├── setup.md              # Setup guide
-│   ├── contributing.md       # Contributing guide
-│   ├── style-guide.md        # Code style guide
-│   └── testing.md           # Testing guide
-│
-└── integrations/              # Integration Guides
-    └── banking/              # Banking Integration
-        ├── README.md         # Banking overview
-        ├── statements.md     # Bank statements
-        └── abk-accounts.md   # ABK accounts
-```
+### Setup & Configuration
+- [Installation](./setup/installation.md) - System setup and requirements
+- [Configuration](./setup/configuration.md) - Environment and settings
+- [Database](./setup/database.md) - Database configuration and management
 
-## 🔄 Automatic Updates
+### Development
+- [Workflow](./development/workflow.md) - Development process and guidelines
+- [SDK Development](./development/sdk.md) - SDK generation and usage
+- [Testing](./development/testing.md) - Testing guidelines
+- [Contributing](./development/contributing.md) - Contribution guidelines
 
-Our documentation stays up-to-date through automated processes:
+### Architecture
+- [System Overview](./architecture/overview.md) - System architecture
+- [RBAC System](./architecture/rbac.md) - Permission management
+- [Database Schema](./architecture/database.md) - Data structure
 
-- **API Documentation**: Automatically generated from code annotations
-- **Breaking Changes**: Automatically detected and documented
-- **SDK Documentation**: Version-controlled and updated with releases
-- **Examples**: Automatically tested for validity
+### API & SDK
+- [API Reference](./api/README.md) - API documentation
+- [SDK Usage](./sdk/README.md) - SDK implementation
+- [Versioning](./api/versioning.md) - Version management
+
+### Guidelines
+- [Coding Standards](./guidelines/coding-standards.md) - Code style
+- [Financial Handling](./guidelines/financial-calculations.md) - Money operations
+- [Error Handling](./guidelines/error-handling.md) - Error management
+
+## 🔄 Documentation Updates
+
+- Documentation is version controlled with code
+- API docs auto-generated from annotations
+- SDK documentation updates with releases
+- Examples are automatically tested
 
 ## 🤝 Contributing
 
 See our [Contributing Guide](./development/contributing.md) for:
 - Documentation standards
-- How to contribute
-- Review process
-- Style guidelines
-
-## 📖 Documentation Features
-
-- **Topic-Based Organization**: Documentation grouped by subject
-- **Quick Navigation**: Direct links to common tasks
-- **Code Examples**: Practical, tested examples
-- **Automatic Updates**: Documentation synchronized with code
-- **Version Control**: All docs are version controlled
+- Contribution process
+- Code review guidelines
