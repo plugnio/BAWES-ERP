@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import Decimal from 'decimal.js';
 
 const prisma = new PrismaClient();
 
@@ -10,35 +9,6 @@ async function createAdmin() {
   const nameEn = process.env.ADMIN_NAME || 'System Administrator';
 
   try {
-    // Create system permissions with bitfield powers of 2
-    const permissions = [
-      { code: 'system.manage', name: 'Manage Permissions' },
-      { code: 'roles.manage', name: 'Manage Roles' },
-      { code: 'users.manage', name: 'Manage Users' },
-      { code: 'audit.read', name: 'View Audit Logs' },
-    ];
-
-    let nextBitfield = new Decimal(1); // Start with 2^0
-    const createdPermissions = await Promise.all(
-      permissions.map(async (perm) => {
-        const result = await prisma.permission.upsert({
-          where: { code: perm.code },
-          update: {},
-          create: {
-            code: perm.code,
-            name: perm.name,
-            description: `System permission: ${perm.name}`,
-            category: 'System',
-            sortOrder: 0,
-            isDeprecated: false,
-            bitfield: nextBitfield,
-          },
-        });
-        nextBitfield = nextBitfield.mul(2); // Next power of 2
-        return result;
-      }),
-    );
-
     // Create super admin role
     const superAdminRole = await prisma.role.upsert({
       where: { name: 'SUPER_ADMIN' },
@@ -50,25 +20,6 @@ async function createAdmin() {
         sortOrder: 0,
       },
     });
-
-    // Assign all permissions to super admin role
-    await Promise.all(
-      createdPermissions.map((perm) =>
-        prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: superAdminRole.id,
-              permissionId: perm.id,
-            },
-          },
-          update: {},
-          create: {
-            roleId: superAdminRole.id,
-            permissionId: perm.id,
-          },
-        }),
-      ),
-    );
 
     // Create admin user
     const hashedPassword = await bcrypt.hash(password, 12);
