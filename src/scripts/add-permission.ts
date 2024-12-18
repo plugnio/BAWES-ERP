@@ -8,13 +8,14 @@ const [,, code, name, category, description] = process.argv;
 if (!code || !name || !category) {
   console.error(`
 Usage: npm run permissions:add -- <code> <name> <category> [description]
-Example: npm run permissions:add -- "users:create" "Create User" "Users" "Allows creating new users"
 
 Arguments:
-  code        - Permission code (e.g., "users:create")
-  name        - Human readable name
-  category    - Permission category
-  description - Optional description
+code        - Permission code (e.g., "users.create")
+name        - Display name (e.g., "Create User")
+category    - Category name (e.g., "Users")
+description - Optional description
+
+Example: npm run permissions:add -- "users.create" "Create User" "Users" "Allows creating new users"
 `);
   process.exit(1);
 }

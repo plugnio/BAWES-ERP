@@ -60,7 +60,7 @@ DELETE /admin/roles/users/:userId/roles/:roleId  // Remove role
 
 ### 5. Permission Guards
 ```typescript
-@RequirePermissions('Role:Create')  // Decorator for permission checks
+@RequirePermissions('roles.create')  // Decorator for permission checks
 ```
 
 ## Permission Categories
@@ -134,7 +134,7 @@ Lists all permissions in the system with detailed information:
 npm run permissions:add -- <code> <name> <category> [description]
 
 # Example
-npm run permissions:add -- "users:create" "Create User" "Users" "Allows creating new users"
+npm run permissions:add -- "users.create" "Create User" "Users" "Allows creating new users"
 ```
 Adds new permissions to the system:
 - Creates category if it doesn't exist

@@ -35,18 +35,41 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
    - Breaking changes trigger major version bump
 
 # RBAC Implementation Guidelines
-- Permissions use globally unique power-of-2 bitfields (1, 2, 4, 8, 16, etc.)
-- Categories (system.*, users.*) are for organization only, not for bitfield calculation
-- Permission bitfields are automatically assigned on discovery
-- JWT contains combined permission bitfield as string
-- Permission checks use Decimal.js for precise bitwise operations
-- Each permission gets next power of 2 as its bitfield
-- Supports over 100k unique permissions via Decimal(40,0)
+- Technical Implementation:
+  - Permissions use globally unique power-of-2 bitfields (1, 2, 4, 8, 16, etc.)
+  - Permission bitfields are automatically assigned on discovery
+  - JWT contains combined permission bitfield as string
+  - Permission checks use Decimal.js for precise bitwise operations
+  - Each permission gets next power of 2 as its bitfield
+  - Supports over 100k unique permissions via Decimal(40,0)
+
+- Permission Format: `category.action` (e.g., users.create, roles.update)
+  - Category: lowercase plural noun (users, roles, permissions)
+  - Action: lowercase verb (create, read, update, delete)
+  - Examples: users.create, roles.update, permissions.manage
+
+- Categories (users.*, roles.*, permissions.*) are for organization only
 - Categories in code must match database categories
 - Super admin role automatically gets all permissions
 - System roles cannot be modified through API
 - Cache permission checks for 5 minutes
 - Clear permission cache when roles change
+
+# Permission Categories
+- system.* - System-level operations
+- users.* - User management
+- roles.* - Role management
+- permissions.* - Permission management
+- audit.* - Audit log operations
+
+# Common Actions
+- create - Create new resources
+- read - View/list resources
+- update - Modify existing resources
+- delete - Remove resources
+- manage - Full control over resources
+- assign - Assign resources to others
+- approve - Approve/reject operations
 
 # FinancialGuidelines
 - All financial calculations must use decimal.js library
