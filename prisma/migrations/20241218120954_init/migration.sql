@@ -156,6 +156,7 @@ CREATE TABLE "permission" (
     "category" TEXT NOT NULL,
     "isDeprecated" BOOLEAN NOT NULL DEFAULT false,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "bitfield" DECIMAL(40,0) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

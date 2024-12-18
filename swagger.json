@@ -151,6 +151,236 @@
           "Authentication"
         ]
       }
+    },
+    "/admin/permissions/dashboard": {
+      "get": {
+        "operationId": "PermissionManagementController_getPermissionDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/admin/permissions/categories": {
+      "post": {
+        "operationId": "PermissionManagementController_createCategory",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/admin/permissions/permissions": {
+      "post": {
+        "operationId": "PermissionManagementController_createPermission",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/admin/permissions/roles/{id}/permissions": {
+      "put": {
+        "operationId": "PermissionManagementController_updateRolePermissions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/admin/permissions/roles/{id}": {
+      "get": {
+        "operationId": "PermissionManagementController_getRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/admin/roles": {
+      "get": {
+        "operationId": "RoleManagementController_getRoles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all roles with their permissions",
+        "tags": [
+          "Role Management"
+        ]
+      },
+      "post": {
+        "operationId": "RoleManagementController_createRole",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a new role",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/admin/roles/{roleId}/permissions": {
+      "patch": {
+        "operationId": "RoleManagementController_togglePermissions",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Toggle permissions for a role",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/admin/roles/{roleId}/position": {
+      "patch": {
+        "operationId": "RoleManagementController_updatePosition",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update role position (for drag-and-drop)",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/admin/roles/users/{userId}/roles": {
+      "post": {
+        "operationId": "RoleManagementController_assignRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Assign role to user",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/admin/roles/users/{userId}/roles/{roleId}": {
+      "delete": {
+        "operationId": "RoleManagementController_removeRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Remove role from user",
+        "tags": [
+          "Role Management"
+        ]
+      }
     }
   },
   "info": {
@@ -247,6 +477,33 @@
         "required": [
           "email",
           "code"
+        ]
+      },
+      "CreateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the role"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the role"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color code for the role"
+          },
+          "permissions": {
+            "description": "Initial permission codes to assign",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name"
         ]
       }
     }
