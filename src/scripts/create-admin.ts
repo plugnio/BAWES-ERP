@@ -12,10 +12,10 @@ async function createAdmin() {
   try {
     // Create system permissions with bitfield powers of 2
     const permissions = [
-      { code: 'system.manage_permissions', name: 'Manage Permissions' },
-      { code: 'system.manage_roles', name: 'Manage Roles' },
-      { code: 'system.manage_users', name: 'Manage Users' },
-      { code: 'system.view_audit_logs', name: 'View Audit Logs' },
+      { code: 'system.manage', name: 'Manage Permissions' },
+      { code: 'roles.manage', name: 'Manage Roles' },
+      { code: 'users.manage', name: 'Manage Users' },
+      { code: 'audit.read', name: 'View Audit Logs' },
     ];
 
     let nextBitfield = new Decimal(1); // Start with 2^0

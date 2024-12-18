@@ -5,10 +5,10 @@ export const categories = [
     description: 'System-level administrative permissions',
     sortOrder: 0,
     permissions: [
-      { code: 'system.manage_permissions', name: 'Manage Permissions', description: 'Can manage system permissions', sortOrder: 0 },
-      { code: 'system.manage_roles', name: 'Manage Roles', description: 'Can manage system roles', sortOrder: 1 },
-      { code: 'system.manage_users', name: 'Manage Users', description: 'Can manage system users', sortOrder: 2 },
-      { code: 'system.view_audit_logs', name: 'View Audit Logs', description: 'Can view system audit logs', sortOrder: 3 }
+      { code: 'system.manage', name: 'Manage Permissions', description: 'Can manage system permissions', sortOrder: 0 },
+      { code: 'roles.manage', name: 'Manage Roles', description: 'Can manage system roles', sortOrder: 1 },
+      { code: 'users.manage', name: 'Manage Users', description: 'Can manage system users', sortOrder: 2 },
+      { code: 'audit.read', name: 'View Audit Logs', description: 'Can view system audit logs', sortOrder: 3 }
     ]
   },
   {

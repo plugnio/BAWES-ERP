@@ -49,17 +49,17 @@ interface Permission {
 
 // Example Permission Registry
 const permissionsRegistry = {
-  "invoices:create": {
+  "invoices.create": {
     "description": "Create new invoices",
     "impact_level": "high",
-    "requires": ["invoices:read"],
+    "requires": ["invoices.read"],
     "last_used": "2024-01-20T10:00:00Z",
     "usage_count": 1502
   },
-  "invoices:approve": {
+  "invoices.approve": {
     "description": "Approve invoices for payment",
     "impact_level": "critical",
-    "requires": ["invoices:read"],
+    "requires": ["invoices.read"],
     "amount_limits": true,
     "last_used": "2024-01-20T09:45:00Z",
     "usage_count": 305
@@ -134,7 +134,7 @@ const roleTemplates = {
     "description": "Basic finance operations",
     "apps": {
       "erp_app": {
-        "permissions": ["invoices:read", "invoices:create"],
+        "permissions": ["invoices.read", "invoices.create"],
         "filters": {
           "max_invoice_amount": 5000,
           "departments": ["finance"]
