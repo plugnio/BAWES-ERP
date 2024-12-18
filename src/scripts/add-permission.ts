@@ -3,7 +3,7 @@ import { AppModule } from '../app.module';
 import { PermissionManagementService } from '../rbac/services/permission-management.service';
 
 // Get command line arguments
-const [,, code, name, category, description] = process.argv;
+const [, , code, name, category, description] = process.argv;
 
 if (!code || !name || !category) {
   console.error(`
@@ -35,7 +35,7 @@ async function bootstrap() {
       code,
       name,
       category,
-      description
+      description,
     });
 
     console.log('\nPermission created successfully:');
@@ -43,14 +43,13 @@ async function bootstrap() {
 
     // Get SUPER_ADMIN role
     const roles = await permissionService.getRoles();
-    const superAdmin = roles.find(r => r.name === 'SUPER_ADMIN');
-    
+    const superAdmin = roles.find((r) => r.name === 'SUPER_ADMIN');
+
     if (superAdmin) {
       // Grant to SUPER_ADMIN role
       await permissionService.toggleRolePermission(superAdmin.id, code, true);
       console.log('\nPermission automatically granted to SUPER_ADMIN role');
     }
-
   } catch (error) {
     console.error('Failed to add permission:', error);
   } finally {
@@ -58,4 +57,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap().catch(console.error); 
+bootstrap().catch(console.error);

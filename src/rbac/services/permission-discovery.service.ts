@@ -37,7 +37,7 @@ export class PermissionDiscoveryService implements OnModuleInit {
       await this.prisma.$transaction(async (tx) => {
         // Get existing permissions from DB
         const dbPermissions = await tx.permission.findMany();
-        
+
         // Add new permissions found in code
         const newPermissions = codePermissions.filter(
           (cp) => !dbPermissions.some((dp) => dp.code === cp.code),
@@ -73,7 +73,7 @@ export class PermissionDiscoveryService implements OnModuleInit {
               })),
               skipDuplicates: true,
             });
-            
+
             this.logger.log('Granted new permissions to SUPER_ADMIN role');
           }
         } else {
@@ -104,15 +104,21 @@ export class PermissionDiscoveryService implements OnModuleInit {
         // Log summary
         const summary = [
           `${codePermissions.length} total permissions`,
-          newPermissions.length > 0 ? `${newPermissions.length} added` : 'none added',
-          obsoletePermissions.length > 0 ? `${obsoletePermissions.length} deprecated` : 'none deprecated',
-          `${dbPermissions.length + newPermissions.length - obsoletePermissions.length} active in database`
+          newPermissions.length > 0
+            ? `${newPermissions.length} added`
+            : 'none added',
+          obsoletePermissions.length > 0
+            ? `${obsoletePermissions.length} deprecated`
+            : 'none deprecated',
+          `${dbPermissions.length + newPermissions.length - obsoletePermissions.length} active in database`,
         ].join(', ');
         this.logger.log(`Permission sync summary: ${summary}`);
 
         // Only log categories if there were changes
         if (newPermissions.length > 0 || obsoletePermissions.length > 0) {
-          const categories = [...new Set(codePermissions.map((p) => p.category))];
+          const categories = [
+            ...new Set(codePermissions.map((p) => p.category)),
+          ];
           this.logger.log(`Permission categories: ${categories.join(', ')}`);
         }
       });
@@ -159,10 +165,17 @@ export class PermissionDiscoveryService implements OnModuleInit {
         if (!isController) return;
 
         // Check class-level permissions first
-        const classPermission = Reflect.getMetadata(PERMISSION_KEY, instance.constructor);
+        const classPermission = Reflect.getMetadata(
+          PERMISSION_KEY,
+          instance.constructor,
+        );
         if (classPermission) {
           const [category, action] = classPermission.split('.');
-          if (category && action && !permissions.some(p => p.code === classPermission)) {
+          if (
+            category &&
+            action &&
+            !permissions.some((p) => p.code === classPermission)
+          ) {
             permissions.push({
               code: classPermission,
               name: this.formatPermissionName(action),
@@ -195,7 +208,7 @@ export class PermissionDiscoveryService implements OnModuleInit {
                 }
 
                 // Skip if this permission code already exists
-                if (permissions.some(p => p.code === permission)) {
+                if (permissions.some((p) => p.code === permission)) {
                   return;
                 }
 

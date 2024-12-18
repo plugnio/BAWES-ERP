@@ -13,20 +13,22 @@ async function createAdmin() {
       type: 'text',
       name: 'email',
       message: 'Enter admin email:',
-      validate: value => value.includes('@') ? true : 'Please enter a valid email'
+      validate: (value) =>
+        value.includes('@') ? true : 'Please enter a valid email',
     },
     {
       type: 'password',
       name: 'password',
       message: 'Enter admin password:',
-      validate: value => value.length >= 8 ? true : 'Password must be at least 8 characters'
+      validate: (value) =>
+        value.length >= 8 ? true : 'Password must be at least 8 characters',
     },
     {
       type: 'text',
       name: 'nameEn',
       message: 'Enter admin name:',
-      validate: value => value.length > 0 ? true : 'Name is required'
-    }
+      validate: (value) => (value.length > 0 ? true : 'Name is required'),
+    },
   ]);
 
   if (!response.email || !response.password || !response.nameEn) {
@@ -71,11 +73,13 @@ async function createAdmin() {
 
     // Assign super admin role (which should already exist from seeds)
     const superAdminRole = await prisma.role.findUnique({
-      where: { name: 'SUPER_ADMIN' }
+      where: { name: 'SUPER_ADMIN' },
     });
 
     if (!superAdminRole) {
-      throw new Error('SUPER_ADMIN role not found. Please run database migrations and seeds first.');
+      throw new Error(
+        'SUPER_ADMIN role not found. Please run database migrations and seeds first.',
+      );
     }
 
     await prisma.personRole.upsert({
@@ -95,7 +99,9 @@ async function createAdmin() {
     console.log(chalk.green('\n✅ Successfully created admin user!\n'));
     console.log('Email:', chalk.cyan(response.email));
     console.log('Password:', chalk.cyan(response.password));
-    console.log(chalk.yellow('\n⚠️  Please change the password after first login\n'));
+    console.log(
+      chalk.yellow('\n⚠️  Please change the password after first login\n'),
+    );
   } catch (error) {
     console.error(chalk.red('\n❌ Error creating admin:'), error);
     process.exit(1);

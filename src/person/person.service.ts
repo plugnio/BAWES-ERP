@@ -56,7 +56,7 @@ export class PersonService {
 
   async remove(id: string) {
     await this.findOne(id);
-    
+
     return this.prisma.person.update({
       where: { id },
       data: {
