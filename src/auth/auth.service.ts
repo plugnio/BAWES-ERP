@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import ms from 'ms';
+const ms = require('ms');
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import Decimal from 'decimal.js';
 
