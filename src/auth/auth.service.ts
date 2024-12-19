@@ -188,7 +188,8 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(accessTokenPayload, {
-      expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m',
+      expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRY', '15m'),
+      secret: this.configService.getOrThrow<string>('JWT_SECRET'),
     });
 
     // Create refresh token record to get CUID
@@ -212,10 +213,8 @@ export class AuthService {
     };
 
     const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-      expiresIn: this.configService.get<string>(
-        'JWT_REFRESH_TOKEN_EXPIRY',
-        '7d',
-      ),
+      expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRY', '7d'),
+      secret: this.configService.getOrThrow<string>('JWT_SECRET'),
     });
 
     // Hash the refresh token

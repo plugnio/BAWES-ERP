@@ -7,18 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// TODO: 
-// - Ability to know which person/org was added by, updated by, and deleted by, and when + activity logs
-// - Connect bank to country, for transfers to India etc.
-// - Add account number and iban to account?
-// - Orgs ability to have multiple orgs, people being part of multiple orgs, 
-//  and what happens if a perosn is part of a parent org and a child org.
-// - Relationship between people and country for nationality and currently living in
-// - Relationship between bank and country?
-// - Relationship between person and organization
-// - Consider org relation with accounts for accounting
-// - Auth for person and organization, with RBAC implementation via JWT.
-
 model Organization {
   /// Unique identifier for the organization
   id        String   @id @default(cuid())
@@ -32,24 +20,20 @@ model Organization {
   nameAr    String
   /// Indicates whether the organization is deleted (soft delete)
   isDeleted Boolean  @default(false)
+  emails    Email[]
+  phones    Phone[]
 
-  /// Relation to the organization emails
-  emails Email[]
-  /// Relation to the organization phones
-  phones Phone[]
-
-  // Map the model to the database table
   @@map("organization")
 }
 
 /// Person model
 model Person {
   /// Unique identifier for the person
-  id                          String    @id @default(cuid())
+  id                          String         @id @default(cuid())
   /// Date and time when the person was created
-  createdAt                   DateTime  @default(now())
+  createdAt                   DateTime       @default(now())
   /// Date and time when the person was last updated
-  updatedAt                   DateTime  @updatedAt
+  updatedAt                   DateTime       @updatedAt
   /// English name of the person
   nameEn                      String?
   /// Arabic name of the person
@@ -59,68 +43,57 @@ model Person {
   /// Last login timestamp
   lastLoginAt                 DateTime?
   /// Account status (active, suspended, locked, etc.)
-  accountStatus               String    @default("active")
+  accountStatus               String         @default("active")
   /// Password reset token
   passwordResetToken          String?
   /// Password reset token expiry
   passwordResetTokenExpiresAt DateTime?
   /// Indicates whether the person is deleted (soft delete)
-  isDeleted                   Boolean   @default(false)
+  isDeleted                   Boolean        @default(false)
+  emails                      Email[]
+  roles                       PersonRole[]
+  phones                      Phone[]
+  RefreshToken                RefreshToken[]
 
-  /// Relation to the person emails
-  emails       Email[]
-  /// Relation to the person phones
-  phones       Phone[]
-  RefreshToken RefreshToken[]
-
-  /// Relation to person roles
-  roles        PersonRole[]
-
-  // Map the model to the database table
   @@map("person")
 }
 
 /// Person email model, a person/organization can have many emails. An email can be associated with a person/organization or not.
 model Email {
   /// Unique identifier for the person email
-  id                        String    @id @default(cuid())
+  id                        String        @id @default(cuid())
   /// Date and time when the email was created
-  createdAt                 DateTime  @default(now())
+  createdAt                 DateTime      @default(now())
   /// Date and time when the email was last updated
-  updatedAt                 DateTime  @updatedAt
+  updatedAt                 DateTime      @updatedAt
   /// Email address of the person
-  email                     String    @unique
+  email                     String        @unique
   /// Indicates whether the email is the primary email of the person
-  isPrimary                 Boolean   @default(false)
+  isPrimary                 Boolean       @default(false)
   /// Is the email verified
-  isVerified                Boolean   @default(false)
+  isVerified                Boolean       @default(false)
   /// Verification code for email
   verificationCode          String?
   /// When the verification code expires
   verificationCodeExpiresAt DateTime?
-
   /// Unique identifier for the person
-  personId       String?
+  personId                  String?
   /// Unique identifier for the organization
-  organizationId String?
+  organizationId            String?
+  organization              Organization? @relation(fields: [organizationId], references: [id])
+  person                    Person?       @relation(fields: [personId], references: [id])
 
-  /// Relation to the person
-  person       Person?       @relation(fields: [personId], references: [id])
-  /// Relation to the organization
-  organization Organization? @relation(fields: [organizationId], references: [id])
-
-  // Map the model to the database table
   @@map("email")
 }
 
 /// Phone model, a phone can be associated with a person or organization.
 model Phone {
   /// Unique identifier for the person phone
-  id                        String    @id @default(cuid())
+  id                        String        @id @default(cuid())
   /// Date and time when the phone was created
-  createdAt                 DateTime  @default(now())
+  createdAt                 DateTime      @default(now())
   /// Date and time when the phone was last updated
-  updatedAt                 DateTime  @updatedAt
+  updatedAt                 DateTime      @updatedAt
   /// Phone number of the person
   phone                     String
   /// Raw phone number without country code (e.g., "5555555")
@@ -130,42 +103,35 @@ model Phone {
   /// Formatted phone number for display (e.g., "(650) 555-5555")
   formattedNumber           String
   /// Is the phone number verified
-  isVerified                Boolean   @default(false)
+  isVerified                Boolean       @default(false)
   /// Verification code for phone number
   verificationCode          String?
   /// When the verification code expires
   verificationCodeExpiresAt DateTime?
   /// Indicates whether the phone is the primary phone of the person
-  isPrimary                 Boolean   @default(false)
-
+  isPrimary                 Boolean       @default(false)
   /// Unique identifier for the person
-  personId       String?
+  personId                  String?
   /// Unique identifier for the organization
-  organizationId String?
+  organizationId            String?
   /// Country ID for the phone number
-  countryId      String
+  countryId                 String
+  country                   Country       @relation(fields: [countryId], references: [id])
+  organization              Organization? @relation(fields: [organizationId], references: [id])
+  person                    Person?       @relation(fields: [personId], references: [id])
 
-  /// Relation to the country
-  country      Country       @relation(fields: [countryId], references: [id])
-  /// Relation to the person
-  person       Person?       @relation(fields: [personId], references: [id])
-  /// Relation to the organization
-  organization Organization? @relation(fields: [organizationId], references: [id])
-
-  /// Ensure phone numbers are unique within a country
   @@unique([countryId, phoneNumber])
-  // Map the model to the database table
   @@map("phone")
 }
 
 /// Account model for bank accounts
 model Account {
   /// Unique identifier for the account
-  id                String   @id @default(cuid())
+  id                String            @id @default(cuid())
   /// Date and time when the account was created
-  createdAt         DateTime @default(now())
+  createdAt         DateTime          @default(now())
   /// Date and time when the account was last updated
-  updatedAt         DateTime @updatedAt
+  updatedAt         DateTime          @updatedAt
   /// Type of the account (savings, checking, credit card, debit card, etc.)
   type              String
   /// Name of the account as per issuer (Eg: BAWES FOR COMPUTER AND OPERATION COMPANY)
@@ -183,17 +149,12 @@ model Account {
   /// Balance of the account
   balance           Decimal
   /// Indicates whether the account is deleted (soft delete)
-  isDeleted         Boolean  @default(false)
-
+  isDeleted         Boolean           @default(false)
   /// Optional reference to the associated bank
-  bankId String?
+  bankId            String?
+  bank              Bank?             @relation(fields: [bankId], references: [id])
+  AccountBalances   AccountBalances[]
 
-  /// Optional relation to the bank
-  bank            Bank?             @relation(fields: [bankId], references: [id])
-  /// Account balances relation
-  AccountBalances AccountBalances[]
-
-  // Map the model to the database table
   @@map("account")
 }
 
@@ -207,31 +168,27 @@ model AccountBalances {
   balance   Decimal
   /// Source of the account balance (eg: bank statement, bank API, scraper, etc.)
   source    String
-
   /// Account ID
   accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
 
-  /// Account Relation
-  account Account @relation(fields: [accountId], references: [id])
-
-  // Map the model to the database table
   @@map("account_balances")
 }
 
 /// Bank model
 model Bank {
   /// Unique identifier for the bank
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   /// Date and time when the bank was created
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
   /// Date and time when the bank was last updated
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   /// English name of the bank
   nameEn         String
   /// Arabic name of the bank
   nameAr         String
   /// IBAN (International Bank Account Number) code prefix of the bank
-  ibanCode       String   @unique
+  ibanCode       String    @unique
   /// SWIFT (Society for Worldwide Interbank Financial Telecommunication) code of the bank
   swiftCode      String
   /// Abbreviated code for the bank (internal usage for ABK system)
@@ -249,19 +206,14 @@ model Bank {
   /// Type of transfer the bank supports (e.g., LCL, TRF)
   transferType   String?
   /// Additional information about the bank
-  additionalInfo Json? // Example: { "ifscCode": "ICIC0003990", "mmid": "9229333" }
+  additionalInfo Json?
   /// Indicates whether the record is deleted (soft delete)
-  isDeleted      Boolean  @default(false)
-
+  isDeleted      Boolean   @default(false)
   /// Relation to country, which country is this bank in?
-  countryId String
+  countryId      String
+  accounts       Account[]
+  country        Country   @relation(fields: [countryId], references: [id])
 
-  /// Relation to country
-  country  Country   @relation(fields: [countryId], references: [id])
-  /// Relation to accounts
-  accounts Account[]
-
-  // Map the model to the database table
   @@map("bank")
 }
 
@@ -283,57 +235,50 @@ model Country {
   currencySymbol String
   /// Indicates whether the country is deleted (soft delete)
   isDeleted      Boolean @default(false)
+  banks          Bank[]
+  phones         Phone[]
 
-  /// Relation to banks in this country
-  banks  Bank[]
-  /// Relation to phones in this country
-  phones Phone[]
-
-  // Map the model to the database table
   @@map("country")
 }
 
 /// Refresh token model for handling session persistence and token rotation
 model RefreshToken {
   /// Unique identifier for the refresh token
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   /// Reference to the person who owns this token
   personId      String
   /// Hashed version of the refresh token for secure storage
-  hashedToken   String    
+  hashedToken   String
   /// User agent string of the device that created the token
-  deviceDetails String?   
+  deviceDetails String?
   /// IP address from which the token was created/last used (for audit only)
-  ipAddress     String    
+  ipAddress     String
   /// When this token expires
   expiresAt     DateTime
   /// Whether this token has been revoked
-  isRevoked     Boolean   @default(false)
+  isRevoked     Boolean  @default(false)
   /// Reason for revocation if the token was revoked
-  revokedReason String?   
+  revokedReason String?
   /// Last time this token was used to obtain a new access token
-  lastUsedAt    DateTime  @default(now())
+  lastUsedAt    DateTime @default(now())
   /// Date and time when the token was created
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime @default(now())
   /// Date and time when the token was last updated
-  updatedAt     DateTime  @updatedAt
-  /// Reference to the person model
-  person        Person    @relation(fields: [personId], references: [id])
+  updatedAt     DateTime @updatedAt
+  person        Person   @relation(fields: [personId], references: [id])
 
   @@index([personId])
   @@index([expiresAt])
   @@index([hashedToken])
-
-  // Map the model to the database table
   @@map("refresh_token")
 }
 
 /// Permission model for RBAC
 model Permission {
   /// Unique identifier for the permission
-  id           String   @id @default(cuid())
+  id           String           @id @default(cuid())
   /// Permission code (e.g., users.create)
-  code         String   @unique
+  code         String           @unique
   /// Display name of the permission
   name         String
   /// Description of what the permission allows
@@ -341,20 +286,17 @@ model Permission {
   /// Category of the permission (e.g., User Management)
   category     String
   /// Whether this permission is deprecated
-  isDeprecated Boolean  @default(false)
+  isDeprecated Boolean          @default(false)
   /// Sort order for UI display within category
-  sortOrder    Int      @default(0)
+  sortOrder    Int              @default(0)
   /// Bitfield for efficient permission checks in JWT, using Decimal for larger capacity
-  bitfield     Decimal  @db.Decimal(40,0) // 40 digits, no decimal places
+  bitfield     Decimal          @db.Decimal(40, 0)
   /// Date and time when the permission was created
-  createdAt    DateTime @default(now())
+  createdAt    DateTime         @default(now())
   /// Date and time when the permission was last updated
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime         @updatedAt
+  roles        RolePermission[]
 
-  /// Relations
-  roles RolePermission[]
-
-  /// Indexes for performance
   @@index([category, sortOrder])
   @@index([isDeprecated])
   @@map("permission")
@@ -363,25 +305,22 @@ model Permission {
 /// Role model for RBAC
 model Role {
   /// Unique identifier for the role
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   /// Name of the role
-  name        String   @unique
+  name        String           @unique
   /// Description of the role
   description String?
   /// Whether this is a system role that cannot be modified
-  isSystem    Boolean  @default(false)
+  isSystem    Boolean          @default(false)
   /// Sort order for UI display
-  sortOrder   Int      @default(0)
+  sortOrder   Int              @default(0)
   /// Date and time when the role was created
-  createdAt   DateTime @default(now())
+  createdAt   DateTime         @default(now())
   /// Date and time when the role was last updated
-  updatedAt   DateTime @updatedAt
-
-  /// Relations
+  updatedAt   DateTime         @updatedAt
+  people      PersonRole[]
   permissions RolePermission[]
-  people       PersonRole[]
 
-  /// Indexes for performance
   @@index([isSystem])
   @@index([sortOrder])
   @@map("role")
@@ -394,11 +333,9 @@ model RolePermission {
   /// Permission ID
   permissionId String
   /// Date and time when the permission was granted
-  grantedAt    DateTime @default(now())
-
-  /// Relations
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  grantedAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@index([permissionId])
@@ -413,10 +350,8 @@ model PersonRole {
   roleId     String
   /// Date and time when the role was assigned
   assignedAt DateTime @default(now())
-
-  /// Relations
-  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
-  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([personId, roleId])
   @@index([roleId])
