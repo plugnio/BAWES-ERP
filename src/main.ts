@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { Logger, LogLevel } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   // Configure logging levels based on DEBUG environment variable
@@ -15,6 +16,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: logLevels,
   });
+
+  // Add cookie parser middleware
+  app.use(cookieParser());
 
   // Add global request logging middleware only in debug mode
   if (debugMode) {
