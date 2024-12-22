@@ -40,22 +40,24 @@ async function main() {
     fs.unlinkSync(oldSwaggerFile);
 
     if (stdout.includes('BREAKING')) {
-      console.log('⚠️ Breaking changes detected:');
-      console.log(stdout);
-      // Don't exit with code 1 for breaking changes
-      // This allows the workflow to continue and handle versioning
+      process.stdout.write('BREAKING\n');
+      process.stdout.write(stdout);
     } else if (stdout.includes('NON-BREAKING')) {
-      console.log('ℹ️ Non-breaking changes detected:');
-      console.log(stdout);
+      process.stdout.write('NON-BREAKING\n');
+      process.stdout.write(stdout);
     } else {
-      console.log('✅ No API changes detected');
+      process.stdout.write('NO-CHANGES\n');
+      process.stdout.write('✅ No API changes detected\n');
     }
   } catch (error) {
-    // Only exit with code 1 for actual errors
+    // Clean up temp file
+    if (fs.existsSync(oldSwaggerFile)) {
+      fs.unlinkSync(oldSwaggerFile);
+    }
+
     if (error.stdout?.includes('Breaking changes found')) {
-      console.log('⚠️ Breaking changes detected:');
-      console.log(error.stdout);
-      // Don't exit with code 1 for breaking changes
+      process.stdout.write('BREAKING\n');
+      process.stdout.write(error.stdout);
     } else {
       console.error('Failed to compare swagger files:', error);
       process.exit(1);
