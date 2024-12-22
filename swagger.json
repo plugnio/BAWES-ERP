@@ -75,16 +75,6 @@
       "post": {
         "operationId": "AuthController_refresh",
         "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefreshTokenDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Token refreshed successfully"
@@ -93,7 +83,7 @@
             "description": "Invalid refresh token"
           }
         },
-        "summary": "Refresh access token",
+        "summary": "Refresh access token using refresh token cookie",
         "tags": [
           "Authentication"
         ]
@@ -103,16 +93,6 @@
       "post": {
         "operationId": "AuthController_logout",
         "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefreshTokenDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Logged out successfully"
@@ -634,18 +614,6 @@
         "required": [
           "email",
           "password"
-        ]
-      },
-      "RefreshTokenDto": {
-        "type": "object",
-        "properties": {
-          "refresh_token": {
-            "type": "string",
-            "description": "Refresh token for generating new access token"
-          }
-        },
-        "required": [
-          "refresh_token"
         ]
       },
       "VerifyEmailDto": {

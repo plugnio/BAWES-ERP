@@ -54,7 +54,7 @@ export class AuthService {
   /**
    * Extract refresh token from cookie
    */
-  private extractRefreshTokenFromCookie(req: Request): { id: string, token: string } | null {
+  public extractRefreshTokenFromCookie(req: Request): { id: string, token: string } | null {
     if (this.debugMode) {
       this.logger.debug('Cookies received:', req.cookies);
     }
@@ -449,7 +449,7 @@ export class AuthService {
     }
   }
 
-  private clearAuthCookies(req: Request) {
+  public clearAuthCookies(req: Request) {
     if (req.res) {
       const cookieOptions = {
         httpOnly: true,
@@ -463,34 +463,67 @@ export class AuthService {
     }
   }
 
-  async revokeRefreshToken(token: string, reason: string = 'Manual logout') {
+  async revokeRefreshToken(tokenString: string, reason: string = 'Manual logout') {
     try {
-      // Find the token record by comparing hashed values
-      const activeTokens = await this.prisma.refreshToken.findMany({
-        where: { isRevoked: false },
-      });
-
-      const matchingToken = await Promise.any(
-        activeTokens.map(async (record) => {
-          const isMatch = await bcrypt.compare(token, record.hashedToken);
-          if (isMatch) return record;
-          throw new Error('No match');
-        }),
-      ).catch(() => null);
-
-      if (!matchingToken) {
-        throw new UnauthorizedException('Invalid refresh token');
+      if (this.debugMode) {
+        this.logger.debug('Attempting to revoke token:', tokenString);
       }
 
+      // Split the token into id and actual token
+      const [id, token] = (tokenString || '').split('.');
+      
+      if (!id || !token) {
+        if (this.debugMode) {
+          this.logger.debug('Invalid token format. ID or token missing:', { id, hasToken: !!token });
+        }
+        throw new UnauthorizedException('Invalid token format');
+      }
+
+      // Find the specific token by ID first
+      const tokenRecord = await this.prisma.refreshToken.findUnique({
+        where: { 
+          id,
+          isRevoked: false 
+        },
+      });
+
+      if (!tokenRecord) {
+        if (this.debugMode) {
+          this.logger.debug('Token not found or already revoked:', id);
+        }
+        throw new UnauthorizedException('Token not found or already revoked');
+      }
+
+      // Verify the token
+      const isValidToken = await bcrypt.compare(token, tokenRecord.hashedToken);
+      if (!isValidToken) {
+        if (this.debugMode) {
+          this.logger.debug('Token validation failed for ID:', id);
+        }
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      // Revoke the token
       await this.prisma.refreshToken.update({
-        where: { id: matchingToken.id },
+        where: { id },
         data: {
           isRevoked: true,
           revokedReason: reason,
+          lastUsedAt: new Date(),
         },
       });
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+
+      if (this.debugMode) {
+        this.logger.debug('Token revoked successfully:', id);
+      }
+
+      return { message: 'Token revoked successfully' };
+    } catch (error) {
+      if (this.debugMode) {
+        this.logger.error('Token revocation failed:', error);
+      }
+      // Always throw UnauthorizedException to avoid leaking implementation details
+      throw new UnauthorizedException('Failed to revoke token');
     }
   }
 

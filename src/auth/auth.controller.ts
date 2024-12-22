@@ -11,7 +11,6 @@ import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Request } from 'express';
 
@@ -46,19 +45,29 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({ summary: 'Refresh access token using refresh token cookie' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto, @Req() req: Request) {
+  async refresh(@Req() req: Request) {
     return this.authService.refreshToken(req);
   }
 
+  @Public()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  async logout(@Body() refreshTokenDto: RefreshTokenDto) {
-    return this.authService.revokeRefreshToken(refreshTokenDto.refresh_token);
+  async logout(@Req() req: Request) {
+    const refreshTokenData = this.authService.extractRefreshTokenFromCookie(req);
+    
+    if (refreshTokenData) {
+      await this.authService.revokeRefreshToken(`${refreshTokenData.id}.${refreshTokenData.token}`);
+    }
+
+    // Clear cookies even if no token was found
+    this.authService.clearAuthCookies(req);
+    
+    return { message: 'Logged out successfully' };
   }
 
   @Public()
