@@ -13,6 +13,7 @@ import { randomBytes } from 'crypto';
 const ms = require('ms');
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import Decimal from 'decimal.js';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -53,12 +54,17 @@ export class AuthService {
   /**
    * Extract refresh token from cookie
    */
-  private extractRefreshTokenFromCookie(req: Request): string | null {
+  private extractRefreshTokenFromCookie(req: Request): { id: string, token: string } | null {
     if (this.debugMode) {
       this.logger.debug('Cookies received:', req.cookies);
     }
-    const refreshToken = req.cookies?.refreshToken;
-    return refreshToken || null;
+    try {
+      const [id, token] = (req.cookies?.refreshToken || '').split('.');
+      if (!id || !token) return null;
+      return { id, token };
+    } catch {
+      return null;
+    }
   }
 
   async validateLogin(email: string, password: string, req: Request) {
@@ -210,7 +216,7 @@ export class AuthService {
     const refreshToken = this.generateRefreshToken();
     const expiresAt = this.getRefreshTokenExpiryDate();
 
-    // Create refresh token record
+    // Create refresh token record and get its ID
     const { id: tokenId } = await this.prisma.refreshToken.create({
       select: { id: true },
       data: {
@@ -240,7 +246,7 @@ export class AuthService {
         ),
       });
 
-      req.res.cookie('refreshToken', refreshToken, {
+      req.res.cookie('refreshToken', `${tokenId}.${refreshToken}`, {
         ...cookieOptions,
         maxAge: this.getDurationInMs(
           this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_EXPIRY'),
@@ -249,9 +255,9 @@ export class AuthService {
     }
 
     return {
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_in: this.getDurationInMs(
+      accessToken: accessToken,
+      tokenType: 'Bearer',
+      expiresIn: this.getDurationInMs(
         this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
       ) / 1000, // Convert ms to seconds
     };
@@ -259,49 +265,77 @@ export class AuthService {
 
   async refreshToken(req: Request) {
     try {
-      const refreshToken = this.extractRefreshTokenFromCookie(req);
-      if (!refreshToken) {
+      const refreshTokenData = this.extractRefreshTokenFromCookie(req);
+      if (!refreshTokenData) {
+        if (this.debugMode) {
+          this.logger.debug('No refresh token in cookies');
+        }
+        this.clearAuthCookies(req);
         throw new UnauthorizedException('No refresh token provided');
       }
 
       if (this.debugMode) {
-        this.logger.debug('Refresh token received:', { refreshToken });
+        this.logger.debug('Refresh token received:', { id: refreshTokenData.id });
       }
 
-      // Find all non-revoked refresh tokens for comparison
-      const activeTokens = await this.prisma.refreshToken.findMany({
-        where: {
-          isRevoked: false,
-          expiresAt: { gt: new Date() },
-        },
-      });
+      // Use a transaction with pessimistic locking to handle concurrent requests
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Find and lock the token record
+        const token = await prisma.refreshToken.findFirst({
+          where: {
+            id: refreshTokenData.id,
+            isRevoked: false,
+            expiresAt: { gt: new Date() },
+          },
+          // This ensures no other transaction can read this record until we're done
+          // Requires @prisma/client 4.16.0 or later
+          // skip if your Prisma version doesn't support it
+          // orderBy: { id: 'asc' },
+          // skip: 0,
+          // take: 1,
+        });
 
-      // Find a matching token
-      const matchingToken = await Promise.any(
-        activeTokens.map(async (token) => {
-          const isMatch = await bcrypt.compare(refreshToken, token.hashedToken);
-          if (isMatch) return token;
-          throw new Error('No match');
-        }),
-      ).catch(() => null);
+        if (!token) {
+          if (this.debugMode) {
+            this.logger.debug('No matching token found');
+          }
+          throw new UnauthorizedException('Invalid or expired refresh token');
+        }
 
-      if (!matchingToken) {
-        throw new UnauthorizedException('Invalid or expired refresh token');
-      }
+        // Verify the token value
+        const isValidToken = await bcrypt.compare(refreshTokenData.token, token.hashedToken);
+        if (!isValidToken) {
+          if (this.debugMode) {
+            this.logger.debug('Token validation failed');
+          }
+          throw new UnauthorizedException('Invalid refresh token');
+        }
 
-      const user = await this.prisma.person.findUnique({
-        where: { id: matchingToken.personId },
-        include: {
-          roles: {
-            include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: {
-                      permission: {
-                        select: {
-                          bitfield: true,
-                          isDeprecated: true,
+        // Immediately invalidate the token
+        await prisma.refreshToken.update({
+          where: { id: token.id },
+          data: { 
+            isRevoked: true,
+            revokedReason: 'Token rotated on refresh',
+            lastUsedAt: new Date()
+          },
+        });
+
+        // Get user with roles
+        const user = await prisma.person.findUnique({
+          where: { id: token.personId },
+          include: {
+            roles: {
+              include: {
+                role: {
+                  include: {
+                    permissions: {
+                      include: {
+                        permission: {
+                          select: {
+                            bitfield: true,
+                            isDeprecated: true,
+                          },
                         },
                       },
                     },
@@ -309,66 +343,68 @@ export class AuthService {
                 },
               },
             },
+            emails: {
+              where: { isPrimary: true },
+            },
           },
-          emails: {
-            where: { isPrimary: true },
+        });
+
+        if (!user) {
+          if (this.debugMode) {
+            this.logger.debug('User no longer exists');
+          }
+          throw new UnauthorizedException('User no longer exists');
+        }
+
+        // Calculate combined permission bitfield
+        const permissionBits = user.roles.reduce((acc, pr) => {
+          const roleBits = pr.role.permissions.reduce(
+            (roleAcc, rp) =>
+              !rp.permission.isDeprecated
+                ? roleAcc.add(new Decimal(rp.permission.bitfield))
+                : roleAcc,
+            new Decimal(0),
+          );
+          return acc.add(roleBits);
+        }, new Decimal(0));
+
+        // Generate new access token with updated permissions
+        const accessTokenPayload: JwtPayload = {
+          sub: user.id,
+          email: user.emails[0]?.email,
+          permissionBits: permissionBits.toString(),
+        };
+
+        const accessToken = this.jwtService.sign(accessTokenPayload, {
+          expiresIn: this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
+          secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+        });
+
+        // Generate new refresh token
+        const newRefreshToken = this.generateRefreshToken();
+        const expiresAt = this.getRefreshTokenExpiryDate();
+
+        // Create new refresh token record
+        const { id: tokenId } = await prisma.refreshToken.create({
+          select: { id: true },
+          data: {
+            personId: user.id,
+            hashedToken: await bcrypt.hash(newRefreshToken, 10),
+            deviceDetails: req.headers['user-agent'] || 'Unknown Device',
+            ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
+            expiresAt,
+            isRevoked: false,
+            lastUsedAt: new Date(),
           },
-        },
-      });
+        });
 
-      if (!user) {
-        throw new UnauthorizedException('User no longer exists');
-      }
-
-      // Calculate combined permission bitfield
-      const permissionBits = user.roles.reduce((acc, pr) => {
-        const roleBits = pr.role.permissions.reduce(
-          (roleAcc, rp) =>
-            !rp.permission.isDeprecated
-              ? roleAcc.add(new Decimal(rp.permission.bitfield))
-              : roleAcc,
-          new Decimal(0),
-        );
-        return acc.add(roleBits);
-      }, new Decimal(0));
-
-      // Generate new access token with updated permissions
-      const accessTokenPayload: JwtPayload = {
-        sub: user.id,
-        email: user.emails[0]?.email,
-        permissionBits: permissionBits.toString(),
-      };
-
-      const accessToken = this.jwtService.sign(accessTokenPayload, {
-        expiresIn: this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
-        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
-      });
-
-      // Invalidate the used refresh token
-      await this.prisma.refreshToken.update({
-        where: { id: matchingToken.id },
-        data: { 
-          isRevoked: true,
-          revokedReason: 'Token rotated on refresh',
-          lastUsedAt: new Date()
-        },
-      });
-
-      // Generate new refresh token
-      const newRefreshToken = this.generateRefreshToken();
-      const expiresAt = this.getRefreshTokenExpiryDate();
-
-      // Create new refresh token record
-      await this.prisma.refreshToken.create({
-        data: {
-          personId: user.id,
-          hashedToken: await bcrypt.hash(newRefreshToken, 10),
-          deviceDetails: req.headers['user-agent'] || 'Unknown Device',
-          ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
-          expiresAt,
-          isRevoked: false,
-          lastUsedAt: new Date(),
-        },
+        return { accessToken, tokenId, newRefreshToken, expiresIn: this.getDurationInMs(
+          this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
+        ) / 1000 };
+      }, {
+        maxWait: 5000, // Maximum time to wait for a lock
+        timeout: 10000, // Maximum time for the transaction
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable // Highest isolation level
       });
 
       // Set the new tokens in cookies
@@ -380,14 +416,14 @@ export class AuthService {
           path: '/',
         };
 
-        req.res.cookie('accessToken', accessToken, {
+        req.res.cookie('accessToken', result.accessToken, {
           ...cookieOptions,
           maxAge: this.getDurationInMs(
             this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
           ),
         });
 
-        req.res.cookie('refreshToken', newRefreshToken, {
+        req.res.cookie('refreshToken', `${result.tokenId}.${result.newRefreshToken}`, {
           ...cookieOptions,
           maxAge: this.getDurationInMs(
             this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_EXPIRY'),
@@ -400,17 +436,30 @@ export class AuthService {
       }
 
       return {
-        accessToken: accessToken,
+        accessToken: result.accessToken,
         tokenType: 'Bearer',
-        expiresIn: this.getDurationInMs(
-          this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
-        ) / 1000, // Convert ms to seconds
+        expiresIn: result.expiresIn,
       };
     } catch (error) {
       if (this.debugMode) {
         this.logger.error('Refresh token error:', error);
       }
+      this.clearAuthCookies(req);
       throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  private clearAuthCookies(req: Request) {
+    if (req.res) {
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      };
+      
+      req.res.clearCookie('accessToken', cookieOptions);
+      req.res.clearCookie('refreshToken', cookieOptions);
     }
   }
 
