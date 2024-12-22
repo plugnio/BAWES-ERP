@@ -42,7 +42,8 @@ async function main() {
     if (stdout.includes('BREAKING')) {
       console.log('⚠️ Breaking changes detected:');
       console.log(stdout);
-      process.exit(1);
+      // Don't exit with code 1 for breaking changes
+      // This allows the workflow to continue and handle versioning
     } else if (stdout.includes('NON-BREAKING')) {
       console.log('ℹ️ Non-breaking changes detected:');
       console.log(stdout);
@@ -50,9 +51,19 @@ async function main() {
       console.log('✅ No API changes detected');
     }
   } catch (error) {
-    console.error('Failed to compare swagger files:', error);
-    process.exit(1);
+    // Only exit with code 1 for actual errors
+    if (error.stdout?.includes('Breaking changes found')) {
+      console.log('⚠️ Breaking changes detected:');
+      console.log(error.stdout);
+      // Don't exit with code 1 for breaking changes
+    } else {
+      console.error('Failed to compare swagger files:', error);
+      process.exit(1);
+    }
   }
 }
 
-main().catch(console.error); 
+main().catch((error) => {
+  console.error('Unexpected error:', error);
+  process.exit(1);
+}); 
