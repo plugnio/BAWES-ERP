@@ -345,23 +345,59 @@ export class AuthService {
         secret: this.configService.getOrThrow<string>('JWT_SECRET'),
       });
 
-      // Update last used timestamp
+      // Invalidate the used refresh token
       await this.prisma.refreshToken.update({
         where: { id: matchingToken.id },
-        data: { lastUsedAt: new Date() },
+        data: { 
+          isRevoked: true,
+          revokedReason: 'Token rotated on refresh',
+          lastUsedAt: new Date()
+        },
       });
 
-      // Set the new access token cookie
+      // Generate new refresh token
+      const newRefreshToken = this.generateRefreshToken();
+      const expiresAt = this.getRefreshTokenExpiryDate();
+
+      // Create new refresh token record
+      await this.prisma.refreshToken.create({
+        data: {
+          personId: user.id,
+          hashedToken: await bcrypt.hash(newRefreshToken, 10),
+          deviceDetails: req.headers['user-agent'] || 'Unknown Device',
+          ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
+          expiresAt,
+          isRevoked: false,
+          lastUsedAt: new Date(),
+        },
+      });
+
+      // Set the new tokens in cookies
       if (req.res) {
-        req.res.cookie('access_token', accessToken, {
+        const cookieOptions = {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          sameSite: 'lax' as const,
           path: '/',
+        };
+
+        req.res.cookie('access_token', accessToken, {
+          ...cookieOptions,
           maxAge: this.getDurationInMs(
             this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
           ),
         });
+
+        req.res.cookie('refresh_token', newRefreshToken, {
+          ...cookieOptions,
+          maxAge: this.getDurationInMs(
+            this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_EXPIRY'),
+          ),
+        });
+      }
+
+      if (this.debugMode) {
+        this.logger.debug('Refresh token rotated successfully');
       }
 
       return {
