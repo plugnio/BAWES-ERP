@@ -233,14 +233,14 @@ export class AuthService {
         path: '/',
       };
 
-      req.res.cookie('access_token', accessToken, {
+      req.res.cookie('accessToken', accessToken, {
         ...cookieOptions,
         maxAge: this.getDurationInMs(
           this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
         ),
       });
 
-      req.res.cookie('refresh_token', refreshToken, {
+      req.res.cookie('refreshToken', refreshToken, {
         ...cookieOptions,
         maxAge: this.getDurationInMs(
           this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_EXPIRY'),
