@@ -250,7 +250,6 @@ export class AuthService {
 
     return {
       access_token: accessToken,
-      refresh_token: refreshToken,
       token_type: 'Bearer',
       expires_in: this.getDurationInMs(
         this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
