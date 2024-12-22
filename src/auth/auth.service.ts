@@ -57,7 +57,7 @@ export class AuthService {
     if (this.debugMode) {
       this.logger.debug('Cookies received:', req.cookies);
     }
-    const refreshToken = req.cookies?.refresh_token;
+    const refreshToken = req.cookies?.refreshToken;
     return refreshToken || null;
   }
 
@@ -381,14 +381,14 @@ export class AuthService {
           path: '/',
         };
 
-        req.res.cookie('access_token', accessToken, {
+        req.res.cookie('accessToken', accessToken, {
           ...cookieOptions,
           maxAge: this.getDurationInMs(
             this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
           ),
         });
 
-        req.res.cookie('refresh_token', newRefreshToken, {
+        req.res.cookie('refreshToken', newRefreshToken, {
           ...cookieOptions,
           maxAge: this.getDurationInMs(
             this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_EXPIRY'),
@@ -401,9 +401,9 @@ export class AuthService {
       }
 
       return {
-        access_token: accessToken,
-        token_type: 'Bearer',
-        expires_in: this.getDurationInMs(
+        accessToken: accessToken,
+        tokenType: 'Bearer',
+        expiresIn: this.getDurationInMs(
           this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
         ) / 1000, // Convert ms to seconds
       };
