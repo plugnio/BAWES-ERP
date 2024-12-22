@@ -6,6 +6,29 @@ async function main() {
     const nodeEnv = process.env.NODE_ENV || 'development';
     console.log(`Seeding database for ${nodeEnv} environment...`);
 
+    // Seed RBAC
+    console.log('Seeding RBAC system roles...');
+    const { roles } = await import(`./data/${nodeEnv}/rbac`);
+    
+    // Create roles
+    for (const role of roles) {
+        const createdRole = await prisma.role.upsert({
+            where: { name: role.name },
+            update: {
+                description: role.description,
+                isSystem: role.isSystem,
+                sortOrder: role.sortOrder
+            },
+            create: {
+                name: role.name,
+                description: role.description,
+                isSystem: role.isSystem,
+                sortOrder: role.sortOrder
+            }
+        });
+        console.log(`Role "${role.name}" has been created/updated`);
+    }
+
     // Seed countries based on environment
     const countryCount = await prisma.country.count();
     if (countryCount === 0) {

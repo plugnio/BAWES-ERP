@@ -130,6 +130,70 @@ CREATE TABLE "country" (
     CONSTRAINT "country_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "refresh_token" (
+    "id" TEXT NOT NULL,
+    "personId" TEXT NOT NULL,
+    "hashedToken" TEXT NOT NULL,
+    "deviceDetails" TEXT,
+    "ipAddress" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "isRevoked" BOOLEAN NOT NULL DEFAULT false,
+    "revokedReason" TEXT,
+    "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "refresh_token_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "permission" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT NOT NULL,
+    "isDeprecated" BOOLEAN NOT NULL DEFAULT false,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "bitfield" DECIMAL(40,0) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "permission_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "role" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "role_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "role_permission" (
+    "roleId" TEXT NOT NULL,
+    "permissionId" TEXT NOT NULL,
+    "grantedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "role_permission_pkey" PRIMARY KEY ("roleId","permissionId")
+);
+
+-- CreateTable
+CREATE TABLE "person_role" (
+    "personId" TEXT NOT NULL,
+    "roleId" TEXT NOT NULL,
+    "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "person_role_pkey" PRIMARY KEY ("personId","roleId")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "email_email_key" ON "email"("email");
 
@@ -141,6 +205,39 @@ CREATE UNIQUE INDEX "bank_ibanCode_key" ON "bank"("ibanCode");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "country_code_key" ON "country"("code");
+
+-- CreateIndex
+CREATE INDEX "refresh_token_personId_idx" ON "refresh_token"("personId");
+
+-- CreateIndex
+CREATE INDEX "refresh_token_expiresAt_idx" ON "refresh_token"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "refresh_token_hashedToken_idx" ON "refresh_token"("hashedToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "permission_code_key" ON "permission"("code");
+
+-- CreateIndex
+CREATE INDEX "permission_category_sortOrder_idx" ON "permission"("category", "sortOrder");
+
+-- CreateIndex
+CREATE INDEX "permission_isDeprecated_idx" ON "permission"("isDeprecated");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "role_name_key" ON "role"("name");
+
+-- CreateIndex
+CREATE INDEX "role_isSystem_idx" ON "role"("isSystem");
+
+-- CreateIndex
+CREATE INDEX "role_sortOrder_idx" ON "role"("sortOrder");
+
+-- CreateIndex
+CREATE INDEX "role_permission_permissionId_idx" ON "role_permission"("permissionId");
+
+-- CreateIndex
+CREATE INDEX "person_role_roleId_idx" ON "person_role"("roleId");
 
 -- AddForeignKey
 ALTER TABLE "email" ADD CONSTRAINT "email_personId_fkey" FOREIGN KEY ("personId") REFERENCES "person"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -165,3 +262,18 @@ ALTER TABLE "account_balances" ADD CONSTRAINT "account_balances_accountId_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "bank" ADD CONSTRAINT "bank_countryId_fkey" FOREIGN KEY ("countryId") REFERENCES "country"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "refresh_token" ADD CONSTRAINT "refresh_token_personId_fkey" FOREIGN KEY ("personId") REFERENCES "person"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "role_permission" ADD CONSTRAINT "role_permission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "role_permission" ADD CONSTRAINT "role_permission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "permission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "person_role" ADD CONSTRAINT "person_role_personId_fkey" FOREIGN KEY ("personId") REFERENCES "person"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "person_role" ADD CONSTRAINT "person_role_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE CASCADE;

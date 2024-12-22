@@ -1,8 +1,75 @@
+Keep in mind that this project is a Nestjs backend, for frontends in other projects. No frontend will be implemented in this project.
+
 # Development Guidelines
+- Project docs are under /docs
+- We use Github actions for publishing swagger as SDK for frontend usage
+- SDK publishing is to a regular github repo, no registry, not github packages or npm registry
 - Keep changes small and focused and incremental
 - Keep code clean and readable, simple and easy to understand
 - Keep code scalable and easy to scale
 - Test your work and confirm it works before presenting it
+
+# SDK Development Workflow
+1. Feature Branch Development:
+   - Create feature branch: `git checkout -b feature/my-feature`
+   - SDK automatically generated on push
+   - SDK branch matches feature branch name
+   - Version format: `0.0.0-feature-name-timestamp`
+
+2. SDK Testing:
+   - Frontend can use branch-specific SDK
+   - SDK updates on every push to feature branch
+   - No interference with production SDK
+   - Manual SDK generation via workflow dispatch
+
+3. Branch Strategy:
+   - feature/* -> Creates matching SDK branch
+   - dev -> Updates dev SDK branch
+   - main -> Updates production SDK with versioning
+   - Each branch gets its own SDK branch
+
+4. Version Management:
+   - Feature branches: `0.0.0-branch-timestamp`
+   - Dev branch: `0.0.0-dev-timestamp`
+   - Main branch: Semantic versioning
+   - Breaking changes trigger major version bump
+
+# RBAC Implementation Guidelines
+- Technical Implementation:
+  - Permissions use globally unique power-of-2 bitfields (1, 2, 4, 8, 16, etc.)
+  - Permission bitfields are automatically assigned on discovery
+  - JWT contains combined permission bitfield as string
+  - Permission checks use Decimal.js for precise bitwise operations
+  - Each permission gets next power of 2 as its bitfield
+  - Supports over 100k unique permissions via Decimal(40,0)
+
+- Permission Format: `category.action` (e.g., users.create, roles.update)
+  - Category: lowercase plural noun (users, roles, permissions)
+  - Action: lowercase verb (create, read, update, delete)
+  - Examples: users.create, roles.update, permissions.manage
+
+- Categories (users.*, roles.*, permissions.*) are for organization only
+- Categories in code must match database categories
+- Super admin role automatically gets all permissions
+- System roles cannot be modified through API
+- Cache permission checks for 5 minutes
+- Clear permission cache when roles change
+
+# Permission Categories
+- system.* - System-level operations
+- users.* - User management
+- roles.* - Role management
+- permissions.* - Permission management
+- audit.* - Audit log operations
+
+# Common Actions
+- create - Create new resources
+- read - View/list resources
+- update - Modify existing resources
+- delete - Remove resources
+- manage - Full control over resources
+- assign - Assign resources to others
+- approve - Approve/reject operations
 
 # FinancialGuidelines
 - All financial calculations must use decimal.js library

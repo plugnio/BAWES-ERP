@@ -14,9 +14,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_ACCESS_TOKEN_EXPIRY', '15m'),
+          expiresIn: configService.get<string>(
+            'JWT_ACCESS_TOKEN_EXPIRY',
+            '15m',
+          ),
         },
       }),
       inject: [ConfigService],
@@ -27,4 +30,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   providers: [AuthService, JwtStrategy],
   exports: [AuthService, JwtStrategy, PassportModule],
 })
-export class AuthModule {} 
+export class AuthModule {}

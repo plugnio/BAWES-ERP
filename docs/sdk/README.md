@@ -82,20 +82,69 @@ import { BawesErpClient } from '@bawes/erp-api-sdk';
 
 // Initialize the client
 const client = new BawesErpClient({
-  baseUrl: 'YOUR_API_URL',
-  apiKey: 'YOUR_API_KEY'
+  baseUrl: 'YOUR_API_URL', // e.g., 'http://localhost:3000'
 });
+
+// After login, set the access token
+client.setAccessToken(accessToken);
 
 // Use the client
 async function example() {
   try {
-    const result = await client.someEndpoint();
+    // Login
+    const authResponse = await client.auth.login({
+      email: 'user@example.com',
+      password: 'password'
+    });
+    
+    // Set the access token after login
+    client.setAccessToken(authResponse.access_token);
+    
+    // Now you can make authenticated requests
+    const result = await client.permissions.getPermissionDashboard();
     console.log(result);
   } catch (error) {
     console.error('API Error:', error);
   }
 }
+
+// Token refresh example
+async function refreshExample() {
+  try {
+    const refreshResponse = await client.auth.refresh({
+      refresh_token: 'your-refresh-token'
+    });
+    
+    // Update the access token after refresh
+    client.setAccessToken(refreshResponse.access_token);
+  } catch (error) {
+    console.error('Refresh Error:', error);
+  }
+}
 ```
+
+### Token Management Best Practices
+
+1. **Access Token Storage**
+   - Store in memory (e.g., Redux store, React state)
+   - Never store in localStorage/sessionStorage
+   - Clear on logout/window close
+
+2. **Refresh Token Storage**
+   - Store in HTTP-only cookie (handled by backend)
+   - Never store in client-side JavaScript
+   - Used only for token refresh
+
+3. **Token Refresh Strategy**
+   - Implement automatic refresh before expiry
+   - Handle 401 responses with refresh attempt
+   - Clear tokens and redirect to login on refresh failure
+
+4. **Security Considerations**
+   - Use HTTPS only
+   - Implement proper CORS
+   - Clear tokens on logout
+   - Handle token expiration gracefully
 
 ## Features
 
@@ -146,3 +195,9 @@ The SDK is automatically updated when:
    - Monitor version tags
    - Review breaking changes
    - Test before upgrading
+
+4. **Authentication**
+   - Follow token management best practices
+   - Implement proper error handling
+   - Use automatic token refresh
+   - Clear tokens on logout

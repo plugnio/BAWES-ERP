@@ -8,6 +8,9 @@
     "type": "git",
     "url": "git+https://github.com/bawes/erp.git"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -29,9 +32,14 @@
     "db:reset:prod": "cross-env NODE_ENV=production prisma migrate reset --force",
     "generate:sdk": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o ./tmp-sdk",
     "build:sdk": "cd tmp-sdk && npm run build",
-    "check:breaking-changes": "ts-node scripts/check-breaking-changes.ts"
+    "check:breaking-changes": "ts-node scripts/check-breaking-changes.ts",
+    "permissions:list": "ts-node src/scripts/list-permissions.ts",
+    "permissions:add": "ts-node src/scripts/add-permission.ts",
+    "permissions:audit": "ts-node src/scripts/audit-permissions.ts",
+    "create:admin": "ts-node src/scripts/create-admin.ts"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^2.3.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.0.0",
@@ -40,21 +48,33 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/schedule": "^4.1.2",
     "@nestjs/swagger": "^8.1.0",
-    "@prisma/client": "^6.0.1",
+    "@nestjs/terminus": "^10.2.3",
+    "@prisma/client": "^6.1.0",
     "@types/bcrypt": "^5.0.2",
+    "@types/cache-manager-redis-store": "^2.0.4",
+    "@types/cookie-parser": "^1.4.8",
     "@types/ms": "^0.7.34",
     "@types/passport-jwt": "^4.0.1",
     "bcrypt": "^5.1.1",
+    "cache-manager": "^5.7.6",
+    "cache-manager-redis-store": "^3.0.1",
+    "chalk": "^4.1.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "cookie-parser": "^1.4.7",
     "decimal.js": "^10.4.3",
+    "ioredis": "^5.4.1",
     "ms": "^2.1.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prompts": "^2.4.2",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
+    "@compodoc/compodoc": "^1.1.26",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.4.12",
@@ -70,8 +90,9 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.5.0",
+    "openapi-diff": "^0.23.6",
     "prettier": "^3.0.0",
-    "prisma": "^6.0.1",
+    "prisma": "^6.1.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
@@ -79,8 +100,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "openapi-diff": "^0.23.6"
+    "typescript": "^5.7.2"
   },
   "jest": {
     "moduleFileExtensions": [

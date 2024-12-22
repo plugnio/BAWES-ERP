@@ -24,17 +24,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "example": "password123"
-                  }
-                }
+                "$ref": "#/components/schemas/LoginDto"
               }
             }
           }
@@ -62,25 +52,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "example": "password123"
-                  },
-                  "nameEn": {
-                    "type": "string",
-                    "example": "John Doe"
-                  },
-                  "nameAr": {
-                    "type": "string",
-                    "example": "جون دو"
-                  }
-                }
+                "$ref": "#/components/schemas/RegisterDto"
               }
             }
           }
@@ -103,21 +75,6 @@
       "post": {
         "operationId": "AuthController_refresh",
         "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refresh_token": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Token refreshed successfully"
@@ -126,7 +83,7 @@
             "description": "Invalid refresh token"
           }
         },
-        "summary": "Refresh access token",
+        "summary": "Refresh access token using refresh token cookie",
         "tags": [
           "Authentication"
         ]
@@ -136,21 +93,6 @@
       "post": {
         "operationId": "AuthController_logout",
         "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refresh_token": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Logged out successfully"
@@ -171,17 +113,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                  },
-                  "code": {
-                    "type": "string",
-                    "example": "123456"
-                  }
-                }
+                "$ref": "#/components/schemas/VerifyEmailDto"
               }
             }
           }
@@ -197,6 +129,424 @@
         "summary": "Verify email address",
         "tags": [
           "Authentication"
+        ]
+      }
+    },
+    "/permissions/dashboard": {
+      "get": {
+        "operationId": "PermissionManagementController_getPermissionDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/permissions/categories": {
+      "post": {
+        "operationId": "PermissionManagementController_createCategory",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/permissions/permissions": {
+      "post": {
+        "operationId": "PermissionManagementController_createPermission",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/permissions/roles/{id}/permissions": {
+      "put": {
+        "operationId": "PermissionManagementController_updateRolePermissions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/permissions/roles/{id}": {
+      "get": {
+        "operationId": "PermissionManagementController_getRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PermissionManagement"
+        ]
+      }
+    },
+    "/roles": {
+      "get": {
+        "operationId": "RoleManagementController_getRoles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all roles with their permissions",
+        "tags": [
+          "Role Management"
+        ]
+      },
+      "post": {
+        "operationId": "RoleManagementController_createRole",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a new role",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/roles/{roleId}/permissions": {
+      "patch": {
+        "operationId": "RoleManagementController_togglePermissions",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Toggle permissions for a role",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/roles/{roleId}/position": {
+      "patch": {
+        "operationId": "RoleManagementController_updatePosition",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update role position (for drag-and-drop)",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/roles/users/{userId}/roles": {
+      "post": {
+        "operationId": "RoleManagementController_assignRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Assign role to user",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/roles/users/{userId}/roles/{roleId}": {
+      "delete": {
+        "operationId": "RoleManagementController_removeRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Remove role from user",
+        "tags": [
+          "Role Management"
+        ]
+      }
+    },
+    "/people": {
+      "post": {
+        "operationId": "PersonController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new person",
+        "tags": [
+          "people"
+        ]
+      },
+      "get": {
+        "operationId": "PersonController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all people",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/people/{id}": {
+      "get": {
+        "operationId": "PersonController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a person by id",
+        "tags": [
+          "people"
+        ]
+      },
+      "patch": {
+        "operationId": "PersonController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a person",
+        "tags": [
+          "people"
+        ]
+      },
+      "delete": {
+        "operationId": "PersonController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete a person",
+        "tags": [
+          "people"
         ]
       }
     }
@@ -217,6 +567,149 @@
         "type": "http"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "User email address"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123",
+            "description": "User password"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "User email address"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123",
+            "description": "User password"
+          },
+          "nameEn": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "User name in English"
+          },
+          "nameAr": {
+            "type": "string",
+            "example": "جون دو",
+            "description": "User name in Arabic"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to verify"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "Verification code sent to email"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ]
+      },
+      "CreateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the role"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the role"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color code for the role"
+          },
+          "permissions": {
+            "description": "Initial permission codes to assign",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreatePersonDto": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "description": "English name of the person"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name of the person"
+          },
+          "passwordHash": {
+            "type": "string",
+            "description": "Password hash for authentication"
+          },
+          "accountStatus": {
+            "type": "string",
+            "description": "Account status",
+            "default": "active"
+          }
+        },
+        "required": [
+          "passwordHash",
+          "accountStatus"
+        ]
+      },
+      "Person": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePersonDto": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "description": "English name of the person"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name of the person"
+          },
+          "accountStatus": {
+            "type": "string",
+            "description": "Account status",
+            "default": "active"
+          }
+        }
+      }
+    }
   }
 }

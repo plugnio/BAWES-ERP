@@ -24,5 +24,8 @@
   "watchOptions": {
     "watchFile": "fixedPollingInterval"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "test/**/*"],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  }
 }
