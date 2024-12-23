@@ -134,7 +134,7 @@
     },
     "/permissions/dashboard": {
       "get": {
-        "operationId": "PermissionManagementController_getPermissionDashboard",
+        "operationId": "PermissionController_getPermissionDashboard",
         "parameters": [],
         "responses": {
           "200": {
@@ -142,59 +142,13 @@
           }
         },
         "tags": [
-          "PermissionManagement"
-        ]
-      }
-    },
-    "/permissions/roles/{id}/permissions": {
-      "put": {
-        "operationId": "PermissionManagementController_updateRolePermissions",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "PermissionManagement"
-        ]
-      }
-    },
-    "/permissions/roles/{id}": {
-      "get": {
-        "operationId": "PermissionManagementController_getRole",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "PermissionManagement"
+          "Permission"
         ]
       }
     },
     "/roles": {
       "get": {
-        "operationId": "RoleManagementController_getRoles",
+        "operationId": "RoleController_getRoles",
         "parameters": [],
         "responses": {
           "200": {
@@ -207,7 +161,7 @@
         ]
       },
       "post": {
-        "operationId": "RoleManagementController_createRole",
+        "operationId": "RoleController_createRole",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -232,7 +186,7 @@
     },
     "/roles/{roleId}/permissions": {
       "patch": {
-        "operationId": "RoleManagementController_togglePermissions",
+        "operationId": "RoleController_togglePermissions",
         "parameters": [
           {
             "name": "roleId",
@@ -256,7 +210,7 @@
     },
     "/roles/{roleId}/position": {
       "patch": {
-        "operationId": "RoleManagementController_updatePosition",
+        "operationId": "RoleController_updatePosition",
         "parameters": [
           {
             "name": "roleId",
@@ -278,12 +232,12 @@
         ]
       }
     },
-    "/roles/users/{userId}/roles": {
+    "/roles/people/{personId}/roles": {
       "post": {
-        "operationId": "RoleManagementController_assignRole",
+        "operationId": "RoleController_assignRole",
         "parameters": [
           {
-            "name": "userId",
+            "name": "personId",
             "required": true,
             "in": "path",
             "schema": {
@@ -296,18 +250,18 @@
             "description": ""
           }
         },
-        "summary": "Assign role to user",
+        "summary": "Assign role to person",
         "tags": [
           "Role Management"
         ]
       }
     },
-    "/roles/users/{userId}/roles/{roleId}": {
+    "/roles/people/{personId}/roles/{roleId}": {
       "delete": {
-        "operationId": "RoleManagementController_removeRole",
+        "operationId": "RoleController_removeRole",
         "parameters": [
           {
-            "name": "userId",
+            "name": "personId",
             "required": true,
             "in": "path",
             "schema": {
@@ -328,7 +282,7 @@
             "description": ""
           }
         },
-        "summary": "Remove role from user",
+        "summary": "Remove role from person",
         "tags": [
           "Role Management"
         ]

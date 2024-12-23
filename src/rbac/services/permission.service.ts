@@ -9,25 +9,50 @@ export class PermissionService {
 
   async getPermissionCategories() {
     const permissions = await this.prisma.permission.findMany({
-      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
+      orderBy: [{ category: 'asc' }, { code: 'asc' }],
     });
 
     // Group permissions by category
     const categories = permissions.reduce(
       (acc, permission) => {
-        if (!acc[permission.category]) {
-          acc[permission.category] = {
+        const category = acc.find((c) => c.name === permission.category);
+        if (category) {
+          category.permissions.push(permission);
+        } else {
+          acc.push({
             name: permission.category,
-            permissions: [],
-          };
+            permissions: [permission],
+          });
         }
-        acc[permission.category].permissions.push(permission);
         return acc;
       },
-      {} as Record<string, { name: string; permissions: any[] }>,
+      [] as { name: string; permissions: any[] }[],
     );
 
-    return Object.values(categories);
+    return categories;
+  }
+
+  async createPermission(data: {
+    code: string;
+    name: string;
+    category: string;
+    description?: string;
+  }) {
+    // Calculate next bitfield
+    const lastPermission = await this.prisma.permission.findFirst({
+      orderBy: { bitfield: 'desc' },
+    });
+
+    const bitfield = lastPermission
+      ? (BigInt(lastPermission.bitfield.toString()) * 2n).toString()
+      : '1';
+
+    return this.prisma.permission.create({
+      data: {
+        ...data,
+        bitfield,
+      },
+    });
   }
 
   async getPermissionDashboard() {

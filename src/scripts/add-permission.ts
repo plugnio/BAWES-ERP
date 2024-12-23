@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
-import { PermissionManagementService } from '../rbac/services/permission-management.service';
+import { PermissionService } from '../rbac/services/permission.service';
+import { RoleService } from '../rbac/services/role.service';
 
 // Get command line arguments
 const [, , code, name, category, description] = process.argv;
@@ -21,13 +22,12 @@ Example: npm run permissions:add -- "users.create" "Create User" "Users" "Allows
 }
 
 async function bootstrap() {
-  // Create a standalone application context
   const app = await NestFactory.createApplicationContext(AppModule, {
-    // Disable authentication and other middleware
     logger: false,
   });
 
-  const permissionService = app.get(PermissionManagementService);
+  const permissionService = app.get(PermissionService);
+  const roleService = app.get(RoleService);
 
   try {
     // Create the permission
@@ -42,12 +42,12 @@ async function bootstrap() {
     console.log(JSON.stringify(permission, null, 2));
 
     // Get SUPER_ADMIN role
-    const roles = await permissionService.getRoles();
+    const roles = await roleService.getRoles();
     const superAdmin = roles.find((r) => r.name === 'SUPER_ADMIN');
 
     if (superAdmin) {
       // Grant to SUPER_ADMIN role
-      await permissionService.toggleRolePermission(superAdmin.id, code, true);
+      await roleService.toggleRolePermission(superAdmin.id, code, true);
       console.log('\nPermission automatically granted to SUPER_ADMIN role');
     }
   } catch (error) {
