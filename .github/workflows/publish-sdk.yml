@@ -11,52 +11,12 @@ on:
     - cron: '0 0 * * 0'
 
 jobs:
-  check-breaking-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      has_breaking: ${{ steps.check-breaking.outputs.has_breaking }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Check for breaking changes
-        id: check-breaking
-        run: |
-          CHANGES=$(npm run check:breaking-changes)
-          echo "has_breaking=$(echo $CHANGES | grep -c "BREAKING" || true)" >> $GITHUB_OUTPUT
-          echo "$CHANGES" > breaking-changes.txt
-
-      - name: Create Issue for Breaking Changes
-        if: steps.check-breaking.outputs.has_breaking != '0' && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const changes = fs.readFileSync('breaking-changes.txt', 'utf8');
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '⚠️ Breaking Changes Detected in API',
-              body: `Breaking changes detected in the API:\n\n\`\`\`\n${changes}\n\`\`\`\n\nPlease review and update the major version number if proceeding with these changes.`,
-              labels: ['breaking-change']
-            });
-
   update-sdk:
-    needs: check-breaking-changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref }}  # Explicitly checkout the triggering branch
+          ref: ${{ github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -81,7 +41,6 @@ jobs:
           # Debug information
           echo "GitHub Ref: ${{ github.ref }}"
           echo "GitHub Ref Name: ${{ github.ref_name }}"
-          echo "GitHub Head Ref: ${{ github.head_ref }}"
           echo "GitHub Event Name: ${{ github.event_name }}"
           
           # Generate the SDK
@@ -98,10 +57,6 @@ jobs:
           # Fetch all branches
           git fetch origin
           
-          # Debug remote branches
-          echo "Available remote branches:"
-          git branch -r
-          
           # Create or switch to branch with error handling
           if git ls-remote --heads origin $BRANCH_NAME | grep -q $BRANCH_NAME; then
             echo "Checking out existing branch: ${BRANCH_NAME}"
@@ -114,104 +69,71 @@ jobs:
             git checkout -b $BRANCH_NAME
           fi
           
-          # Verify current branch
-          echo "Current branch:"
-          git branch --show-current
-          
           # Clean existing files
           rm -rf src/
           mkdir -p src
           
-          # Copy new files with debug info
-          echo "Copying SDK files..."
+          # Copy new files
           cp -v ../tmp-sdk/*.ts src/
-          echo "Files in src directory:"
-          ls -la src/
           
           # Initialize package.json if it doesn't exist
           if [ ! -f package.json ]; then
-            echo "Initializing package.json..."
             npm init -y
           fi
           
           # Install dependencies
-          echo "Installing dependencies..."
           npm install typescript @types/node --save-dev
           
           # Build SDK
-          echo "Building SDK..."
-          npm run build || {
-            echo "Build failed, checking TypeScript files..."
-            npx tsc --noEmit
-          }
+          npm run build || npx tsc --noEmit
           
           # Check for changes
-          echo "Checking for changes..."
-          git status
           if [[ -n "$(git status --porcelain)" ]]; then
-            # Generate version based on branch and timestamp
             TIMESTAMP=$(date +%Y%m%d%H%M%S)
             
             if [ "$BRANCH_NAME" = "main" ]; then
-              # Get current version for main branch
+              # For main branch, increment minor version
               CURRENT_VERSION=$(npm pkg get version | tr -d '"')
-              
-              # Increment version based on breaking changes
-              if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-                major=$(echo $CURRENT_VERSION | cut -d. -f1)
-                NEW_VERSION="$((major + 1)).0.0"
-              else
-                minor=$(echo $CURRENT_VERSION | cut -d. -f2)
-                NEW_VERSION="$(echo $CURRENT_VERSION | cut -d. -f1).$((minor + 1)).0"
-              fi
+              MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+              MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+              NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
             else
-              # For any other branch, use timestamp-based version
-              NEW_VERSION="0.0.0-${TIMESTAMP}"
+              # For feature branches, use timestamp version
+              NEW_VERSION="0.0.0-${BRANCH_NAME}-${TIMESTAMP}"
             fi
             
             # Update package.json version
             npm version $NEW_VERSION --no-git-tag-version --allow-same-version
             
-            # Update CHANGELOG.md for main branch
-            if [ "$BRANCH_NAME" = "main" ]; then
-              echo "## [$NEW_VERSION] - $(date +'%Y-%m-%d')" >> CHANGELOG.md
-              echo "" >> CHANGELOG.md
-              if [ "${{ needs.check-breaking-changes.outputs.has_breaking }}" != "0" ]; then
-                echo "### Breaking Changes" >> CHANGELOG.md
-                cat ../breaking-changes.txt >> CHANGELOG.md
-              else
-                echo "### Changes" >> CHANGELOG.md
-                echo "- Updated SDK based on latest API changes" >> CHANGELOG.md
-              fi
-              echo "" >> CHANGELOG.md
-              if [ -f CHANGELOG.md.tmp ]; then
-                cat CHANGELOG.md.tmp >> CHANGELOG.md
-              fi
+            # Update CHANGELOG.md for all branches
+            if [ ! -f CHANGELOG.md ]; then
+              echo "# Changelog\n" > CHANGELOG.md
             fi
             
-            # Commit and push changes with error handling
+            # Get commit messages since last update
+            CHANGES=$(cd .. && git log --pretty=format:"- %s" -n 5)
+            
+            # Update changelog
+            echo -e "## [$NEW_VERSION] - $(date +'%Y-%m-%d')\n" > CHANGELOG.tmp
+            echo -e "### Changes\n$CHANGES\n\n" >> CHANGELOG.tmp
+            cat CHANGELOG.md >> CHANGELOG.tmp
+            mv CHANGELOG.tmp CHANGELOG.md
+            
+            # Commit and push changes
             git add .
             git commit -m "feat(sdk): Update SDK to version $NEW_VERSION"
             
-            # Push changes with error handling and debug info
-            echo "Pushing changes to branch: ${BRANCH_NAME}"
             if [ "$BRANCH_NAME" = "main" ]; then
-              git tag -a "v$NEW_VERSION" -m "$NEW_VERSION"
+              git tag -a "v$NEW_VERSION" -m "Version $NEW_VERSION"
               git push --follow-tags || {
                 echo "Failed to push to main branch"
                 exit 1
               }
             else
               git push -u origin $BRANCH_NAME --force || {
-                echo "Failed to push to branch: ${BRANCH_NAME}"
-                echo "Attempting push with set-upstream"
                 git push --set-upstream origin $BRANCH_NAME --force
               }
             fi
-            
-            # Verify remote branches after push
-            echo "Remote branches after push:"
-            git ls-remote --heads origin
             
             echo "SDK updated on branch: $BRANCH_NAME with version: $NEW_VERSION"
           else
@@ -248,20 +170,13 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/branches" | \
             jq -r '.[].name')
           
-          # For each SDK branch
           for branch in $BRANCHES; do
-            # Check if branch exists in main repo
             if ! echo "$ACTIVE_BRANCHES" | grep -q "^${branch}$"; then
-              echo "Removing stale branch: $branch"
-              
-              # Get last commit date of the branch
               LAST_COMMIT=$(git log -1 --format=%ct origin/$branch)
               CURRENT_TIME=$(date +%s)
               DAYS_OLD=$(( ($CURRENT_TIME - $LAST_COMMIT) / 86400 ))
               
-              # If branch is older than 30 days and doesn't exist in main repo
               if [ $DAYS_OLD -gt 30 ]; then
-                # Delete the remote branch
                 git push origin --delete $branch
                 echo "Deleted branch $branch (${DAYS_OLD} days old)"
               fi
