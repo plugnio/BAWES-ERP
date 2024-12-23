@@ -75,25 +75,6 @@ export class PermissionManagementService {
     };
   }
 
-  async createPermission(data: {
-    code: string;
-    name: string;
-    description?: string;
-    category: string;
-  }) {
-    const lastPermission = await this.prisma.permission.findFirst({
-      orderBy: { bitfield: 'desc' },
-    });
-
-    const bitfield = lastPermission
-      ? new Decimal(lastPermission.bitfield).mul(2)
-      : new Decimal(1);
-
-    return this.prisma.permission.create({
-      data: { ...data, bitfield },
-    });
-  }
-
   async getRoles(includePermissions = false) {
     return this.prisma.role.findMany({
       include: {

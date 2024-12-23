@@ -160,20 +160,6 @@
         ]
       }
     },
-    "/permissions/permissions": {
-      "post": {
-        "operationId": "PermissionManagementController_createPermission",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "PermissionManagement"
-        ]
-      }
-    },
     "/permissions/roles/{id}/permissions": {
       "put": {
         "operationId": "PermissionManagementController_updateRolePermissions",

@@ -46,19 +46,6 @@ export class PermissionManagementController {
     return this.permissionService.createPermissionCategory(data);
   }
 
-  @Post('permissions')
-  async createPermission(
-    @Body()
-    data: {
-      code: string;
-      name: string;
-      description?: string;
-      category: string;
-    },
-  ) {
-    return this.permissionService.createPermission(data);
-  }
-
   @Put('roles/:id/permissions')
   async updateRolePermissions(
     @Param('id') roleId: string,
