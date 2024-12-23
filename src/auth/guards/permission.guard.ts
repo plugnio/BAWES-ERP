@@ -1,12 +1,14 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PermissionManagementService } from '../../rbac/services/permission-management.service';
+import { PermissionService } from '../../rbac/services/permission.service';
+import { PersonRoleService } from '../../rbac/services/person-role.service';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private permissionService: PermissionManagementService,
+    private permissionService: PermissionService,
+    private personRoleService: PersonRoleService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -20,20 +22,24 @@ export class PermissionGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const personId = request.user?.id;
 
-    if (!user) {
+    if (!personId) {
       return false;
     }
 
-    // Check all required permissions
-    const checks = await Promise.all(
-      requiredPermissions.map((permission) =>
-        this.permissionService.hasPermission(user.id, permission),
-      ),
-    );
+    // Check each required permission
+    for (const permission of requiredPermissions) {
+      const hasPermission = await this.personRoleService.hasPermission(
+        personId,
+        permission,
+      );
 
-    // User must have all permissions
-    return checks.every(Boolean);
+      if (!hasPermission) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

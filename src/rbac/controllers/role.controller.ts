@@ -12,27 +12,31 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequirePermission } from '../decorators/require-permission.decorator';
-import { PermissionManagementService } from '../services/permission-management.service';
+import { RoleService } from '../services/role.service';
+import { PersonRoleService } from '../services/person-role.service';
 import { CreateRoleDto } from '../dto/create-role.dto';
 
 @ApiTags('Role Management')
 @Controller('roles')
 @UseGuards(JwtAuthGuard, PermissionGuard)
-export class RoleManagementController {
-  constructor(private permissionService: PermissionManagementService) {}
+export class RoleController {
+  constructor(
+    private roleService: RoleService,
+    private personRoleService: PersonRoleService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all roles with their permissions' })
   @RequirePermission('roles.read')
   async getRoles() {
-    return this.permissionService.getRoles(true);
+    return this.roleService.getRoles(true);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
   @RequirePermission('roles.create')
   async createRole(@Body() data: CreateRoleDto) {
-    return this.permissionService.createRole(data);
+    return this.roleService.createRole(data);
   }
 
   @Patch(':roleId/permissions')
@@ -46,7 +50,7 @@ export class RoleManagementController {
       enabled: boolean;
     },
   ) {
-    return this.permissionService.toggleRolePermission(
+    return this.roleService.toggleRolePermission(
       roleId,
       data.permissionCode,
       data.enabled,
@@ -60,26 +64,26 @@ export class RoleManagementController {
     @Param('roleId') roleId: string,
     @Body() data: { position: number },
   ) {
-    return this.permissionService.updateRolePosition(roleId, data.position);
+    return this.roleService.updateRolePosition(roleId, data.position);
   }
 
-  @Post('users/:userId/roles')
-  @ApiOperation({ summary: 'Assign role to user' })
+  @Post('people/:personId/roles')
+  @ApiOperation({ summary: 'Assign role to person' })
   @RequirePermission('roles.assign')
   async assignRole(
-    @Param('userId') userId: string,
+    @Param('personId') personId: string,
     @Body() data: { roleId: string },
   ) {
-    return this.permissionService.assignRoleToUser(userId, data.roleId);
+    return this.personRoleService.assignRole(personId, data.roleId);
   }
 
-  @Delete('users/:userId/roles/:roleId')
-  @ApiOperation({ summary: 'Remove role from user' })
+  @Delete('people/:personId/roles/:roleId')
+  @ApiOperation({ summary: 'Remove role from person' })
   @RequirePermission('roles.assign')
   async removeRole(
-    @Param('userId') userId: string,
+    @Param('personId') personId: string,
     @Param('roleId') roleId: string,
   ) {
-    return this.permissionService.removeRoleFromUser(userId, roleId);
+    return this.personRoleService.removeRole(personId, roleId);
   }
-}
+} 

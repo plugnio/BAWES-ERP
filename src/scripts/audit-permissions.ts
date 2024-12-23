@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
-import { PermissionManagementService } from '../rbac/services/permission-management.service';
+import { PermissionService } from '../rbac/services/permission.service';
+import { RoleService } from '../rbac/services/role.service';
 
 async function bootstrap() {
   // Create a standalone application context
@@ -9,10 +10,11 @@ async function bootstrap() {
     logger: false,
   });
 
-  const permissionService = app.get(PermissionManagementService);
+  const permissionService = app.get(PermissionService);
+  const roleService = app.get(RoleService);
 
   try {
-    const roles = await permissionService.getRoles(true);
+    const roles = await roleService.getRoles(true);
     const categories = await permissionService.getPermissionCategories();
     const totalPermissions = categories.reduce(
       (acc, cat) => acc + cat.permissions.length,
