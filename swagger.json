@@ -141,8 +141,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Permission"
+          "Permissions"
         ]
       }
     },
@@ -155,6 +160,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Get all roles with their permissions",
         "tags": [
           "Role Management"
@@ -178,6 +188,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Create a new role",
         "tags": [
           "Role Management"
@@ -202,6 +217,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Toggle permissions for a role",
         "tags": [
           "Role Management"
@@ -226,6 +246,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Update role position (for drag-and-drop)",
         "tags": [
           "Role Management"
@@ -250,6 +275,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Assign role to person",
         "tags": [
           "Role Management"
@@ -282,6 +312,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Remove role from person",
         "tags": [
           "Role Management"

@@ -3,12 +3,15 @@ import {
   Get,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequirePermission } from '../decorators/require-permission.decorator';
 import { PermissionService } from '../services/permission.service';
 import { RoleService } from '../services/role.service';
 
+@ApiTags('Permissions')
+@ApiBearerAuth()
 @Controller('permissions')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @RequirePermission('permissions.manage')
