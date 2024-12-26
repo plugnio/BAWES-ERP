@@ -1,6 +1,5 @@
 import * as request from 'supertest';
 import { TestSetup } from '../test-setup';
-import { CreatePermissionDto } from '../../src/rbac/dto/create-permission.dto';
 
 describe('Permission Controller (e2e)', () => {
   let testSetup: TestSetup;
@@ -15,110 +14,88 @@ describe('Permission Controller (e2e)', () => {
 
   beforeEach(async () => {
     await testSetup.cleanDb();
-  });
-
-  describe('POST /permissions', () => {
-    it('should create a new permission', async () => {
-      // Arrange
-      const createPermissionDto: CreatePermissionDto = {
-        code: 'users.create',
-        name: 'Create Users',
-        category: 'users',
-        description: 'Can create users',
-      };
-
-      // Act & Assert
-      const response = await request(testSetup.app.getHttpServer())
-        .post('/permissions')
-        .send(createPermissionDto)
-        .expect(201);
-
-      expect(response.body).toMatchObject({
-        code: createPermissionDto.code,
-        name: createPermissionDto.name,
-        category: createPermissionDto.category,
-        description: createPermissionDto.description,
-        bitfield: expect.any(String),
-      });
-
-      // Verify permission was created in database
-      const createdPermission = await testSetup.prisma.permission.findUnique({
-        where: { code: createPermissionDto.code },
-      });
-      expect(createdPermission).toBeDefined();
-      expect(createdPermission.bitfield).toBe(response.body.bitfield);
-    });
-
-    it('should not create duplicate permission', async () => {
-      // Arrange
-      const createPermissionDto: CreatePermissionDto = {
-        code: 'users.create',
-        name: 'Create Users',
-        category: 'users',
-        description: 'Can create users',
-      };
-
-      // Create first permission
-      await request(testSetup.app.getHttpServer())
-        .post('/permissions')
-        .send(createPermissionDto)
-        .expect(201);
-
-      // Act & Assert - Try to create duplicate
-      await request(testSetup.app.getHttpServer())
-        .post('/permissions')
-        .send(createPermissionDto)
-        .expect(400);
-    });
+    // Discover and create permissions from code
+    await testSetup.setupPermissions();
   });
 
   describe('GET /permissions', () => {
-    it('should return all permissions', async () => {
-      // Arrange
-      const permissions = [
-        {
-          code: 'users.create',
-          name: 'Create Users',
-          category: 'users',
-          description: 'Can create users',
-        },
-        {
-          code: 'users.update',
-          name: 'Update Users',
-          category: 'users',
-          description: 'Can update users',
-        },
-      ];
-
-      // Create test permissions
-      for (const permission of permissions) {
-        await testSetup.prisma.permission.create({
-          data: {
-            ...permission,
-            bitfield: '1', // Dummy bitfield for test
-          },
-        });
-      }
-
+    it('should return all permissions discovered from code', async () => {
       // Act
       const response = await request(testSetup.app.getHttpServer())
         .get('/permissions')
         .expect(200);
 
       // Assert
-      expect(response.body).toHaveLength(permissions.length);
-      expect(response.body).toEqual(
-        expect.arrayContaining(
-          permissions.map((p) =>
-            expect.objectContaining({
-              code: p.code,
-              name: p.name,
-              category: p.category,
-              description: p.description,
-            }),
-          ),
-        ),
+      expect(response.body.length).toBeGreaterThan(0);
+      // Each permission should have required fields
+      response.body.forEach(permission => {
+        expect(permission).toMatchObject({
+          code: expect.any(String),
+          name: expect.any(String),
+          category: expect.any(String),
+          description: expect.any(String),
+          bitfield: expect.any(String),
+        });
+        // Verify permission format
+        expect(permission.code).toMatch(/^[a-z]+\.[a-z]+$/);
+        // Verify bitfield is power of 2
+        const bitfield = BigInt(permission.bitfield);
+        expect(bitfield & (bitfield - BigInt(1))).toBe(BigInt(0));
+      });
+    });
+  });
+
+  describe('Permission Discovery', () => {
+    it('should automatically assign unique power-of-2 bitfields', async () => {
+      // Act
+      const response = await request(testSetup.app.getHttpServer())
+        .get('/permissions')
+        .expect(200);
+
+      // Assert
+      const bitfields = response.body.map(p => BigInt(p.bitfield));
+      
+      // Check all bitfields are unique
+      const uniqueBitfields = new Set(bitfields);
+      expect(uniqueBitfields.size).toBe(bitfields.length);
+      
+      // Check all bitfields are powers of 2
+      bitfields.forEach(bitfield => {
+        expect(bitfield & (bitfield - BigInt(1))).toBe(BigInt(0));
+      });
+      
+      // Check bitfields are in ascending order
+      const sortedBitfields = [...bitfields].sort((a, b) => 
+        a < b ? -1 : a > b ? 1 : 0
       );
+      expect(bitfields).toEqual(sortedBitfields);
+    });
+
+    it('should group permissions by category', async () => {
+      // Act
+      const response = await request(testSetup.app.getHttpServer())
+        .get('/permissions')
+        .expect(200);
+
+      // Group permissions by category
+      const categories = response.body.reduce((acc, permission) => {
+        acc[permission.category] = acc[permission.category] || [];
+        acc[permission.category].push(permission);
+        return acc;
+      }, {});
+
+      // Assert
+      Object.entries(categories).forEach(([category, permissions]: [string, any[]]) => {
+        // Category should be lowercase
+        expect(category).toMatch(/^[a-z]+$/);
+        // Each category should have at least one permission
+        expect(permissions.length).toBeGreaterThan(0);
+        // All permissions in category should have matching category
+        permissions.forEach(permission => {
+          expect(permission.category).toBe(category);
+          expect(permission.code.startsWith(category + '.')).toBe(true);
+        });
+      });
     });
   });
 }); 

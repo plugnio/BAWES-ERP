@@ -5,10 +5,12 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { getTestPrismaService, TestConfigModule } from './test-config';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
+import { PermissionDiscoveryService } from '../src/rbac/services/permission-discovery.service';
 
 export class TestSetup {
   app: INestApplication;
   prisma: PrismaService;
+  private permissionDiscovery: PermissionDiscoveryService;
 
   async init() {
     const moduleRef = await Test.createTestingModule({
@@ -29,6 +31,9 @@ export class TestSetup {
     // Get test prisma instance
     this.prisma = await getTestPrismaService();
     
+    // Get permission discovery service
+    this.permissionDiscovery = moduleRef.get<PermissionDiscoveryService>(PermissionDiscoveryService);
+    
     return this;
   }
 
@@ -39,5 +44,10 @@ export class TestSetup {
 
   async cleanDb() {
     this.prisma = await getTestPrismaService();
+  }
+
+  async setupPermissions() {
+    // Access private method for testing
+    await (this.permissionDiscovery as any).syncPermissions();
   }
 } 

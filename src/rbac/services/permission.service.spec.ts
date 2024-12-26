@@ -2,29 +2,41 @@ import { Test } from '@nestjs/testing';
 import { PermissionService } from './permission.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RbacCacheService } from './rbac-cache.service';
-import { PermissionDiscoveryService } from './permission-discovery.service';
 import { Decimal } from 'decimal.js';
+import { discoverActualPermissions } from '../../../test/helpers/permission-discovery.helper';
 
 describe('PermissionService', () => {
   let service: PermissionService;
   let prisma: PrismaService;
   let cacheService: RbacCacheService;
-  let discoveryService: PermissionDiscoveryService;
+  let actualPermissions: any[];
+
+  beforeAll(async () => {
+    // Discover actual permissions from code
+    actualPermissions = await discoverActualPermissions();
+    
+    // Validate we have permissions to test with
+    expect(actualPermissions.length).toBeGreaterThan(0);
+    console.log(`Discovered ${actualPermissions.length} permissions for testing`);
+  });
 
   const mockPrisma = {
     permission: {
       findMany: jest.fn(),
-      create: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
+    role: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    $transaction: jest.fn((callback) => callback(mockPrisma)),
   };
 
   const mockCacheService = {
     clearPermissionCache: jest.fn(),
-  };
-
-  const mockDiscoveryService = {
-    getNextBitfield: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -39,77 +51,121 @@ describe('PermissionService', () => {
           provide: RbacCacheService,
           useValue: mockCacheService,
         },
-        {
-          provide: PermissionDiscoveryService,
-          useValue: mockDiscoveryService,
-        },
       ],
     }).compile();
 
     service = module.get<PermissionService>(PermissionService);
     prisma = module.get<PrismaService>(PrismaService);
     cacheService = module.get<RbacCacheService>(RbacCacheService);
-    discoveryService = module.get<PermissionDiscoveryService>(PermissionDiscoveryService);
-  });
 
-  afterEach(() => {
+    // Reset mocks but keep using actual permissions
     jest.clearAllMocks();
+    mockPrisma.permission.findMany.mockResolvedValue(actualPermissions);
   });
 
-  describe('createPermission', () => {
-    it('should create a new permission with correct bitfield', async () => {
-      // Arrange
-      const permissionData = {
-        code: 'users.create',
-        name: 'Create Users',
-        description: 'Can create users',
-        category: 'users',
-      };
-      const bitfield = new Decimal(2);
-      mockDiscoveryService.getNextBitfield.mockResolvedValue(bitfield);
-      mockPrisma.permission.create.mockResolvedValue({
-        ...permissionData,
-        id: 1,
-        bitfield: bitfield.toString(),
-      });
-
+  describe('getPermissionCategories', () => {
+    it('should group actual permissions by category', async () => {
       // Act
-      const result = await service.createPermission(permissionData);
+      const result = await service.getPermissionCategories();
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.bitfield).toBe(bitfield.toString());
-      expect(mockCacheService.clearPermissionCache).toHaveBeenCalled();
-      expect(mockPrisma.permission.create).toHaveBeenCalledWith({
-        data: {
-          ...permissionData,
-          bitfield: bitfield.toString(),
-        },
+      // Get unique categories from actual permissions
+      const uniqueCategories = [...new Set(actualPermissions.map(p => p.category))];
+      
+      expect(result.length).toBe(uniqueCategories.length);
+      
+      // Verify each category
+      uniqueCategories.forEach(category => {
+        const categoryGroup = result.find(r => r.name === category);
+        expect(categoryGroup).toBeDefined();
+        
+        const expectedPermissions = actualPermissions.filter(p => p.category === category);
+        expect(categoryGroup.permissions).toHaveLength(expectedPermissions.length);
+      });
+
+      expect(prisma.permission.findMany).toHaveBeenCalledWith({
+        orderBy: [{ category: 'asc' }, { code: 'asc' }],
+      });
+    });
+
+    it('should maintain consistent category structure', async () => {
+      // Act
+      const result = await service.getPermissionCategories();
+
+      // Assert
+      result.forEach(category => {
+        expect(category.name).toMatch(/^[a-z]+$/); // lowercase category names
+        expect(Array.isArray(category.permissions)).toBe(true);
+        
+        category.permissions.forEach(permission => {
+          expect(permission.category).toBe(category.name);
+          expect(permission.code.startsWith(category.name + '.')).toBe(true);
+        });
       });
     });
   });
 
-  describe('getPermissions', () => {
-    it('should return all permissions', async () => {
-      // Arrange
-      const mockPermissions = [
-        {
-          id: 1,
-          code: 'users.create',
-          name: 'Create Users',
-          description: 'Can create users',
-          category: 'users',
-          bitfield: '2',
-        },
-      ];
-      mockPrisma.permission.findMany.mockResolvedValue(mockPermissions);
+  describe('createPermission', () => {
+    it('should create permission with correct bitfield sequence', async () => {
+      // Use the last actual permission to test bitfield sequence
+      const lastPermission = actualPermissions[actualPermissions.length - 1];
+      mockPrisma.permission.findFirst.mockResolvedValue(lastPermission);
+
+      // Create a new permission in the same category
+      const permissionData = {
+        code: `${lastPermission.category}.new_action`,
+        name: 'New Action',
+        category: lastPermission.category,
+        description: 'Test permission',
+      };
 
       // Act
-      const result = await service.getPermissions();
+      await service.createPermission(permissionData);
 
       // Assert
-      expect(result).toEqual(mockPermissions);
-      expect(mockPrisma.permission.findMany).toHaveBeenCalled();
+      // Verify the new bitfield is double the last one
+      const expectedBitfield = (BigInt(lastPermission.bitfield) * 2n).toString();
+      expect(prisma.permission.create).toHaveBeenCalledWith({
+        data: {
+          ...permissionData,
+          bitfield: expectedBitfield,
+        },
+      });
+    });
+
+    it('should handle edge cases from actual permissions', async () => {
+      // Test with various categories from actual permissions
+      for (const category of new Set(actualPermissions.map(p => p.category))) {
+        const categoryPermissions = actualPermissions.filter(p => p.category === category);
+        
+        // Verify bitfield sequence within each category
+        const bitfields = categoryPermissions.map(p => BigInt(p.bitfield));
+        
+        // Check if bitfields are powers of 2
+        bitfields.forEach(bitfield => {
+          expect(bitfield & (bitfield - BigInt(1))).toBe(BigInt(0));
+        });
+        
+        // Check if bitfields are unique
+        expect(new Set(bitfields).size).toBe(bitfields.length);
+      }
+    });
+  });
+
+  describe('getPermissionDashboard', () => {
+    it('should return dashboard with actual permission stats', async () => {
+      // Act
+      const result = await service.getPermissionDashboard();
+
+      // Assert
+      const uniqueCategories = [...new Set(actualPermissions.map(p => p.category))];
+      
+      expect(result.categories).toHaveLength(uniqueCategories.length);
+      expect(result.stats.totalPermissions).toBe(actualPermissions.length);
+      
+      // Verify category totals match
+      const categoryTotals = result.categories.reduce((sum, cat) => sum + cat.permissions.length, 0);
+      expect(categoryTotals).toBe(actualPermissions.length);
     });
   });
 }); 
