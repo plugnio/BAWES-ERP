@@ -62,10 +62,10 @@
 Last Updated: 2024-12-26
 
 Unit Tests:
-- Overall Coverage: 46.19%
-- Branch Coverage: 30.45%
-- Function Coverage: 38.42%
-- Line Coverage: 44.36%
+- Overall Coverage: 57.87%
+- Branch Coverage: 47.72%
+- Function Coverage: 43.84%
+- Line Coverage: 56.68%
 
 ✅ High Coverage Areas:
 1. Person Module:
@@ -80,16 +80,19 @@ Unit Tests:
    - Permission Discovery Helper: 100% coverage
    - Test Module Helper: 100% coverage
 
+3. Auth Module:
+   - AuthService: 91.19% coverage
+   - JWT Strategy: 76.66% coverage
+
 🚫 Low Coverage Areas:
 1. Auth Module:
-   - AuthService: 49.05% coverage
+   - Auth Decorators: 38.46% coverage
    - Guards: 54.28% coverage
-   - JWT Strategy: 43.33% coverage
 
 2. RBAC Module:
-   - Permission Guard: 21.42% coverage
    - Permission Discovery Service: 44.73% coverage
    - RbacCache Service: 57.14% coverage
+   - RBAC DTOs: 36.84% coverage
 
 3. Scripts & E2E Tests:
    - All scripts: 0% coverage
@@ -114,16 +117,18 @@ Last Checked: 2024-12-26
 - PermissionService tests with high coverage
 - RoleService tests with full coverage
 - PersonRoleService tests with full coverage
-- Basic AuthService tests implemented
+- AuthService tests with high coverage
+- JWT Strategy tests with good coverage
 
 🚧 In Progress:
-- AuthService tests (more coverage needed)
-- Setting up test environment
-- Implementing test helpers
+- Permission guard tests
+- Auth decorator tests
+- RBAC DTO tests
 
 ⏱ Pending:
-- Permission guard tests
 - E2E test coverage
+- Script tests
+- RbacCache service tests
 
 ❌ Blocked:
 - None (previous blockers resolved)
@@ -131,21 +136,27 @@ Last Checked: 2024-12-26
 
 ### Next Actions
 
-1. [ ] Complete AuthService tests
+1. [ ] Complete Auth Decorator Tests
    ```typescript
-   // TODO: Add tests for remaining AuthService methods
-   - Test refreshToken flow
-   - Test token revocation
-   - Test token cleanup
-   - Test debug mode functionality
+   // TODO: Add tests for auth decorators
+   - Test current-user decorator
+   - Test permissions decorator
+   - Test public decorator
    ```
 
-2. [ ] Implement Permission Guard tests
+2. [ ] Implement RBAC DTO Tests
    ```typescript
-   // TODO: Create src/rbac/guards/permission.guard.spec.ts
-   - Test permission validation
-   - Test bitfield operations
-   - Test cache integration
+   // TODO: Create tests for RBAC DTOs
+   - Test assign-role.dto.ts
+   - Test create-role.dto.ts
+   - Test update-role.dto.ts
+   ```
+
+3. [ ] Improve RbacCache Service Tests
+   ```typescript
+   // TODO: Enhance RbacCache service coverage
+   - Test cache operations
+   - Test cache invalidation
    - Test error handling
    ```
 

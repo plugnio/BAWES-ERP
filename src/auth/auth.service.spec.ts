@@ -28,7 +28,9 @@ describe('AuthService', () => {
     refreshToken: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
     },
@@ -327,6 +329,287 @@ describe('AuthService', () => {
       await expect(
         service.verifyEmail('test@example.com', 'ABC123'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('refreshToken', () => {
+    const mockRequest = {
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
+      cookies: {
+        refreshToken: 'token-id.token-value',
+      },
+      res: {
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      },
+    } as unknown as Request;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should successfully refresh tokens', async () => {
+      const mockToken = {
+        id: 'token-id',
+        hashedToken: await bcrypt.hash('token-value', 10),
+        personId: '1',
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      };
+
+      const mockPerson = {
+        id: '1',
+        accountStatus: 'active',
+        roles: [
+          {
+            role: {
+              permissions: [
+                { permission: { bitfield: '1', isDeprecated: false } },
+              ],
+            },
+          },
+        ],
+        emails: [{ email: 'test@example.com' }],
+      };
+
+      const mockTransaction = {
+        refreshToken: {
+          findFirst: jest.fn().mockResolvedValue(mockToken),
+          update: jest.fn().mockResolvedValue({ ...mockToken, isRevoked: true }),
+          create: jest.fn().mockResolvedValue({ id: 'new-token-id' }),
+        },
+        person: {
+          findUnique: jest.fn().mockResolvedValue(mockPerson),
+        },
+      };
+
+      mockPrisma.$transaction.mockImplementation((callback) => callback(mockTransaction));
+      mockJwtService.sign.mockReturnValue('new-access-token');
+
+      const result = await service.refreshToken(mockRequest);
+
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBe('new-access-token');
+      expect(result.tokenType).toBe('Bearer');
+      expect(mockRequest.res.cookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw UnauthorizedException for invalid refresh token', async () => {
+      const mockTransaction = {
+        refreshToken: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrisma.$transaction.mockImplementation((callback) => callback(mockTransaction));
+
+      await expect(service.refreshToken(mockRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockRequest.res.clearCookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw UnauthorizedException for revoked token', async () => {
+      const mockTransaction = {
+        refreshToken: {
+          findFirst: jest.fn().mockResolvedValue(null), // Revoked tokens are filtered in the query
+        },
+      };
+
+      mockPrisma.$transaction.mockImplementation((callback) => callback(mockTransaction));
+
+      await expect(service.refreshToken(mockRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockRequest.res.clearCookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw UnauthorizedException for expired token', async () => {
+      const mockTransaction = {
+        refreshToken: {
+          findFirst: jest.fn().mockResolvedValue(null), // Expired tokens are filtered in the query
+        },
+      };
+
+      mockPrisma.$transaction.mockImplementation((callback) => callback(mockTransaction));
+
+      await expect(service.refreshToken(mockRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockRequest.res.clearCookie).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('revokeRefreshToken', () => {
+    it('should successfully revoke token', async () => {
+      const tokenId = 'token-id';
+      const tokenValue = 'token-value';
+      const tokenString = `${tokenId}.${tokenValue}`;
+
+      const mockToken = {
+        id: tokenId,
+        hashedToken: await bcrypt.hash(tokenValue, 10),
+        personId: '1',
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      };
+
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(mockToken);
+      mockPrisma.refreshToken.update.mockResolvedValue({ ...mockToken, isRevoked: true });
+
+      const result = await service.revokeRefreshToken(tokenString);
+
+      expect(result).toEqual({ message: 'Token revoked successfully' });
+      expect(mockPrisma.refreshToken.update).toHaveBeenCalledWith({
+        where: { id: tokenId },
+        data: {
+          isRevoked: true,
+          revokedReason: 'Manual logout',
+          lastUsedAt: expect.any(Date),
+        },
+      });
+    });
+
+    it('should handle invalid token format', async () => {
+      await expect(service.revokeRefreshToken('invalid-format'))
+        .rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should handle non-existent token', async () => {
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(null);
+      
+      await expect(service.revokeRefreshToken('token-id.token-value'))
+        .rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should handle invalid token value', async () => {
+      const tokenId = 'token-id';
+      const correctToken = 'correct-token';
+      const wrongToken = 'wrong-token';
+      
+      const mockToken = {
+        id: tokenId,
+        hashedToken: await bcrypt.hash(correctToken, 10),
+        personId: '1',
+        isRevoked: false,
+      };
+
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(mockToken);
+      
+      await expect(service.revokeRefreshToken(`${tokenId}.${wrongToken}`))
+        .rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('revokeAllUserTokens', () => {
+    it('should revoke all tokens for a person', async () => {
+      const personId = '1';
+      
+      await service.revokeAllUserTokens(personId);
+
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          personId,
+          isRevoked: false,
+        },
+        data: {
+          isRevoked: true,
+          revokedReason: 'Manual revocation of all tokens',
+        },
+      });
+    });
+
+    it('should accept custom revocation reason', async () => {
+      const personId = '1';
+      const customReason = 'Security breach';
+      
+      await service.revokeAllUserTokens(personId, customReason);
+
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          personId,
+          isRevoked: false,
+        },
+        data: {
+          isRevoked: true,
+          revokedReason: customReason,
+        },
+      });
+    });
+  });
+
+  describe('cleanupExpiredTokens', () => {
+    it('should delete expired and revoked tokens', async () => {
+      jest.useFakeTimers();
+      const now = new Date('2024-01-01T00:00:00Z');
+      jest.setSystemTime(now);
+
+      await service.cleanupExpiredTokens();
+
+      // Should mark expired tokens as revoked
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          expiresAt: { lt: now },
+          isRevoked: false,
+        },
+        data: {
+          isRevoked: true,
+          revokedReason: 'Token expired during cleanup',
+        },
+      });
+
+      // Should delete very old tokens
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: {
+          expiresAt: { lt: thirtyDaysAgo },
+        },
+      });
+
+      jest.useRealTimers();
+    });
+  });
+
+  describe('debug mode', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      jest.resetModules();
+      process.env = { ...originalEnv };
+      process.env.DEBUG = 'false';
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should log debug information when DEBUG is true', () => {
+      process.env.DEBUG = 'true';
+      const service = new AuthService(prisma, jwtService, configService);
+      const loggerSpy = jest.spyOn(service['logger'], 'debug');
+      
+      const mockRequest = {
+        cookies: { refreshToken: 'test.token' },
+      } as unknown as Request;
+
+      service.extractRefreshTokenFromCookie(mockRequest);
+
+      expect(loggerSpy).toHaveBeenCalledWith('Cookies received:', { refreshToken: 'test.token' });
+    });
+
+    it('should not log debug information when DEBUG is false', () => {
+      process.env.DEBUG = 'false';
+      const service = new AuthService(prisma, jwtService, configService);
+      const loggerSpy = jest.spyOn(service['logger'], 'debug');
+      
+      const mockRequest = {
+        cookies: { refreshToken: 'test.token' },
+      } as unknown as Request;
+
+      service.extractRefreshTokenFromCookie(mockRequest);
+
+      expect(loggerSpy).not.toHaveBeenCalled();
     });
   });
 }); 
