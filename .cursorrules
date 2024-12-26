@@ -34,6 +34,55 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
    - Main branch: Semantic versioning
    - Breaking changes trigger major version bump
 
+# Testing Guidelines
+1. Test File Organization:
+   - Co-locate test files with source files
+   - Use `.spec.ts` for unit tests, `.e2e-spec.ts` for E2E
+   - Group related tests in describe blocks
+   - Clear, descriptive test names
+
+2. Test Structure:
+   - Follow Arrange-Act-Assert pattern
+   - One behavior per test
+   - Use beforeEach for setup
+   - Clean up in afterEach when needed
+   - Mock external dependencies
+
+3. Coverage Requirements:
+   - 80% minimum for critical paths
+   - 60% minimum overall coverage
+   - 100% for permission code
+   - Test success and error cases
+   - Include edge cases
+
+4. Database Testing:
+   - Use test database
+   - Clean before each test
+   - Use transactions
+   - Mock for unit tests
+   - Real DB for E2E
+
+5. Authentication Testing:
+   - Test auth states
+   - Verify tokens
+   - Check permissions
+   - Test refresh flows
+   - Test expiration
+
+6. Error Handling:
+   - Test all errors
+   - Verify messages
+   - Check status codes
+   - Test validation
+   - Verify logging
+
+7. Code Quality:
+   - No test duplication
+   - Use test helpers
+   - Keep maintainable
+   - Document complexity
+   - Follow style guide
+
 # RBAC Implementation Guidelines
 - Technical Implementation:
   - Permissions use globally unique power-of-2 bitfields (1, 2, 4, 8, 16, etc.)
@@ -71,7 +120,7 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
 - assign - Assign resources to others
 - approve - Approve/reject operations
 
-# FinancialGuidelines
+# Financial Guidelines
 - All financial calculations must use decimal.js library
 - Never use native JavaScript floating-point arithmetic for monetary values
 - Always import Decimal from 'decimal.js' when handling currency
