@@ -94,14 +94,24 @@ describe('PermissionService', () => {
 
       // Assert
       result.forEach(category => {
-        expect(category.name).toMatch(/^[a-z]+$/); // lowercase category names
+        // Category names should be PascalCase
+        expect(category.name).toMatch(/^[A-Z][a-zA-Z]*$/);
         expect(Array.isArray(category.permissions)).toBe(true);
         
         category.permissions.forEach(permission => {
           expect(permission.category).toBe(category.name);
-          expect(permission.code.startsWith(category.name + '.')).toBe(true);
+          // Permission codes should be lowercase.category.action
+          expect(permission.code).toMatch(new RegExp(`^${category.name.toLowerCase()}\\.`));
         });
       });
+    });
+
+    it('should handle empty permissions list', async () => {
+      mockPrisma.permission.findMany.mockResolvedValue([]);
+
+      const result = await service.getPermissionCategories();
+
+      expect(result).toHaveLength(0);
     });
   });
 
@@ -150,6 +160,26 @@ describe('PermissionService', () => {
         expect(new Set(bitfields).size).toBe(bitfields.length);
       }
     });
+
+    it('should handle first permission in new category', async () => {
+      mockPrisma.permission.findFirst.mockResolvedValue(null);
+
+      const permissionData = {
+        code: 'newcategory.create',
+        name: 'Create',
+        category: 'NewCategory',
+        description: 'First permission in new category',
+      };
+
+      await service.createPermission(permissionData);
+
+      expect(prisma.permission.create).toHaveBeenCalledWith({
+        data: {
+          ...permissionData,
+          bitfield: '1',
+        },
+      });
+    });
   });
 
   describe('getPermissionDashboard', () => {
@@ -166,6 +196,15 @@ describe('PermissionService', () => {
       // Verify category totals match
       const categoryTotals = result.categories.reduce((sum, cat) => sum + cat.permissions.length, 0);
       expect(categoryTotals).toBe(actualPermissions.length);
+    });
+
+    it('should handle empty permissions list', async () => {
+      mockPrisma.permission.findMany.mockResolvedValue([]);
+
+      const result = await service.getPermissionDashboard();
+
+      expect(result.categories).toHaveLength(0);
+      expect(result.stats.totalPermissions).toBe(0);
     });
   });
 }); 

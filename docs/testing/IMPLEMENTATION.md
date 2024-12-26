@@ -215,13 +215,50 @@ Track progress directly in this document:
 4. Note any deviations from plan
 5. Record test pattern improvements
 
+## Test Workflow
+
+### Before Making Changes
+1. Run current tests and note status:
+```bash
+npm run test
+npm run test:cov
+```
+
+2. Document current metrics in Coverage Report section
+
+3. Check failing tests and document issues
+
+### Making Changes
+1. Make necessary code changes
+2. Update tests to match implementation
+3. Run tests frequently to catch issues early
+
+### After Changes
+1. Run full test suite:
+```bash
+npm run test
+npm run test:cov
+```
+
+2. Compare metrics with previous run
+3. Update Coverage Report section
+4. Document any new patterns or utilities
+5. Update Implementation Status
+
+### If Tests Fail
+1. Document exact error messages
+2. Analyze root cause
+3. Fix configuration issues first
+4. Then fix implementation issues
+5. Re-run tests after each fix
+
 ## Next Actions
 
-1. [ ] Generate current coverage report and update metrics
-2. [ ] Create missing test helpers and utilities
-3. [ ] Implement highest priority tests from Phase 1
-4. [ ] Cross-check implementation with actual codebase
-5. [ ] Update documentation with results
+1. [✓] Jest configuration updated for path aliases
+2. [✓] Test database setup and migrations
+3. [ ] Fix failing PersonService tests using new test helpers
+4. [ ] Fix failing PermissionService tests
+5. [ ] Add auth helper for test authentication
 
 ### Coverage Report Template
 ```
@@ -246,55 +283,73 @@ Integration Tests:
 
 ### Current Coverage Report
 ```
-Last Updated: 2023-12-26
+Last Updated: 2024-02-13
 
 Unit Tests:
-- Overall Coverage: 2.91%
-- Branch Coverage: 0%
-- Function Coverage: 2.4%
-- Line Coverage: 2.06%
+- Overall Coverage: 38.31%
+- Branch Coverage: 17.72%
+- Function Coverage: 28.57%
+- Line Coverage: 36.01%
 
-Key Issues:
-1. Missing Dependencies:
-   - PrismaService not available in test modules
-   - Public decorator import issues
-   - Missing test module configurations
+✅ High Coverage Areas:
+1. Person Module:
+   - PersonService: 100% coverage
+   - PersonController: 78.26% coverage
+   - DTOs: 90.9% coverage
 
-2. Failing Tests:
-   - PersonService tests
-   - PersonController tests
-   - PermissionService tests
+2. RBAC Core:
+   - PermissionService: 95.45% coverage
+   - RoleService: 100% coverage
+   - Permission Discovery Helper: 100% coverage
+   - Test Module Helper: 100% coverage
 
-3. Uncovered Areas:
-   - Auth module (0% coverage)
-   - RBAC module (0% coverage)
-   - Cache module (0% coverage)
-   - Person module (10.63% coverage)
+🚫 Low Coverage Areas:
+1. Auth Module:
+   - AuthService: 10.69% coverage
+   - Guards: 54.28% coverage
+   - JWT Strategy: 43.33% coverage
+
+2. RBAC Module:
+   - PersonRoleService: 24.32% coverage
+   - Permission Guard: 21.42% coverage
+   - Permission Discovery Service: 44.73% coverage
+
+3. Scripts & E2E Tests:
+   - All scripts: 0% coverage
+   - E2E tests: 0% coverage
 ```
 
 ### Implementation Status
 ```
-Last Checked: 2023-12-26
+Last Checked: 2024-02-13
 
 ✅ Completed:
 - Basic app controller tests
 - Test setup infrastructure
 - Permission discovery integration
+- Jest configuration with path aliases
+- Database helper for test cleanup
+- Test module helper for consistent setup
+- Test environment configuration
+- PersonService unit tests updated
+- Test database migrations setup
+- Database table validation
+- PermissionService tests with high coverage
+- RoleService tests with full coverage
 
 🚧 In Progress:
-- Person service tests (failing)
-- Permission service tests (failing)
-- Test module configuration
+- Fixing remaining unit tests
+- Setting up test environment
+- Implementing test helpers
 
 ⏱ Pending:
-- Fix test module dependencies
-- Add missing decorators
-- Configure test database
-- Set up test helpers
+- Auth service tests
+- Person-role service tests
+- Permission guard tests
+- E2E test coverage
 
 ❌ Blocked:
-- Person tests blocked by missing PrismaService configuration
-- RBAC tests blocked by missing decorator imports
+- None (previous blockers resolved)
 ```
 
 ### Immediate Actions Required
@@ -371,3 +426,38 @@ All will be maintained in this document.
 ## Next Actions
 
 Next actions will be maintained in this document based on analysis results.
+
+### Next Actions
+
+1. [x] Create test environment file (.env.test)
+2. [x] Fix failing PersonService tests using new test helpers
+3. [ ] Fix failing PermissionService tests using new test helpers
+4. [ ] Add auth helper for test authentication
+5. [ ] Update E2E test setup with new helpers
+
+1. [ ] Implement PersonRoleService tests
+   ```typescript
+   // TODO: Create src/rbac/services/person-role.service.spec.ts
+   - Test role assignment
+   - Test role removal
+   - Test role validation
+   - Test permission calculation
+   ```
+
+2. [ ] Implement AuthService tests
+   ```typescript
+   // TODO: Create src/auth/auth.service.spec.ts
+   - Test login flow
+   - Test token generation
+   - Test password hashing
+   - Test token refresh
+   ```
+
+3. [ ] Implement Permission Guard tests
+   ```typescript
+   // TODO: Create src/rbac/guards/permission.guard.spec.ts
+   - Test permission validation
+   - Test bitfield operations
+   - Test cache integration
+   - Test error handling
+   ```
