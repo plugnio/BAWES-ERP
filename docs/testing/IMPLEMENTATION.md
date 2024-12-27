@@ -14,6 +14,8 @@
 - Use beforeEach for common setup
 - Clean up after tests using afterEach when needed
 - Mock external dependencies consistently
+- Test DTOs through controller/service integration tests
+- Only create separate DTO tests for custom validation or transformation logic
 
 ### 3. Coverage Requirements
 - Minimum 80% coverage for critical paths
@@ -109,7 +111,7 @@
 
 ### Current Coverage Report
 ```
-Last Updated: 2024-12-26
+Last Updated: 2024-02-13
 
 Unit Tests:
 - Overall Coverage: 57.87%
@@ -118,10 +120,10 @@ Unit Tests:
 - Line Coverage: 56.68%
 
 ✅ High Coverage Areas:
-1. Person Module:
-   - PersonService: 100% coverage
-   - PersonController: 78.26% coverage
-   - DTOs: 90.9% coverage
+1. Auth Decorators:
+   - Current User Decorator: 100% coverage
+   - Public Decorator: 100% coverage
+   - Permissions Decorator: 100% coverage
 
 2. RBAC Core:
    - PermissionService: 95.45% coverage
@@ -129,44 +131,24 @@ Unit Tests:
    - PersonRoleService: 100% coverage
    - Permission Discovery Helper: 100% coverage
    - Test Module Helper: 100% coverage
+   - DTOs (via controller/service tests)
 
 3. Auth Module:
    - AuthService: 91.19% coverage
    - JWT Strategy: 76.66% coverage
 
 🚫 Low Coverage Areas:
-1. Auth Module:
-   - Auth Decorators: 38.46% coverage
-   - Guards: 54.28% coverage
-
-2. RBAC Module:
+1. RBAC Module:
    - Permission Discovery Service: 44.73% coverage
    - RbacCache Service: 57.14% coverage
-   - RBAC DTOs: 36.84% coverage
 
-3. Scripts & E2E Tests:
+2. Scripts & E2E Tests:
    - All scripts: 0% coverage
    - E2E tests: 0% coverage
 
-✅ High Coverage Areas:
-- Public Decorator: 100%
-- Permissions Decorator: 100%
-- Current User Decorator: Tests passing but needs improvement
-
-🚧 In Progress:
-- Current User Decorator Coverage
-- Guard Decorators
-- Controller Decorators
-
-⏱ Pending:
-- Custom Validation Decorators
-- Swagger Decorators
-- Cache Decorators
-```
-
 ### Implementation Status
 ```
-Last Checked: 2024-12-26
+Last Checked: 2024-02-13
 
 ✅ Completed:
 - Basic app controller tests
@@ -184,69 +166,56 @@ Last Checked: 2024-12-26
 - PersonRoleService tests with full coverage
 - AuthService tests with high coverage
 - JWT Strategy tests with good coverage
+- Auth decorator tests (CurrentUser, Public, Permissions)
 
 🚧 In Progress:
 - Permission guard tests
-- Auth decorator tests
-- RBAC DTO tests
 
 ⏱ Pending:
 - E2E test coverage
 - Script tests
 - RbacCache service tests
+- Permission Discovery Service tests
 
 ❌ Blocked:
-- None (previous blockers resolved)
+- None
 ```
 
-### Next Actions
+### Next Actions (Priority Order)
 
-1. [ ] Complete Auth Decorator Tests
+1. [ ] Complete Permission Discovery Service Tests (44.73% → 100%)
    ```typescript
-   // TODO: Add tests for auth decorators
-   - Test current-user decorator
-   - Test permissions decorator
-   - Test public decorator
+   // TODO: Test permission discovery service
+   - Test permission scanning
+   - Test permission registration
+   - Test permission updates
+   - Test caching behavior
    ```
 
-2. [ ] Implement RBAC DTO Tests
-   ```typescript
-   // TODO: Create tests for RBAC DTOs
-   - Test assign-role.dto.ts
-   - Test create-role.dto.ts
-   - Test update-role.dto.ts
-   ```
-
-3. [ ] Improve RbacCache Service Tests
+2. [ ] Improve RbacCache Service Tests (57.14% → 100%)
    ```typescript
    // TODO: Enhance RbacCache service coverage
    - Test cache operations
    - Test cache invalidation
    - Test error handling
+   - Test concurrent access
    ```
 
-4. [ ] Improve Current User Decorator Coverage
+3. [ ] Add E2E Tests
    ```typescript
-   // TODO: Test actual decorator factory
-   - Test with real controller integration
-   - Test error scenarios
-   - Test type handling
+   // TODO: Implement E2E test coverage
+   - Test complete auth flow
+   - Test permission checks
+   - Test role management
+   - Test user management
    ```
 
-5. [ ] Complete Guard Decorator Tests
+4. [ ] Script Tests
    ```typescript
-   // TODO: Add tests for guard decorators
-   - Test permission guards
-   - Test authentication guards
-   - Test role guards
-   ```
-
-6. [ ] Add Controller Decorator Tests
-   ```typescript
-   // TODO: Test controller decorators
-   - Test route decorators
-   - Test method decorators
-   - Test parameter decorators
+   // TODO: Add tests for CLI scripts
+   - Test permission management scripts
+   - Test admin creation script
+   - Test database seeding
    ```
 
 ## Implementation Plan

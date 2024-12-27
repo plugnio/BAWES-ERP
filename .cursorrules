@@ -40,6 +40,7 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
    - Use `.spec.ts` for unit tests, `.e2e-spec.ts` for E2E
    - Group related tests in describe blocks
    - Clear, descriptive test names
+   - Test DTOs through controller/service integration tests, not separately
 
 2. Test Structure:
    - Follow Arrange-Act-Assert pattern
@@ -47,6 +48,7 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
    - Use beforeEach for setup
    - Clean up in afterEach when needed
    - Mock external dependencies
+   - Only create separate DTO tests for custom validation or transformation logic
 
 3. Coverage Requirements:
    - 80% minimum for critical paths
@@ -54,6 +56,7 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
    - 100% for permission code
    - Test success and error cases
    - Include edge cases
+   - Ensure DTOs are covered through controller/service tests
 
 4. Database Testing:
    - Use test database
