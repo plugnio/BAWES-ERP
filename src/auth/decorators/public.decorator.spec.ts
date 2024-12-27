@@ -1,4 +1,5 @@
 import { Public, IS_PUBLIC_KEY } from './public.decorator';
+import { SetMetadata } from '@nestjs/common';
 import 'reflect-metadata';
 
 describe('Public Decorator', () => {
@@ -37,12 +38,7 @@ describe('Public Decorator', () => {
   it('should work with multiple decorators', () => {
     // Arrange
     const TEST_KEY = 'test';
-    const TestDecorator = (): MethodDecorator => {
-      return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-        Reflect.defineMetadata(TEST_KEY, true, descriptor.value);
-        return descriptor;
-      };
-    };
+    const TestDecorator = () => SetMetadata(TEST_KEY, true);
 
     class TestClass {
       @Public()

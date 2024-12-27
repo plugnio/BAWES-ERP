@@ -1,4 +1,5 @@
 import { RequirePermissions } from './permissions.decorator';
+import { SetMetadata } from '@nestjs/common';
 import 'reflect-metadata';
 
 describe('RequirePermissions Decorator', () => {
@@ -89,12 +90,7 @@ describe('RequirePermissions Decorator', () => {
   it('should work with multiple decorators', () => {
     // Arrange
     const TEST_KEY = 'test';
-    const TestDecorator = (): MethodDecorator => {
-      return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-        Reflect.defineMetadata(TEST_KEY, true, target, propertyKey);
-        return descriptor;
-      };
-    };
+    const TestDecorator = () => SetMetadata(TEST_KEY, true);
 
     class TestClass {
       @RequirePermissions('users.read')
@@ -104,7 +100,7 @@ describe('RequirePermissions Decorator', () => {
 
     // Act
     const permissions = Reflect.getMetadata(PERMISSIONS_KEY, TestClass.prototype.testMethod);
-    const testValue = Reflect.getMetadata(TEST_KEY, TestClass.prototype, 'testMethod');
+    const testValue = Reflect.getMetadata(TEST_KEY, TestClass.prototype.testMethod);
 
     // Assert
     expect(permissions).toEqual(['users.read']);
