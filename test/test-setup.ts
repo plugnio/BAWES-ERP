@@ -38,12 +38,39 @@ export class TestSetup {
   }
 
   async close() {
+    // Close database connection
     await this.prisma.$disconnect();
-    await this.app.close();
+    
+    // Close Redis connections if used
+    const redisService = this.app.get('REDIS_CLIENT', { strict: false });
+    if (redisService) {
+      await redisService.quit();
+    }
+    
+    // Close NestJS app
+    if (this.app) {
+      await this.app.close();
+    }
+    
+    // Reset any mocks
+    jest.resetModules();
+    jest.clearAllMocks();
   }
 
   async cleanDb() {
-    this.prisma = await getTestPrismaService();
+    // Ensure connection is active
+    if (!this.prisma) {
+      this.prisma = await getTestPrismaService();
+    }
+    
+    // Clean database tables
+    const models = Reflect.ownKeys(this.prisma).filter(
+      key => typeof this.prisma[key] === 'object' && this.prisma[key].deleteMany
+    );
+    
+    await this.prisma.$transaction(
+      models.map(model => this.prisma[model].deleteMany())
+    );
   }
 
   async setupPermissions() {

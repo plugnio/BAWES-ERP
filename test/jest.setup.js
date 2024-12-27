@@ -12,9 +12,19 @@ beforeAll(async () => {
 // Global test cleanup
 afterAll(async () => {
   await DatabaseHelper.resetDatabase();
+  
+  // Cleanup any remaining handles
+  await new Promise(resolve => setTimeout(resolve, 500));
 });
 
 // Reset mocks between tests
 beforeEach(() => {
   jest.resetAllMocks();
+  jest.clearAllTimers();
+});
+
+// Cleanup after each test
+afterEach(async () => {
+  jest.clearAllMocks();
+  jest.clearAllTimers();
 }); 
