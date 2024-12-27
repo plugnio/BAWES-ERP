@@ -3,11 +3,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CurrentUser } from './current-user.decorator';
 import 'reflect-metadata';
 
-// Extract the factory function from the decorator for testing
-const getCurrentUser = (data: unknown, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest();
-  return request?.user;
-};
+// Mock createParamDecorator to capture and execute the factory function
+jest.mock('@nestjs/common', () => {
+  const actual = jest.requireActual('@nestjs/common');
+  return {
+    ...actual,
+    createParamDecorator: (factory: (data: any, ctx: ExecutionContext) => any) => {
+      return function(...args: any[]) {
+        const [data, ctx] = args;
+        return factory(data, ctx);
+      };
+    },
+  };
+});
 
 describe('CurrentUser', () => {
   let mockExecutionContext: ExecutionContext;
@@ -22,13 +30,17 @@ describe('CurrentUser', () => {
     } as unknown as ExecutionContext;
   });
 
+  function executeDecorator(data: unknown = undefined) {
+    return CurrentUser(data, mockExecutionContext);
+  }
+
   it('should extract user from request', () => {
     // Arrange
     const mockUser = { id: '1', email: 'test@example.com' };
     mockRequest.user = mockUser;
 
     // Act
-    const result = getCurrentUser(undefined, mockExecutionContext);
+    const result = executeDecorator();
 
     // Assert
     expect(result).toBe(mockUser);
@@ -37,7 +49,7 @@ describe('CurrentUser', () => {
 
   it('should return undefined when no user in request', () => {
     // Act
-    const result = getCurrentUser(undefined, mockExecutionContext);
+    const result = executeDecorator();
 
     // Assert
     expect(result).toBeUndefined();
@@ -50,7 +62,7 @@ describe('CurrentUser', () => {
     (getRequest as jest.Mock).mockReturnValue(null);
 
     // Act
-    const result = getCurrentUser(undefined, mockExecutionContext);
+    const result = executeDecorator();
 
     // Assert
     expect(result).toBeUndefined();
@@ -63,7 +75,7 @@ describe('CurrentUser', () => {
     mockRequest.user = mockUser;
 
     // Act
-    const result = getCurrentUser('someData', mockExecutionContext);
+    const result = executeDecorator('someData');
 
     // Assert
     expect(result).toBe(mockUser);
@@ -78,7 +90,7 @@ describe('CurrentUser', () => {
     });
 
     // Act & Assert
-    expect(() => getCurrentUser(undefined, mockExecutionContext)).toThrow('Invalid request');
+    expect(() => executeDecorator()).toThrow('Invalid request');
     expect(mockExecutionContext.switchToHttp).toHaveBeenCalled();
   });
 }); 
