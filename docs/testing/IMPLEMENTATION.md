@@ -57,6 +57,56 @@
 - Document complex test setups
 - Follow project style guide
 
+### 9. Decorator Testing
+- Test different decorator types appropriately:
+  - Method Decorators:
+    - Test metadata setting using `Reflect.getMetadata`
+    - Verify metadata values and keys
+    - Test stacking with other decorators
+    - Verify method functionality preservation
+  
+  - Parameter Decorators:
+    - Test the decorator factory function behavior
+    - Mock ExecutionContext and request objects
+    - Test with various input scenarios
+    - Verify proper request handling
+
+  - Class Decorators:
+    - Test metadata on class level
+    - Verify class behavior modifications
+    - Test inheritance scenarios
+
+- Common Test Cases:
+  ```typescript
+  // Method Decorator Example
+  it('should set metadata correctly', () => {
+    class TestClass {
+      @SomeDecorator()
+      method() {}
+    }
+    const metadata = Reflect.getMetadata(KEY, TestClass.prototype.method);
+    expect(metadata).toBe(expectedValue);
+  });
+
+  // Parameter Decorator Example
+  it('should handle request data', () => {
+    const mockContext = {
+      switchToHttp: () => ({
+        getRequest: () => ({ data: 'value' }),
+      }),
+    } as ExecutionContext;
+
+    const result = decoratorFunction(undefined, mockContext);
+    expect(result).toBe(expectedValue);
+  });
+  ```
+
+- Coverage Requirements:
+  - 100% coverage for security-related decorators
+  - Test all possible metadata combinations
+  - Verify error cases and edge conditions
+  - Test decorator composition
+
 ### Current Coverage Report
 ```
 Last Updated: 2024-12-26
@@ -97,6 +147,21 @@ Unit Tests:
 3. Scripts & E2E Tests:
    - All scripts: 0% coverage
    - E2E tests: 0% coverage
+
+✅ High Coverage Areas:
+- Public Decorator: 100%
+- Permissions Decorator: 100%
+- Current User Decorator: Tests passing but needs improvement
+
+🚧 In Progress:
+- Current User Decorator Coverage
+- Guard Decorators
+- Controller Decorators
+
+⏱ Pending:
+- Custom Validation Decorators
+- Swagger Decorators
+- Cache Decorators
 ```
 
 ### Implementation Status
@@ -158,6 +223,30 @@ Last Checked: 2024-12-26
    - Test cache operations
    - Test cache invalidation
    - Test error handling
+   ```
+
+4. [ ] Improve Current User Decorator Coverage
+   ```typescript
+   // TODO: Test actual decorator factory
+   - Test with real controller integration
+   - Test error scenarios
+   - Test type handling
+   ```
+
+5. [ ] Complete Guard Decorator Tests
+   ```typescript
+   // TODO: Add tests for guard decorators
+   - Test permission guards
+   - Test authentication guards
+   - Test role guards
+   ```
+
+6. [ ] Add Controller Decorator Tests
+   ```typescript
+   // TODO: Test controller decorators
+   - Test route decorators
+   - Test method decorators
+   - Test parameter decorators
    ```
 
 ## Implementation Plan
