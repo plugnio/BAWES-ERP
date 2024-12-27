@@ -13,8 +13,16 @@ beforeAll(async () => {
 afterAll(async () => {
   await DatabaseHelper.resetDatabase();
   
-  // Cleanup any remaining handles
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Use real timers
+  jest.useRealTimers();
+  
+  // Clear all mocks and timers
+  jest.resetModules();
+  jest.clearAllMocks();
+  jest.clearAllTimers();
+  
+  // Allow time for cleanup
+  await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
 // Reset mocks between tests

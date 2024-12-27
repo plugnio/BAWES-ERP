@@ -38,6 +38,9 @@ export class TestSetup {
   }
 
   async close() {
+    // Clear all timers
+    jest.useRealTimers();
+    
     // Close database connection
     await this.prisma.$disconnect();
     
@@ -52,9 +55,10 @@ export class TestSetup {
       await this.app.close();
     }
     
-    // Reset any mocks
+    // Reset any mocks and clear timers
     jest.resetModules();
     jest.clearAllMocks();
+    jest.clearAllTimers();
   }
 
   async cleanDb() {

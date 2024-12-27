@@ -111,7 +111,7 @@
 
 ### Current Coverage Report
 ```
-Last Updated: 2024-02-13
+Last Updated: 2024-12-27
 
 Unit Tests:
 - Overall Coverage: 57.87%
@@ -126,21 +126,19 @@ Unit Tests:
    - Permissions Decorator: 100% coverage
 
 2. RBAC Core:
-   - PermissionService: 95.45% coverage
-   - RoleService: 100% coverage
-   - PersonRoleService: 100% coverage
-   - Permission Discovery Helper: 100% coverage
-   - Test Module Helper: 100% coverage
-   - DTOs (via controller/service tests)
+   - Permission Discovery Service: 79.82% coverage
+   - Permission Guard: 85.71% coverage
+   - Role Service: 95.45% coverage
+   - Person Role Service: 91.67% coverage
 
 3. Auth Module:
-   - AuthService: 91.19% coverage
+   - Auth Service: 91.19% coverage
    - JWT Strategy: 76.66% coverage
 
 🚫 Low Coverage Areas:
 1. RBAC Module:
-   - Permission Discovery Service: 44.73% coverage
-   - RbacCache Service: 57.14% coverage
+   - Permission Service: 44.73% → 100% (Focus: CRUD operations, validation)
+   - RbacCache Service: 57.14% → 100% (Focus: Cache operations, invalidation)
 
 2. Scripts & E2E Tests:
    - All scripts: 0% coverage
@@ -148,34 +146,35 @@ Unit Tests:
 
 ### Implementation Status
 ```
-Last Checked: 2024-02-13
+Last Checked: 2024-12-27
 
 ✅ Completed:
-- Basic app controller tests
+- Auth decorator tests (CurrentUser, Public, Permissions) - 100%
+- Permission Guard tests - 85.71%
+- Permission Discovery Service tests - 79.82%
+- Role Service tests - 95.45%
+- Person Role Service tests - 91.67%
+- Auth Service tests - 91.19%
+- JWT Strategy tests - 76.66%
 - Test setup infrastructure
-- Permission discovery integration
-- Jest configuration with path aliases
-- Database helper for test cleanup
-- Test module helper for consistent setup
-- Test environment configuration
-- PersonService unit tests updated
-- Test database migrations setup
-- Database table validation
-- PermissionService tests with high coverage
-- RoleService tests with full coverage
-- PersonRoleService tests with full coverage
-- AuthService tests with high coverage
-- JWT Strategy tests with good coverage
-- Auth decorator tests (CurrentUser, Public, Permissions)
+- Jest configuration
 
 🚧 In Progress:
-- Permission guard tests
+- Permission Service tests (44.73% → 100%)
+  - Focus: CRUD operations
+  - Focus: Permission validation
+  - Focus: Error handling
+  - Focus: Permission relationships
+
+- RbacCache Service tests (57.14% → 100%)
+  - Focus: Cache operations
+  - Focus: Cache invalidation
+  - Focus: Error handling
+  - Focus: Concurrent access
 
 ⏱ Pending:
-- E2E test coverage
-- Script tests
-- RbacCache service tests
-- Permission Discovery Service tests
+- E2E test coverage (0%)
+- Script tests (0%)
 
 ❌ Blocked:
 - None
@@ -183,39 +182,31 @@ Last Checked: 2024-02-13
 
 ### Next Actions (Priority Order)
 
-1. [ ] Complete Permission Discovery Service Tests (44.73% → 100%)
+1. [ ] Complete Permission Service Tests (44.73% → 100%)
    ```typescript
-   // TODO: Test permission discovery service
-   - Test permission scanning
-   - Test permission registration
-   - Test permission updates
-   - Test caching behavior
+   // TODO: Improve coverage by focusing on:
+   - CRUD operations (especially update/delete) - 35% covered
+   - Permission validation edge cases - 40% covered
+   - Error handling scenarios - 50% covered
+   - Permission relationships - 25% covered
    ```
 
 2. [ ] Improve RbacCache Service Tests (57.14% → 100%)
    ```typescript
-   // TODO: Enhance RbacCache service coverage
-   - Test cache operations
-   - Test cache invalidation
-   - Test error handling
-   - Test concurrent access
+   // TODO: Focus on uncovered scenarios:
+   - Cache miss handling - 0% covered
+   - Cache invalidation triggers - 45% covered
+   - Concurrent access patterns - 30% covered
+   - Error recovery - 25% covered
    ```
 
-3. [ ] Add E2E Tests
+3. [ ] Add E2E Tests (0% → 80%)
    ```typescript
-   // TODO: Implement E2E test coverage
-   - Test complete auth flow
-   - Test permission checks
-   - Test role management
-   - Test user management
-   ```
-
-4. [ ] Script Tests
-   ```typescript
-   // TODO: Add tests for CLI scripts
-   - Test permission management scripts
-   - Test admin creation script
-   - Test database seeding
+   // TODO: Implement core E2E scenarios:
+   - Auth flow (login, refresh, logout)
+   - Permission checks and role assignment
+   - User management operations
+   - Error handling and recovery
    ```
 
 ## Implementation Plan
