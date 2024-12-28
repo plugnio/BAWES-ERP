@@ -184,5 +184,85 @@ describe('JwtStrategy', () => {
       });
       expect(result).toEqual(mockPerson);
     });
+
+    it('should handle super admin flag in payload', async () => {
+      const mockPerson = {
+        id: '1',
+        email: 'test@example.com',
+        nameEn: undefined,
+        nameAr: undefined,
+        permissionBits: '1',
+        isSuperAdmin: true,
+      };
+
+      mockPrisma.person.findUnique.mockResolvedValueOnce({
+        id: '1',
+        accountStatus: 'active',
+        emails: [{ email: 'test@example.com', isPrimary: true }],
+      });
+
+      const result = await strategy.validate(mockRequest, { 
+        sub: '1',
+        email: 'test@example.com',
+        permissionBits: '1',
+        isSuperAdmin: true,
+      });
+      expect(result).toEqual(mockPerson);
+    });
+
+    it('should handle name fields when provided', async () => {
+      const mockPerson = {
+        id: '1',
+        email: 'test@example.com',
+        nameEn: 'John Doe',
+        nameAr: 'جون دو',
+        permissionBits: '1',
+        isSuperAdmin: false,
+      };
+
+      mockPrisma.person.findUnique.mockResolvedValueOnce({
+        id: '1',
+        accountStatus: 'active',
+        emails: [{ email: 'test@example.com', isPrimary: true }],
+        nameEn: 'John Doe',
+        nameAr: 'جون دو',
+      });
+
+      const result = await strategy.validate(mockRequest, { 
+        sub: '1',
+        email: 'test@example.com',
+        permissionBits: '1',
+      });
+      expect(result).toEqual(mockPerson);
+    });
+
+    it('should handle debug mode with missing authorization header', async () => {
+      mockConfigService.get.mockReturnValueOnce('true');
+      const mockRequestNoAuth = {
+        headers: {},
+      };
+
+      const mockPerson = {
+        id: '1',
+        email: 'test@example.com',
+        nameEn: undefined,
+        nameAr: undefined,
+        permissionBits: '1',
+        isSuperAdmin: false,
+      };
+
+      mockPrisma.person.findUnique.mockResolvedValueOnce({
+        id: '1',
+        accountStatus: 'active',
+        emails: [{ email: 'test@example.com', isPrimary: true }],
+      });
+
+      const result = await strategy.validate(mockRequestNoAuth, { 
+        sub: '1',
+        email: 'test@example.com',
+        permissionBits: '1',
+      });
+      expect(result).toEqual(mockPerson);
+    });
   });
 }); 
