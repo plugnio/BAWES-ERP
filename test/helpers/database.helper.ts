@@ -7,12 +7,8 @@ export class DatabaseHelper {
   private debugMode: boolean;
 
   private constructor() {
-    // Create ConfigService with test configuration
-    const configService = new ConfigService({
-      NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/bawes_erp_test?schema=public',
-    });
-
+    // Create ConfigService with environment variables
+    const configService = new ConfigService();
     this.prisma = new PrismaService(configService);
     this.debugMode = process.env.DEBUG === 'true';
   }
