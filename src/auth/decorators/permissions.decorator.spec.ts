@@ -1,10 +1,8 @@
-import { RequirePermissions } from './permissions.decorator';
+import { RequirePermissions, PERMISSIONS_KEY } from './permissions.decorator';
 import { SetMetadata } from '@nestjs/common';
 import 'reflect-metadata';
 
 describe('RequirePermissions Decorator', () => {
-  const PERMISSIONS_KEY = 'permissions';
-
   it('should set permissions metadata with single permission', () => {
     // Arrange
     const permission = 'users.read';

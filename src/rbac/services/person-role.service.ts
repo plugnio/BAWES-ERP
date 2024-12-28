@@ -138,6 +138,25 @@ export class PersonRoleService {
     }
 
     const permissionBitfield = new Decimal(permission.bitfield);
-    return personPermissions.dividedBy(permissionBitfield).modulo(2).equals(1);
+    return personPermissions.mod(permissionBitfield.mul(2)).gte(permissionBitfield);
+  }
+
+  async hasRole(personId: string, roleName: string): Promise<boolean> {
+    const person = await this.prisma.person.findUnique({
+      where: { id: personId },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!person) {
+      return false;
+    }
+
+    return person.roles.some(pr => pr.role.name === roleName);
   }
 } 

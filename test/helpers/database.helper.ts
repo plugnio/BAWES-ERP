@@ -18,10 +18,12 @@ export class DatabaseHelper {
     try {
       // Delete in correct order to handle foreign key constraints
       await prisma.$transaction([
+        prisma.refreshToken.deleteMany(),
         prisma.rolePermission.deleteMany(),
         prisma.personRole.deleteMany(),
         prisma.permission.deleteMany(),
         prisma.role.deleteMany(),
+        prisma.email.deleteMany(),
         prisma.person.deleteMany(),
       ]);
     } catch (error) {

@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
-import { RequirePermission } from '../rbac/decorators/require-permission.decorator';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Person } from './entities/person.entity';
 
 @ApiTags('people')
@@ -30,7 +30,7 @@ export class PersonController {
   constructor(private readonly personService: PersonService) {}
 
   @Post()
-  @RequirePermission('people.create')
+  @RequirePermissions('people.create')
   @ApiOperation({ summary: 'Create a new person' })
   @ApiResponse({ status: 201, type: Person })
   create(@Body() createPersonDto: CreatePersonDto) {
@@ -38,7 +38,7 @@ export class PersonController {
   }
 
   @Get()
-  @RequirePermission('people.read')
+  @RequirePermissions('people.read')
   @ApiOperation({ summary: 'Get all people' })
   @ApiResponse({ status: 200, type: [Person] })
   findAll() {
@@ -46,7 +46,7 @@ export class PersonController {
   }
 
   @Get(':id')
-  @RequirePermission('people.read')
+  @RequirePermissions('people.read')
   @ApiOperation({ summary: 'Get a person by id' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
@@ -55,7 +55,7 @@ export class PersonController {
   }
 
   @Patch(':id')
-  @RequirePermission('people.update')
+  @RequirePermissions('people.update')
   @ApiOperation({ summary: 'Update a person' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })
@@ -64,7 +64,7 @@ export class PersonController {
   }
 
   @Delete(':id')
-  @RequirePermission('people.delete')
+  @RequirePermissions('people.delete')
   @ApiOperation({ summary: 'Soft delete a person' })
   @ApiResponse({ status: 200, type: Person })
   @ApiResponse({ status: 404, description: 'Person not found' })

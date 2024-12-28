@@ -84,6 +84,7 @@ describe('PermissionService', () => {
       });
 
       expect(prisma.permission.findMany).toHaveBeenCalledWith({
+        where: { isDeprecated: false },
         orderBy: [{ category: 'asc' }, { code: 'asc' }],
       });
     });

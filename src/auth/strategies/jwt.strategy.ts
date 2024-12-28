@@ -56,6 +56,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       nameEn: person.nameEn,
       nameAr: person.nameAr,
       permissionBits: payload.permissionBits,
+      isSuperAdmin: payload.isSuperAdmin || false,
     };
 
     if (this.debugMode) {

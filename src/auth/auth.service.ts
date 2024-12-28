@@ -167,11 +167,13 @@ export class AuthService {
         roles: {
           include: {
             role: {
-              include: {
+              select: {
+                name: true,
                 permissions: {
                   include: {
                     permission: {
                       select: {
+                        code: true,
                         bitfield: true,
                         isDeprecated: true,
                       },
@@ -188,24 +190,54 @@ export class AuthService {
       },
     });
 
+    if (this.debugMode) {
+      this.logger.debug('Person roles:', JSON.stringify(personWithRoles.roles, null, 2));
+    }
+
+    // Check if person has SUPER_ADMIN role
+    const isSuperAdmin = personWithRoles.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
+
     // Calculate combined permission bitfield
     const permissionBits = personWithRoles.roles.reduce((acc, pr) => {
+      if (this.debugMode) {
+        this.logger.debug(`Processing role ${pr.role.name}`);
+      }
+
       const roleBits = pr.role.permissions.reduce(
-        (roleAcc, rp) =>
-          !rp.permission.isDeprecated
-            ? roleAcc.add(new Decimal(rp.permission.bitfield))
-            : roleAcc,
+        (roleAcc, rp) => {
+          if (!rp.permission.isDeprecated) {
+            if (this.debugMode) {
+              this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+            }
+            return roleAcc.add(new Decimal(rp.permission.bitfield));
+          }
+          return roleAcc;
+        },
         new Decimal(0),
       );
+
+      if (this.debugMode) {
+        this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
+      }
+
       return acc.add(roleBits);
     }, new Decimal(0));
+
+    if (this.debugMode) {
+      this.logger.debug(`Final combined permission bits: ${permissionBits.toString()}`);
+    }
 
     // Generate access token with permissions
     const accessTokenPayload: JwtPayload = {
       sub: personId,
       email: personWithRoles.emails[0]?.email,
       permissionBits: permissionBits.toString(),
+      isSuperAdmin,
     };
+
+    if (this.debugMode) {
+      this.logger.debug('JWT payload:', accessTokenPayload);
+    }
 
     const accessToken = this.jwtService.sign(accessTokenPayload, {
       expiresIn: this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_EXPIRY'),
@@ -268,17 +300,11 @@ export class AuthService {
       const refreshTokenData = this.extractRefreshTokenFromCookie(req);
       if (!refreshTokenData) {
         if (this.debugMode) {
-          this.logger.debug('No refresh token in cookies');
+          this.logger.debug('No refresh token found in cookies');
         }
-        this.clearAuthCookies(req);
         throw new UnauthorizedException('No refresh token provided');
       }
 
-      if (this.debugMode) {
-        this.logger.debug('Refresh token received:', { id: refreshTokenData.id });
-      }
-
-      // Use a transaction with pessimistic locking to handle concurrent requests
       const result = await this.prisma.$transaction(async (prisma) => {
         // Find and lock the token record
         const token = await prisma.refreshToken.findFirst({
@@ -321,18 +347,20 @@ export class AuthService {
           },
         });
 
-        // Get user with roles
+        // Get user with roles and permissions
         const user = await prisma.person.findUnique({
           where: { id: token.personId },
           include: {
             roles: {
               include: {
                 role: {
-                  include: {
+                  select: {
+                    name: true,
                     permissions: {
                       include: {
                         permission: {
                           select: {
+                            code: true,
                             bitfield: true,
                             isDeprecated: true,
                           },
@@ -349,30 +377,52 @@ export class AuthService {
           },
         });
 
-        if (!user) {
+        if (!user || user.accountStatus !== 'active') {
           if (this.debugMode) {
-            this.logger.debug('User no longer exists');
+            this.logger.debug('User not found or inactive');
           }
-          throw new UnauthorizedException('User no longer exists');
+          throw new UnauthorizedException('User not found or inactive');
         }
+
+        // Check if user has SUPER_ADMIN role
+        const isSuperAdmin = user.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
 
         // Calculate combined permission bitfield
         const permissionBits = user.roles.reduce((acc, pr) => {
+          if (this.debugMode) {
+            this.logger.debug(`Processing role ${pr.role.name}`);
+          }
+
           const roleBits = pr.role.permissions.reduce(
-            (roleAcc, rp) =>
-              !rp.permission.isDeprecated
-                ? roleAcc.add(new Decimal(rp.permission.bitfield))
-                : roleAcc,
+            (roleAcc, rp) => {
+              if (!rp.permission.isDeprecated) {
+                if (this.debugMode) {
+                  this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+                }
+                return roleAcc.add(new Decimal(rp.permission.bitfield));
+              }
+              return roleAcc;
+            },
             new Decimal(0),
           );
+
+          if (this.debugMode) {
+            this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
+          }
+
           return acc.add(roleBits);
         }, new Decimal(0));
+
+        if (this.debugMode) {
+          this.logger.debug(`Final combined permission bits: ${permissionBits.toString()}`);
+        }
 
         // Generate new access token with updated permissions
         const accessTokenPayload: JwtPayload = {
           sub: user.id,
           email: user.emails[0]?.email,
           permissionBits: permissionBits.toString(),
+          isSuperAdmin,
         };
 
         const accessToken = this.jwtService.sign(accessTokenPayload, {

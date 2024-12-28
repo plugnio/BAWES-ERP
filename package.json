@@ -36,6 +36,7 @@
     "permissions:list": "ts-node src/scripts/list-permissions.ts",
     "permissions:add": "ts-node src/scripts/add-permission.ts",
     "permissions:audit": "ts-node src/scripts/audit-permissions.ts",
+    "permissions:assign-admin": "ts-node src/scripts/assign-admin-permissions.ts",
     "create:admin": "ts-node src/scripts/create-admin.ts"
   },
   "dependencies": {

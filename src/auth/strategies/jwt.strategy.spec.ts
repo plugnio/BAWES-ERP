@@ -81,6 +81,7 @@ describe('JwtStrategy', () => {
         nameEn: undefined,
         nameAr: undefined,
         permissionBits: '1',
+        isSuperAdmin: false,
       };
 
       mockPrisma.person.findUnique.mockResolvedValueOnce({
@@ -142,6 +143,7 @@ describe('JwtStrategy', () => {
         nameEn: undefined,
         nameAr: undefined,
         permissionBits: '1',
+        isSuperAdmin: false,
       };
 
       mockPrisma.person.findUnique.mockResolvedValueOnce({
@@ -165,6 +167,7 @@ describe('JwtStrategy', () => {
         nameEn: undefined,
         nameAr: undefined,
         permissionBits: '1',
+        isSuperAdmin: false,
       };
 
       mockConfigService.get.mockReturnValueOnce('true');

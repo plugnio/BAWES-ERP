@@ -7,21 +7,42 @@ export class PermissionService {
     private prisma: PrismaService,
   ) {}
 
+  /**
+   * Formats a category name to PascalCase.
+   * Example: "user_management" -> "UserManagement"
+   */
+  private formatCategoryName(category: string): string {
+    return category
+      .split(/[_\s]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('');
+  }
+
   async getPermissionCategories() {
     const permissions = await this.prisma.permission.findMany({
+      where: { isDeprecated: false },
       orderBy: [{ category: 'asc' }, { code: 'asc' }],
     });
 
     // Group permissions by category
     const categories = permissions.reduce(
       (acc, permission) => {
-        const category = acc.find((c) => c.name === permission.category);
+        const categoryName = this.formatCategoryName(permission.category);
+        const category = acc.find((c) => c.name === categoryName);
         if (category) {
-          category.permissions.push(permission);
+          category.permissions.push({
+            ...permission,
+            category: categoryName,
+            code: permission.code.toLowerCase(),
+          });
         } else {
           acc.push({
-            name: permission.category,
-            permissions: [permission],
+            name: categoryName,
+            permissions: [{
+              ...permission,
+              category: categoryName,
+              code: permission.code.toLowerCase(),
+            }],
           });
         }
         return acc;
@@ -79,5 +100,28 @@ export class PermissionService {
         systemRoles: roles.filter((r) => r.isSystem).length,
       },
     };
+  }
+
+  async findByCode(codes: string[]) {
+    return this.prisma.permission.findMany({
+      where: {
+        code: {
+          in: codes,
+        },
+      },
+    });
+  }
+
+  async getPerson(id: string) {
+    return this.prisma.person.findUnique({
+      where: { id },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
   }
 } 

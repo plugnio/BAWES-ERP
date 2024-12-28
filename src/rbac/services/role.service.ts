@@ -135,6 +135,9 @@ export class RoleService {
     // Clear cache for all users with this role
     await this.cacheService.clearPermissionCache(roleId);
 
+    // Wait for cache to be cleared before returning
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     return this.getRoleWithPermissions(roleId);
   }
 

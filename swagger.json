@@ -132,44 +132,7 @@
         ]
       }
     },
-    "/permissions/dashboard": {
-      "get": {
-        "operationId": "PermissionController_getPermissionDashboard",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Permissions"
-        ]
-      }
-    },
     "/roles": {
-      "get": {
-        "operationId": "RoleController_getRoles",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get all roles with their permissions",
-        "tags": [
-          "Role Management"
-        ]
-      },
       "post": {
         "operationId": "RoleController_createRole",
         "parameters": [],
@@ -195,16 +158,34 @@
         ],
         "summary": "Create a new role",
         "tags": [
-          "Role Management"
+          "Roles"
+        ]
+      },
+      "get": {
+        "operationId": "RoleController_getRoles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all roles",
+        "tags": [
+          "Roles"
         ]
       }
     },
-    "/roles/{roleId}/permissions": {
-      "patch": {
-        "operationId": "RoleController_togglePermissions",
+    "/roles/{id}": {
+      "get": {
+        "operationId": "RoleController_getRole",
         "parameters": [
           {
-            "name": "roleId",
+            "name": "id",
             "required": true,
             "in": "path",
             "schema": {
@@ -222,9 +203,9 @@
             "bearer": []
           }
         ],
-        "summary": "Toggle permissions for a role",
+        "summary": "Get a role by ID",
         "tags": [
-          "Role Management"
+          "Roles"
         ]
       }
     },
@@ -251,53 +232,16 @@
             "bearer": []
           }
         ],
-        "summary": "Update role position (for drag-and-drop)",
+        "summary": "Update role position",
         "tags": [
-          "Role Management"
+          "Roles"
         ]
       }
     },
-    "/roles/people/{personId}/roles": {
-      "post": {
-        "operationId": "RoleController_assignRole",
+    "/roles/{roleId}/permissions": {
+      "patch": {
+        "operationId": "RoleController_togglePermissions",
         "parameters": [
-          {
-            "name": "personId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Assign role to person",
-        "tags": [
-          "Role Management"
-        ]
-      }
-    },
-    "/roles/people/{personId}/roles/{roleId}": {
-      "delete": {
-        "operationId": "RoleController_removeRole",
-        "parameters": [
-          {
-            "name": "personId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "roleId",
             "required": true,
@@ -317,9 +261,102 @@
             "bearer": []
           }
         ],
-        "summary": "Remove role from person",
+        "summary": "Toggle role permissions",
         "tags": [
-          "Role Management"
+          "Roles"
+        ]
+      }
+    },
+    "/roles/{roleId}/assign/{personId}": {
+      "post": {
+        "operationId": "RoleController_assignRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "personId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign a role to a person",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/roles/{roleId}/unassign/{personId}": {
+      "delete": {
+        "operationId": "RoleController_unassignRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "personId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unassign a role from a person",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/permissions/dashboard": {
+      "get": {
+        "operationId": "PermissionController_getPermissionDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Permissions"
         ]
       }
     },

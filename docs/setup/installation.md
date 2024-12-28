@@ -24,12 +24,12 @@ This guide will help you set up your development environment and create your fir
 1. **Install Dependencies**   
 ```bash
    npm install   
-   ```
+```
 
 2. **Set Up Environment**   
 ```bash
    cp .env.sample .env   
-   ```
+```
    Edit `.env` file with your database credentials and other configurations.
 
 3. **Database Setup**   
@@ -39,18 +39,30 @@ This guide will help you set up your development environment and create your fir
 
    # Run seeds to populate initial data (including RBAC setup)
    npx prisma db seed   
-   ```
+```
+   This creates the database schema and seeds the SUPER_ADMIN role.
 
-4. **Create Admin User**  
- ```bash
-   npm run create:admin   
-   ```
-   Follow the interactive prompts to create your admin account.
-
-5. **Start Development Server**  
- ```bash
+4. **Start Development Server**  
+```bash
    npm run start:dev   
-   ```
+```
+   This step is crucial as it:
+   - Discovers permissions from controller decorators
+   - Syncs permissions to the database
+   - Assigns all permissions to SUPER_ADMIN role
+
+5. **Create Admin User**  
+```bash
+   # In a new terminal
+   npm run create:admin   
+```
+   Follow the interactive prompts to create your admin account.
+   The admin will automatically receive all permissions through the SUPER_ADMIN role.
+
+> **Important**: The order of these steps matters:
+> 1. Database setup must come first to create the SUPER_ADMIN role
+> 2. Starting the server discovers and syncs permissions to SUPER_ADMIN role
+> 3. Creating admin user last ensures it gets all permissions through role inheritance
 
 ## Understanding RBAC (Role-Based Access Control)
 
@@ -60,6 +72,32 @@ Our RBAC system is designed to be flexible and scalable:
 - **Super Admin** role is created during seeding and has all permissions
 - New permissions are automatically added when detected
 - Permissions use efficient bitfield storage for fast checking
+
+### RBAC Initialization Process
+
+The RBAC system initializes in the following sequence:
+
+1. **Database Seeding**
+   - Creates SUPER_ADMIN role
+   - Sets up basic system roles
+   - Prepares role-permission structure
+
+2. **Permission Discovery**
+   - Runs when application starts
+   - Scans all controllers for @RequirePermission decorators
+   - Creates new permissions in database
+   - Assigns all permissions to SUPER_ADMIN role
+
+3. **Admin User Creation**
+   - Creates admin user account
+   - Assigns SUPER_ADMIN role
+   - Inherits all permissions through role
+
+This sequence ensures that:
+- All permissions are properly discovered
+- SUPER_ADMIN role has complete access
+- Admin user has full system control
+- Permissions are consistently managed
 
 ### Permission Structure
 
