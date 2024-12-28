@@ -48,7 +48,10 @@ export class PersonService {
     }
 
     return this.prisma.person.update({
-      where: { id },
+      where: { 
+        id,
+        isDeleted: false 
+      },
       data: updatePersonDto,
     });
   }
