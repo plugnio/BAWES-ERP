@@ -27,13 +27,30 @@ export class DatabaseHelper {
   }
 
   public async cleanDatabase() {
-    const models = Reflect.ownKeys(this.prisma).filter(
-      key => typeof this.prisma[key] === 'object' && this.prisma[key].deleteMany
-    );
+    console.log('Starting database cleanup...');
 
-    await this.prisma.$transaction(
-      models.map(model => this.prisma[model].deleteMany())
-    );
+    // Delete in correct order to handle foreign key constraints
+    const results = await this.prisma.$transaction([
+      this.prisma.refreshToken.deleteMany(),
+      this.prisma.email.deleteMany(),
+      this.prisma.personRole.deleteMany(),
+      this.prisma.rolePermission.deleteMany(),
+      this.prisma.permission.deleteMany(),
+      this.prisma.role.deleteMany(),
+      this.prisma.person.deleteMany(),
+    ]);
+
+    console.log('Cleanup results:', {
+      refreshTokens: results[0].count,
+      emails: results[1].count,
+      personRoles: results[2].count,
+      rolePermissions: results[3].count,
+      permissions: results[4].count,
+      roles: results[5].count,
+      persons: results[6].count,
+    });
+
+    console.log('Database cleanup completed');
   }
 
   public async disconnect() {

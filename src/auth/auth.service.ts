@@ -374,42 +374,34 @@ export class AuthService {
           },
         });
 
-        // Get user with roles and permissions
-        const user = await prisma.person.findUnique({
-          where: { id: token.personId },
-          include: {
-            roles: {
-              include: {
-                role: {
-                  select: {
-                    name: true,
+        // Check cache first
+        let permissionBits: Decimal | null = null;
+        const cachedPermissions = await this.rbacCache.getCachedPersonPermissions(token.personId);
+        let user: any;
+
+        if (cachedPermissions) {
+          // If permissions are cached, we only need basic user info
+          user = await prisma.person.findUnique({
+            where: { id: token.personId },
+            include: {
+              roles: {
+                include: {
+                  role: {
+                    select: {
+                      name: true,
+                    },
                   },
                 },
               },
+              emails: {
+                where: { isPrimary: true },
+              },
             },
-            emails: {
-              where: { isPrimary: true },
-            },
-          },
-        });
-
-        if (!user || user.accountStatus !== 'active') {
-          if (this.debugMode) {
-            this.logger.debug('User not found or inactive');
-          }
-          throw new UnauthorizedException('User not found or inactive');
-        }
-
-        // Check if user has SUPER_ADMIN role
-        const isSuperAdmin = user.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
-
-        // Get cached permissions or calculate them
-        let permissionBits: Decimal | null = null;
-        const cachedPermissions = await this.rbacCache.getCachedPersonPermissions(user.id);
-        
-        if (!cachedPermissions) {
-          // Get user with full role and permission details
-          const userWithPermissions = await prisma.person.findUnique({
+          });
+          permissionBits = new Decimal(cachedPermissions);
+        } else {
+          // If no cache, get full user info with permissions in one query
+          user = await prisma.person.findUnique({
             where: { id: token.personId },
             include: {
               roles: {
@@ -431,11 +423,26 @@ export class AuthService {
                   },
                 },
               },
+              emails: {
+                where: { isPrimary: true },
+              },
             },
           });
+        }
 
-          // Calculate combined permission bitfield
-          permissionBits = userWithPermissions.roles.reduce((acc, pr) => {
+        if (!user || user.accountStatus !== 'active') {
+          if (this.debugMode) {
+            this.logger.debug('User not found or inactive');
+          }
+          throw new UnauthorizedException('User not found or inactive');
+        }
+
+        // Check if user has SUPER_ADMIN role
+        const isSuperAdmin = user.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
+
+        // Calculate permissions if not cached
+        if (!cachedPermissions) {
+          permissionBits = user.roles.reduce((acc, pr) => {
             if (this.debugMode) {
               this.logger.debug(`Processing role ${pr.role.name}`);
             }
@@ -462,9 +469,6 @@ export class AuthService {
 
           // Cache the calculated permissions
           await this.rbacCache.setCachedPersonPermissions(user.id, permissionBits.toString());
-        } else {
-          // Convert cached string to Decimal
-          permissionBits = new Decimal(cachedPermissions);
         }
 
         if (this.debugMode) {

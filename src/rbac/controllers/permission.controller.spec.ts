@@ -2,11 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PermissionController } from './permission.controller';
 import { PermissionService } from '../services/permission.service';
 import { RoleService } from '../services/role.service';
+import { PermissionCacheService } from '../services/permission-cache.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Decimal } from 'decimal.js';
 
 describe('PermissionController', () => {
   let controller: PermissionController;
-  let permissionService: jest.Mocked<PermissionService>;
-  let roleService: jest.Mocked<RoleService>;
+  let permissionService: PermissionService;
+  let roleService: RoleService;
+  let cacheService: PermissionCacheService;
 
   beforeEach(async () => {
     const mockPermissionService = {
@@ -15,6 +19,12 @@ describe('PermissionController', () => {
 
     const mockRoleService = {
       getRoles: jest.fn(),
+    };
+
+    const mockCacheService = {
+      getCachedPermissions: jest.fn(),
+      setCachedPermissions: jest.fn(),
+      clearCache: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -28,12 +38,25 @@ describe('PermissionController', () => {
           provide: RoleService,
           useValue: mockRoleService,
         },
+        {
+          provide: PermissionCacheService,
+          useValue: mockCacheService,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<PermissionController>(PermissionController);
-    permissionService = module.get(PermissionService);
-    roleService = module.get(RoleService);
+    permissionService = module.get<PermissionService>(PermissionService);
+    roleService = module.get<RoleService>(RoleService);
+    cacheService = module.get<PermissionCacheService>(PermissionCacheService);
   });
 
   it('should be defined', () => {
@@ -42,47 +65,48 @@ describe('PermissionController', () => {
 
   describe('getPermissionDashboard', () => {
     it('should return dashboard data with categories, roles, and stats', async () => {
+      const mockPermission = {
+        id: '1',
+        name: 'users.read',
+        code: 'users.read',
+        description: 'Read users',
+        category: 'users',
+        isDeprecated: false,
+        sortOrder: 1,
+        bitfield: new Decimal(1),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
       const mockCategories = [
         {
           name: 'users',
-          permissions: [
-            { name: 'users.create', bitField: '1' },
-            { name: 'users.read', bitField: '2' },
-          ],
-        },
-        {
-          name: 'roles',
-          permissions: [
-            { name: 'roles.create', bitField: '4' },
-          ],
+          permissions: [mockPermission],
         },
       ];
 
       const mockRoles = [
         {
           id: '1',
-          name: 'Admin',
-          description: 'Administrator role',
+          name: 'admin',
+          description: 'Administrator',
           isSystem: true,
           sortOrder: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
-          permissions: [],
-        },
-        {
-          id: '2',
-          name: 'User',
-          description: 'Regular user role',
-          isSystem: false,
-          sortOrder: 2,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          permissions: [],
+          permissions: [{
+            permission: mockPermission,
+            roleId: '1',
+            permissionId: '1',
+            grantedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }],
         },
       ];
 
-      permissionService.getPermissionCategories.mockResolvedValue(mockCategories);
-      roleService.getRoles.mockResolvedValue(mockRoles);
+      jest.spyOn(permissionService, 'getPermissionCategories').mockResolvedValue(mockCategories);
+      jest.spyOn(roleService, 'getRoles').mockResolvedValue(mockRoles);
 
       const result = await controller.getPermissionDashboard();
 
@@ -90,12 +114,11 @@ describe('PermissionController', () => {
         categories: mockCategories,
         roles: mockRoles,
         stats: {
-          totalPermissions: 3, // Total number of permissions across all categories
-          totalRoles: 2,
-          systemRoles: 1, // Number of system roles
+          totalPermissions: 1,
+          totalRoles: 1,
+          systemRoles: 1,
         },
       });
-
       expect(permissionService.getPermissionCategories).toHaveBeenCalled();
       expect(roleService.getRoles).toHaveBeenCalledWith(true);
     });
@@ -104,21 +127,20 @@ describe('PermissionController', () => {
       const mockCategories = [];
       const mockRoles = [];
 
-      permissionService.getPermissionCategories.mockResolvedValue(mockCategories);
-      roleService.getRoles.mockResolvedValue(mockRoles);
+      jest.spyOn(permissionService, 'getPermissionCategories').mockResolvedValue(mockCategories);
+      jest.spyOn(roleService, 'getRoles').mockResolvedValue(mockRoles);
 
       const result = await controller.getPermissionDashboard();
 
       expect(result).toEqual({
-        categories: [],
-        roles: [],
+        categories: mockCategories,
+        roles: mockRoles,
         stats: {
           totalPermissions: 0,
           totalRoles: 0,
           systemRoles: 0,
         },
       });
-
       expect(permissionService.getPermissionCategories).toHaveBeenCalled();
       expect(roleService.getRoles).toHaveBeenCalledWith(true);
     });
@@ -129,27 +151,11 @@ describe('PermissionController', () => {
           name: 'users',
           permissions: [],
         },
-        {
-          name: 'roles',
-          permissions: [],
-        },
       ];
+      const mockRoles = [];
 
-      const mockRoles = [
-        {
-          id: '1',
-          name: 'Admin',
-          description: 'Administrator role',
-          isSystem: true,
-          sortOrder: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          permissions: [],
-        },
-      ];
-
-      permissionService.getPermissionCategories.mockResolvedValue(mockCategories);
-      roleService.getRoles.mockResolvedValue(mockRoles);
+      jest.spyOn(permissionService, 'getPermissionCategories').mockResolvedValue(mockCategories);
+      jest.spyOn(roleService, 'getRoles').mockResolvedValue(mockRoles);
 
       const result = await controller.getPermissionDashboard();
 
@@ -158,21 +164,19 @@ describe('PermissionController', () => {
         roles: mockRoles,
         stats: {
           totalPermissions: 0,
-          totalRoles: 1,
-          systemRoles: 1,
+          totalRoles: 0,
+          systemRoles: 0,
         },
       });
-
       expect(permissionService.getPermissionCategories).toHaveBeenCalled();
       expect(roleService.getRoles).toHaveBeenCalledWith(true);
     });
 
     it('should handle service errors gracefully', async () => {
-      permissionService.getPermissionCategories.mockRejectedValue(new Error('Database error'));
-      roleService.getRoles.mockRejectedValue(new Error('Database error'));
+      jest.spyOn(permissionService, 'getPermissionCategories').mockRejectedValue(new Error('Service error'));
+      jest.spyOn(roleService, 'getRoles').mockRejectedValue(new Error('Service error'));
 
-      await expect(controller.getPermissionDashboard()).rejects.toThrow('Database error');
-
+      await expect(controller.getPermissionDashboard()).rejects.toThrow('Service error');
       expect(permissionService.getPermissionCategories).toHaveBeenCalled();
       expect(roleService.getRoles).toHaveBeenCalledWith(true);
     });

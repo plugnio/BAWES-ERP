@@ -12,6 +12,7 @@ import { Role, Permission } from '@prisma/client';
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { Decimal } from 'decimal.js';
+import { RbacCacheService } from '../src/rbac/services/rbac-cache.service';
 
 describe('Permission Flow (e2e)', () => {
   let app: INestApplication;
@@ -25,6 +26,7 @@ describe('Permission Flow (e2e)', () => {
   let limitedUserToken: string;
   let testRole: Role;
   let permissions: Permission[];
+  let rbacCacheService: RbacCacheService;
 
   beforeAll(async () => {
     // Create test module with real implementations
@@ -42,6 +44,7 @@ describe('Permission Flow (e2e)', () => {
     roleService = moduleRef.get(RoleService);
     personRoleService = moduleRef.get(PersonRoleService);
     jwtService = moduleRef.get(JwtService);
+    rbacCacheService = moduleRef.get(RbacCacheService);
 
     // Clean database
     await prisma.refreshToken.deleteMany();
@@ -358,6 +361,66 @@ describe('Permission Flow (e2e)', () => {
     it('should respect public endpoints', async () => {
       await request(app.getHttpServer())
         .get('/')
+        .expect(200);
+    });
+
+    it('should handle permission cache invalidation correctly', async () => {
+      // Initial access with cached permissions
+      await request(app.getHttpServer())
+        .get('/people')
+        .set('Authorization', `Bearer ${limitedUserToken}`)
+        .expect(200);
+
+      // Remove permission
+      await roleService.toggleRolePermission(testRole.id, 'people.read', false);
+
+      // Clear cache for the role change
+      await rbacCacheService.clearPermissionCache(testRole.id);
+
+      // Get new token
+      const newAuth = await authService.validateLogin(
+        'limited@test.com',
+        'password',
+        {
+          ip: '127.0.0.1',
+          headers: { 'user-agent': 'test-agent' },
+          cookies: {},
+          res: {
+            cookie: jest.fn(),
+          },
+        } as unknown as Request,
+      );
+
+      // Access should now be denied with new permissions
+      await request(app.getHttpServer())
+        .get('/people')
+        .set('Authorization', `Bearer ${newAuth.accessToken}`)
+        .expect(403);
+
+      // Add permission back
+      await roleService.toggleRolePermission(testRole.id, 'people.read', true);
+
+      // Clear cache for the role change
+      await rbacCacheService.clearPermissionCache(testRole.id);
+
+      // Get another token
+      const finalAuth = await authService.validateLogin(
+        'limited@test.com',
+        'password',
+        {
+          ip: '127.0.0.1',
+          headers: { 'user-agent': 'test-agent' },
+          cookies: {},
+          res: {
+            cookie: jest.fn(),
+          },
+        } as unknown as Request,
+      );
+
+      // Access should be granted again
+      await request(app.getHttpServer())
+        .get('/people')
+        .set('Authorization', `Bearer ${finalAuth.accessToken}`)
         .expect(200);
     });
   });

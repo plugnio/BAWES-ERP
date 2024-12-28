@@ -1,40 +1,27 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PersonService } from './person.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DatabaseHelper } from '../../test/helpers/database.helper';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
-import { NotFoundException } from '@nestjs/common';
 
 describe('PersonService', () => {
   let service: PersonService;
   let prisma: PrismaService;
   let dbHelper: DatabaseHelper;
 
-  beforeEach(async () => {
-    // Get database helper instance
-    dbHelper = DatabaseHelper.getInstance();
-    prisma = dbHelper.getPrismaService();
-
-    const module = await Test.createTestingModule({
-      providers: [
-        PersonService,
-        {
-          provide: PrismaService,
-          useValue: prisma,
-        },
-      ],
+  beforeAll(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [PersonService, PrismaService],
     }).compile();
 
     service = module.get<PersonService>(PersonService);
+    prisma = module.get<PrismaService>(PrismaService);
+    dbHelper = new DatabaseHelper(prisma);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await dbHelper.cleanDatabase();
-  });
-
-  afterAll(async () => {
-    await dbHelper.disconnect();
   });
 
   it('should be defined', () => {
@@ -50,25 +37,29 @@ describe('PersonService', () => {
         accountStatus: 'active',
       };
 
-      const person = await service.create(dto);
+      const result = await service.create(dto);
 
-      expect(person).toBeDefined();
-      expect(person.nameEn).toBe(dto.nameEn);
-      expect(person.nameAr).toBe(dto.nameAr);
-      expect(person.accountStatus).toBe(dto.accountStatus);
+      expect(result).toBeDefined();
+      expect(result.nameEn).toBe(dto.nameEn);
+      expect(result.nameAr).toBe(dto.nameAr);
+      expect(result.passwordHash).toBe(dto.passwordHash);
+      expect(result.accountStatus).toBe(dto.accountStatus);
     });
 
     it('should create a person with minimal data', async () => {
       const dto: CreatePersonDto = {
         nameEn: 'Test User',
         passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
       };
 
-      const person = await service.create(dto);
+      const result = await service.create(dto);
 
-      expect(person).toBeDefined();
-      expect(person.nameEn).toBe(dto.nameEn);
-      expect(person.accountStatus).toBe('active');
+      expect(result).toBeDefined();
+      expect(result.nameEn).toBe(dto.nameEn);
+      expect(result.nameAr).toBeNull();
+      expect(result.passwordHash).toBe(dto.passwordHash);
+      expect(result.accountStatus).toBe(dto.accountStatus);
     });
   });
 
@@ -79,20 +70,24 @@ describe('PersonService', () => {
     });
 
     it('should return all people', async () => {
+      // Create test data
       const dto1: CreatePersonDto = {
         nameEn: 'Test User 1',
         passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
       };
 
       const dto2: CreatePersonDto = {
         nameEn: 'Test User 2',
         passwordHash: 'hashedpassword456',
+        accountStatus: 'active',
       };
 
       await service.create(dto1);
       await service.create(dto2);
 
       const result = await service.findAll();
+
       expect(result).toHaveLength(2);
       expect(result.map(p => p.nameEn)).toContain(dto1.nameEn);
       expect(result.map(p => p.nameEn)).toContain(dto2.nameEn);
@@ -100,70 +95,84 @@ describe('PersonService', () => {
   });
 
   describe('findOne', () => {
-    it('should return person by id', async () => {
+    it('should return a person by id', async () => {
       const dto: CreatePersonDto = {
         nameEn: 'Test User',
         passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
       };
 
       const created = await service.create(dto);
-      const found = await service.findOne(created.id);
+      const result = await service.findOne(created.id);
 
-      expect(found).toBeDefined();
-      expect(found.id).toBe(created.id);
-      expect(found.nameEn).toBe(created.nameEn);
+      expect(result).toBeDefined();
+      expect(result.id).toBe(created.id);
+      expect(result.nameEn).toBe(dto.nameEn);
     });
 
-    it('should throw NotFoundException for non-existent id', async () => {
-      await expect(service.findOne('non-existent-id')).rejects.toThrow(NotFoundException);
+    it('should return null for non-existent id', async () => {
+      const result = await service.findOne('non-existent-id');
+      expect(result).toBeNull();
     });
   });
 
   describe('update', () => {
-    it('should update person', async () => {
+    it('should update a person', async () => {
       const createDto: CreatePersonDto = {
         nameEn: 'Test User',
         passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
       };
 
       const created = await service.create(createDto);
 
       const updateDto: UpdatePersonDto = {
-        nameEn: 'Updated Name',
-        nameAr: 'الاسم المحدث',
+        nameEn: 'Updated User',
+        nameAr: 'مستخدم محدث',
       };
 
-      const updated = await service.update(created.id, updateDto);
+      const result = await service.update(created.id, updateDto);
 
-      expect(updated.nameEn).toBe(updateDto.nameEn);
-      expect(updated.nameAr).toBe(updateDto.nameAr);
-      expect(updated.accountStatus).toBe(created.accountStatus);
+      expect(result).toBeDefined();
+      expect(result.id).toBe(created.id);
+      expect(result.nameEn).toBe(updateDto.nameEn);
+      expect(result.nameAr).toBe(updateDto.nameAr);
+      expect(result.passwordHash).toBe(created.passwordHash);
     });
 
-    it('should throw error for non-existent id', async () => {
+    it('should return null for non-existent id', async () => {
       const updateDto: UpdatePersonDto = {
-        nameEn: 'Updated Name',
+        nameEn: 'Updated User',
       };
 
-      await expect(service.update('non-existent-id', updateDto)).rejects.toThrow();
+      const result = await service.update('non-existent-id', updateDto);
+      expect(result).toBeNull();
     });
   });
 
   describe('remove', () => {
-    it('should remove person', async () => {
+    it('should soft delete a person', async () => {
       const dto: CreatePersonDto = {
         nameEn: 'Test User',
         passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
       };
 
       const created = await service.create(dto);
-      await service.remove(created.id);
+      const result = await service.remove(created.id);
 
-      await expect(service.findOne(created.id)).rejects.toThrow(NotFoundException);
+      expect(result).toBeDefined();
+      expect(result.id).toBe(created.id);
+      expect(result.isDeleted).toBe(true);
+
+      // Verify the person is not returned in findAll
+      const allPeople = await service.findAll();
+      expect(allPeople.map(p => p.id)).not.toContain(created.id);
     });
 
-    it('should throw NotFoundException for non-existent id', async () => {
-      await expect(service.remove('non-existent-id')).rejects.toThrow(NotFoundException);
+    it('should return null for non-existent id', async () => {
+      const result = await service.remove('non-existent-id');
+      expect(result).toBeNull();
     });
   });
 });

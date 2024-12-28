@@ -511,12 +511,14 @@ describe('AuthService', () => {
       },
       res: {
         cookie: jest.fn(),
+        clearCookie: jest.fn(),
       },
     } as unknown as Request;
 
     beforeEach(() => {
       jest.clearAllMocks();
       process.env.DEBUG = 'false';
+      mockRequest.res.clearCookie = jest.fn();
     });
 
     it('should successfully refresh tokens', async () => {
@@ -732,6 +734,205 @@ describe('AuthService', () => {
         .toThrow(UnauthorizedException);
 
       expect(loggerSpy).toHaveBeenCalledWith('No refresh token found in cookies');
+    });
+
+    it('should use cached permissions when available and not recalculate', async () => {
+      const mockToken = {
+        id: 'token-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        personId: '1',
+        hashedToken: await bcrypt.hash('token-value', 10),
+        deviceDetails: 'test-agent',
+        ipAddress: '127.0.0.1',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        isRevoked: false,
+        revokedReason: null,
+        lastUsedAt: new Date(),
+      };
+
+      const mockUser = {
+        id: '1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        nameEn: 'Test User',
+        nameAr: 'مستخدم اختبار',
+        passwordHash: 'hash',
+        lastLoginAt: new Date(),
+        accountStatus: 'active',
+        passwordResetToken: null,
+        passwordResetTokenExpiresAt: null,
+        isDeleted: false,
+        roles: [{ role: { name: 'USER' } }],
+        emails: [{ email: 'test@example.com', isPrimary: true }],
+      };
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        mockPrismaService.refreshToken.findFirst.mockResolvedValue(mockToken);
+        mockPrismaService.person.findUnique
+          .mockResolvedValueOnce(mockUser) // First call for basic user info
+          .mockRejectedValue(new Error('Should not be called')); // Second call should not happen
+        mockPrismaService.refreshToken.create.mockResolvedValue({
+          id: 'new-token-id',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          personId: '1',
+          hashedToken: 'new-hashed-token',
+          deviceDetails: 'test-agent',
+          ipAddress: '127.0.0.1',
+          expiresAt: new Date(),
+          isRevoked: false,
+          revokedReason: null,
+          lastUsedAt: new Date(),
+        });
+        return callback(mockPrismaService);
+      });
+
+      mockJwtService.sign.mockReturnValue('new-access-token');
+      mockRbacCacheService.getCachedPersonPermissions.mockResolvedValue('255'); // Cached permissions exist
+
+      const result = await service.refreshToken(mockRequest);
+
+      expect(result).toEqual({
+        accessToken: 'new-access-token',
+        tokenType: 'Bearer',
+        expiresIn: expect.any(Number),
+      });
+
+      // Verify we only called findUnique once for basic user info
+      expect(mockPrismaService.person.findUnique).toHaveBeenCalledTimes(1);
+      expect(mockPrismaService.person.findUnique).toHaveBeenCalledWith({
+        where: { id: '1' },
+        include: {
+          roles: {
+            include: {
+              role: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          emails: {
+            where: { isPrimary: true },
+          },
+        },
+      });
+
+      // Verify we used cached permissions
+      expect(mockRbacCacheService.getCachedPersonPermissions).toHaveBeenCalledWith('1');
+      expect(mockRbacCacheService.setCachedPersonPermissions).not.toHaveBeenCalled();
+    });
+
+    it('should recalculate permissions when cache is empty', async () => {
+      const mockToken = {
+        id: 'token-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        personId: '1',
+        hashedToken: await bcrypt.hash('token-value', 10),
+        deviceDetails: 'test-agent',
+        ipAddress: '127.0.0.1',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        isRevoked: false,
+        revokedReason: null,
+        lastUsedAt: new Date(),
+      };
+
+      const mockUser = {
+        id: '1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        nameEn: 'Test User',
+        nameAr: 'مستخدم اختبار',
+        passwordHash: 'hash',
+        lastLoginAt: new Date(),
+        accountStatus: 'active',
+        passwordResetToken: null,
+        passwordResetTokenExpiresAt: null,
+        isDeleted: false,
+        roles: [{ role: { name: 'USER' } }],
+        emails: [{ email: 'test@example.com', isPrimary: true }],
+      };
+
+      const mockUserWithPermissions = {
+        ...mockUser,
+        roles: [{
+          role: {
+            name: 'USER',
+            permissions: [{
+              permission: {
+                code: 'users.read',
+                bitfield: '1',
+                isDeprecated: false,
+              },
+            }],
+          },
+        }],
+      };
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        mockPrismaService.refreshToken.findFirst.mockResolvedValue(mockToken);
+        mockPrismaService.person.findUnique
+          .mockResolvedValueOnce(mockUser) // First call for basic user info
+          .mockResolvedValueOnce(mockUserWithPermissions); // Second call for permissions
+        mockPrismaService.refreshToken.create.mockResolvedValue({
+          id: 'new-token-id',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          personId: '1',
+          hashedToken: 'new-hashed-token',
+          deviceDetails: 'test-agent',
+          ipAddress: '127.0.0.1',
+          expiresAt: new Date(),
+          isRevoked: false,
+          revokedReason: null,
+          lastUsedAt: new Date(),
+        });
+        return callback(mockPrismaService);
+      });
+
+      mockJwtService.sign.mockReturnValue('new-access-token');
+      mockRbacCacheService.getCachedPersonPermissions.mockResolvedValue(null); // No cached permissions
+
+      const result = await service.refreshToken(mockRequest);
+
+      expect(result).toEqual({
+        accessToken: 'new-access-token',
+        tokenType: 'Bearer',
+        expiresIn: expect.any(Number),
+      });
+
+      // Verify we called findUnique twice - once for basic info, once for permissions
+      expect(mockPrismaService.person.findUnique).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.person.findUnique).toHaveBeenCalledWith({
+        where: { id: '1' },
+        include: {
+          roles: {
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      permission: {
+                        select: {
+                          code: true,
+                          bitfield: true,
+                          isDeprecated: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Verify we cached the calculated permissions
+      expect(mockRbacCacheService.getCachedPersonPermissions).toHaveBeenCalledWith('1');
+      expect(mockRbacCacheService.setCachedPersonPermissions).toHaveBeenCalledWith('1', '1');
     });
   });
 
