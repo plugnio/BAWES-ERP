@@ -2,33 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionGuard } from './permission.guard';
-import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
+import { PermissionCacheService } from '../../rbac/services/permission-cache.service';
 import Decimal from 'decimal.js';
-import { PermissionService } from '../../rbac/services/permission.service';
+import { PERMISSIONS_KEY } from '../../rbac/decorators/require-permission.decorator';
 
 describe('PermissionGuard', () => {
   let guard: PermissionGuard;
   let reflector: Reflector;
-  let permissionService: PermissionService;
+  let permissionCache: PermissionCacheService;
+  let mockContext: ExecutionContext;
+  let mockRequest: any;
   let logger: jest.SpyInstance;
-
-  // Create a mock request object
-  const mockRequest = {
-    user: undefined,
-  };
-
-  // Create a properly typed mock context
-  const mockContext = {
-    switchToHttp: () => ({
-      getRequest: () => mockRequest,
-    }),
-    getHandler: () => ({ name: 'testHandler' }),
-    getClass: () => ({ name: 'TestController' }),
-  } as ExecutionContext;
-
-  const mockPermissionService = {
-    findByCode: jest.fn(),
-  };
 
   beforeEach(async () => {
     // Store original environment
@@ -47,49 +31,51 @@ describe('PermissionGuard', () => {
           },
         },
         {
-          provide: PermissionService,
-          useValue: mockPermissionService,
+          provide: PermissionCacheService,
+          useValue: {
+            getPermissionBitfields: jest.fn(),
+          },
         },
       ],
     }).compile();
 
     guard = module.get<PermissionGuard>(PermissionGuard);
     reflector = module.get<Reflector>(Reflector);
-    permissionService = module.get<PermissionService>(PermissionService);
+    permissionCache = module.get<PermissionCacheService>(PermissionCacheService);
 
-    // Reset all mocks
-    jest.clearAllMocks();
+    mockRequest = {
+      user: null,
+    };
+
+    mockContext = {
+      getHandler: jest.fn().mockReturnValue({ name: 'testHandler' }),
+      getClass: jest.fn().mockReturnValue({ name: 'TestController' }),
+      switchToHttp: jest.fn().mockReturnValue({
+        getRequest: jest.fn().mockReturnValue(mockRequest),
+      }),
+    } as unknown as ExecutionContext;
   });
 
   afterEach(() => {
     process.env.DEBUG = undefined;
-    jest.restoreAllMocks();
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(guard).toBeDefined();
   });
 
-  it('should allow access when no permission is required', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+  it('should allow access when no permissions required', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(null);
 
     const result = await guard.canActivate(mockContext);
 
     expect(result).toBe(true);
   });
 
-  it('should deny access when no user is present', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-    mockRequest.user = undefined;
-
-    const result = await guard.canActivate(mockContext);
-
-    expect(result).toBe(false);
-  });
-
-  it('should deny access when no permission bits are present', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-    mockRequest.user = { id: '1' };
+  it('should deny access when no user in request', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+    mockRequest.user = null;
 
     const result = await guard.canActivate(mockContext);
 
@@ -97,8 +83,8 @@ describe('PermissionGuard', () => {
   });
 
   it('should allow access for super admin', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-    mockRequest.user = { 
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+    mockRequest.user = {
       id: '1',
       permissionBits: '1',
       isSuperAdmin: true,
@@ -110,63 +96,126 @@ describe('PermissionGuard', () => {
   });
 
   it('should check permission bits correctly', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-    mockRequest.user = { 
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+    mockRequest.user = {
       id: '1',
       permissionBits: '3', // Binary: 11
       isSuperAdmin: false,
     };
-    mockPermissionService.findByCode.mockResolvedValue([{
-      code: 'test.permission',
-      bitfield: '2', // Binary: 10
-    }]);
+
+    jest.spyOn(permissionCache, 'getPermissionBitfields')
+      .mockResolvedValue(['2']); // Binary: 10
+
+    const result = await guard.canActivate(mockContext);
+
+    expect(result).toBe(true);
+    expect(permissionCache.getPermissionBitfields).toHaveBeenCalledWith(['test.permission']);
+  });
+
+  it('should deny access for insufficient permissions', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+    mockRequest.user = {
+      id: '1',
+      permissionBits: '1', // Binary: 01
+      isSuperAdmin: false,
+    };
+
+    jest.spyOn(permissionCache, 'getPermissionBitfields')
+      .mockResolvedValue(['2']); // Binary: 10
+
+    const result = await guard.canActivate(mockContext);
+
+    expect(result).toBe(false);
+  });
+
+  it('should deny access when permission does not exist in cache', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+    mockRequest.user = {
+      id: '1',
+      permissionBits: '1',
+      isSuperAdmin: false,
+    };
+
+    jest.spyOn(permissionCache, 'getPermissionBitfields')
+      .mockResolvedValue([null]);
+
+    const result = await guard.canActivate(mockContext);
+
+    expect(result).toBe(false);
+  });
+
+  it('should handle single permission string correctly', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
+    mockRequest.user = {
+      id: '1',
+      permissionBits: '2',
+      isSuperAdmin: false,
+    };
+
+    jest.spyOn(permissionCache, 'getPermissionBitfields')
+      .mockResolvedValue(['2']);
 
     const result = await guard.canActivate(mockContext);
 
     expect(result).toBe(true);
   });
 
-  it('should deny access for insufficient permissions', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-    mockRequest.user = { 
+  it('should check multiple permissions correctly', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(['test.read', 'test.write']);
+    
+    mockRequest.user = {
+      id: '1',
+      permissionBits: '3', // Binary: 11
+      isSuperAdmin: false,
+    };
+
+    jest.spyOn(permissionCache, 'getPermissionBitfields')
+      .mockResolvedValue(['1', '2']); // Binary: 01, 10
+
+    const result = await guard.canActivate(mockContext);
+
+    expect(result).toBe(true);
+  });
+
+  it('should deny access when missing one of multiple permissions', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(['test.read', 'test.write']);
+    
+    mockRequest.user = {
       id: '1',
       permissionBits: '1', // Binary: 01
       isSuperAdmin: false,
     };
-    mockPermissionService.findByCode.mockResolvedValue([{
-      code: 'test.permission',
-      bitfield: '2', // Binary: 10
-    }]);
+
+    jest.spyOn(permissionCache, 'getPermissionBitfields')
+      .mockResolvedValue(['1', '2']); // Binary: 01, 10
 
     const result = await guard.canActivate(mockContext);
 
     expect(result).toBe(false);
   });
 
-  it('should deny access when permission does not exist', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-    mockRequest.user = { 
+  it('should deny access when permission bits are missing', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+    mockRequest.user = {
       id: '1',
-      permissionBits: '1',
       isSuperAdmin: false,
     };
-    mockPermissionService.findByCode.mockResolvedValue([]);
 
     const result = await guard.canActivate(mockContext);
 
     expect(result).toBe(false);
   });
 
-  // New tests for 100% coverage
   describe('with debug mode', () => {
     beforeEach(() => {
-      // Enable debug mode and recreate the guard to pick up the new setting
       process.env.DEBUG = 'true';
-      guard = new PermissionGuard(reflector, permissionService);
+      guard = new PermissionGuard(reflector, permissionCache);
     });
 
     it('should log debug information when no permissions required', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(null);
 
       await guard.canActivate(mockContext);
 
@@ -175,16 +224,14 @@ describe('PermissionGuard', () => {
     });
 
     it('should log debug information for permission checks', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-      mockRequest.user = { 
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
         id: '1',
         permissionBits: '3',
         isSuperAdmin: false,
       };
-      mockPermissionService.findByCode.mockResolvedValue([{
-        code: 'test.permission',
-        bitfield: '2',
-      }]);
+      jest.spyOn(permissionCache, 'getPermissionBitfields')
+        .mockResolvedValue(['2']);
 
       await guard.canActivate(mockContext);
 
@@ -194,16 +241,14 @@ describe('PermissionGuard', () => {
     });
 
     it('should log debug information when permission check fails', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-      mockRequest.user = { 
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
         id: '1',
         permissionBits: '1',
         isSuperAdmin: false,
       };
-      mockPermissionService.findByCode.mockResolvedValue([{
-        code: 'test.permission',
-        bitfield: '2',
-      }]);
+      jest.spyOn(permissionCache, 'getPermissionBitfields')
+        .mockResolvedValue(['2']);
 
       await guard.canActivate(mockContext);
 
@@ -212,56 +257,73 @@ describe('PermissionGuard', () => {
       expect(logger).toHaveBeenCalledWith('User permission bits: 1');
       expect(logger).toHaveBeenCalledWith('User does not have permission test.permission');
     });
-  });
 
-  describe('with multiple permissions', () => {
-    it('should require all permissions to be present', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.read', 'test.write']);
-      mockRequest.user = { 
+    it('should log debug information for super admin access', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
         id: '1',
-        permissionBits: '7', // Binary: 111
-        isSuperAdmin: false,
+        permissionBits: '1',
+        isSuperAdmin: true,
       };
-      mockPermissionService.findByCode.mockResolvedValue([
-        { code: 'test.read', bitfield: '2' },  // Binary: 010
-        { code: 'test.write', bitfield: '4' }, // Binary: 100
-      ]);
 
-      const result = await guard.canActivate(mockContext);
+      await guard.canActivate(mockContext);
 
-      expect(result).toBe(true);
+      expect(logger).toHaveBeenCalledWith('User is SUPER_ADMIN, granting access');
     });
 
-    it('should deny access if any required permission is missing', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.read', 'test.write']);
-      mockRequest.user = { 
+    it('should log debug information when no user found', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = null;
+
+      await guard.canActivate(mockContext);
+
+      expect(logger).toHaveBeenCalledWith('No user found in request');
+    });
+
+    it('should log debug information when permission bits missing', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
         id: '1',
-        permissionBits: '3', // Binary: 011
         isSuperAdmin: false,
       };
-      mockPermissionService.findByCode.mockResolvedValue([
-        { code: 'test.read', bitfield: '2' },  // Binary: 010
-        { code: 'test.write', bitfield: '4' }, // Binary: 100
-      ]);
 
-      const result = await guard.canActivate(mockContext);
+      await guard.canActivate(mockContext);
 
-      expect(result).toBe(false);
+      expect(logger).toHaveBeenCalledWith('No permission bits found in request');
+      expect(logger).toHaveBeenCalledWith('Request user:', mockRequest.user);
+    });
+
+    it('should log debug information for bitwise operations', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
+        id: '1',
+        permissionBits: '3',
+        isSuperAdmin: false,
+      };
+      jest.spyOn(permissionCache, 'getPermissionBitfields')
+        .mockResolvedValue(['2']);
+
+      await guard.canActivate(mockContext);
+
+      expect(logger).toHaveBeenCalledWith('Checking permission test.permission with bitfield 2');
+      expect(logger).toHaveBeenCalledWith('Permission check for test.permission:');
+      expect(logger).toHaveBeenCalledWith('  userBits: 3');
+      expect(logger).toHaveBeenCalledWith('  permissionBitfield: 2');
+      expect(logger).toHaveBeenCalledWith('  hasPermission: true');
     });
   });
 
   describe('edge cases', () => {
     it('should handle large permission bitfields correctly', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue('test.permission');
-      mockRequest.user = { 
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
         id: '1',
         permissionBits: '1152921504606846976', // 2^60
         isSuperAdmin: false,
       };
-      mockPermissionService.findByCode.mockResolvedValue([{
-        code: 'test.permission',
-        bitfield: '1152921504606846976', // 2^60
-      }]);
+
+      jest.spyOn(permissionCache, 'getPermissionBitfields')
+        .mockResolvedValue(['1152921504606846976']); // 2^60
 
       const result = await guard.canActivate(mockContext);
 
@@ -269,21 +331,41 @@ describe('PermissionGuard', () => {
     });
 
     it('should handle multiple high-bit permissions correctly', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.high1', 'test.high2']);
-      mockRequest.user = { 
+      jest.spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue(['test.high1', 'test.high2']);
+      
+      mockRequest.user = {
         id: '1',
         // Has both 2^59 and 2^60 bits set
-        permissionBits: '1729382256910270464', 
+        permissionBits: '1729382256910270464',
         isSuperAdmin: false,
       };
-      mockPermissionService.findByCode.mockResolvedValue([
-        { code: 'test.high1', bitfield: '576460752303423488' },  // 2^59
-        { code: 'test.high2', bitfield: '1152921504606846976' }, // 2^60
-      ]);
+
+      jest.spyOn(permissionCache, 'getPermissionBitfields')
+        .mockResolvedValue([
+          '576460752303423488',  // 2^59
+          '1152921504606846976', // 2^60
+        ]);
 
       const result = await guard.canActivate(mockContext);
 
       expect(result).toBe(true);
+    });
+
+    it('should handle permission check with zero bits', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['test.permission']);
+      mockRequest.user = {
+        id: '1',
+        permissionBits: '0',
+        isSuperAdmin: false,
+      };
+
+      jest.spyOn(permissionCache, 'getPermissionBitfields')
+        .mockResolvedValue(['1']);
+
+      const result = await guard.canActivate(mockContext);
+
+      expect(result).toBe(false);
     });
   });
 }); 
