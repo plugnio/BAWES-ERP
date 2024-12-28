@@ -38,9 +38,14 @@ export class AuthService {
 
   /**
    * Convert duration string (e.g., '7d', '15m') to milliseconds
+   * @throws {Error} if the duration string is invalid
    */
   private getDurationInMs(duration: string): number {
-    return ms(duration);
+    const result = ms(duration);
+    if (result === undefined) {
+      throw new Error(`Invalid duration format: ${duration}`);
+    }
+    return result;
   }
 
   /**
