@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RbacModule } from '../rbac/rbac.module';
+import { PermissionGuard } from './guards/permission.guard';
 
 @Module({
   imports: [
@@ -29,7 +30,16 @@ import { RbacModule } from '../rbac/rbac.module';
     RbacModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  providers: [
+    AuthService, 
+    JwtStrategy,
+    PermissionGuard,
+  ],
+  exports: [
+    AuthService, 
+    JwtStrategy, 
+    PassportModule,
+    PermissionGuard,
+  ],
 })
 export class AuthModule {}

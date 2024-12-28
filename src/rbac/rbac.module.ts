@@ -6,11 +6,12 @@ import { PermissionService } from './services/permission.service';
 import { PermissionDiscoveryService } from './services/permission-discovery.service';
 import { PersonRoleService } from './services/person-role.service';
 import { RbacCacheService } from './services/rbac-cache.service';
-import { PermissionGuard } from '../auth/guards/permission.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisCacheModule } from '../cache/redis-cache.module';
 import { PermissionController } from './controllers/permission.controller';
 import { ConfigModule } from '@nestjs/config';
+import { PermissionCacheService } from './services/permission-cache.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot({
       isGlobal: true
     }),
+    EventEmitterModule.forRoot(),
   ],
   controllers: [RoleController, PermissionController],
   providers: [
@@ -28,7 +30,7 @@ import { ConfigModule } from '@nestjs/config';
     PermissionDiscoveryService,
     PersonRoleService,
     RbacCacheService,
-    PermissionGuard,
+    PermissionCacheService,
   ],
   exports: [
     RoleService,
@@ -36,7 +38,7 @@ import { ConfigModule } from '@nestjs/config';
     PermissionDiscoveryService,
     PersonRoleService,
     RbacCacheService,
-    PermissionGuard,
+    PermissionCacheService,
   ],
 })
 export class RbacModule {}
