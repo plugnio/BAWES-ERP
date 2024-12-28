@@ -190,7 +190,11 @@ describe('PermissionDiscoveryService', () => {
       (prisma.$transaction as jest.Mock).mockRejectedValue(error);
       
       await expect((service as any).syncPermissions()).rejects.toThrow('Sync failed');
-      expect(logger).toHaveBeenCalledWith('Failed to sync permissions', error.stack);
+      expect(logger).toHaveBeenCalledWith('Failed to sync permissions', {
+        error: error.message,
+        stack: error.stack,
+        context: 'syncPermissions',
+      });
     });
   });
 
