@@ -1,31 +1,40 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { PersonService } from './person.service';
-import { TestModuleHelper } from '../../test/helpers/test-module.helper';
+import { PrismaService } from '../prisma/prisma.service';
 import { DatabaseHelper } from '../../test/helpers/database.helper';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
-import { PrismaService } from '@/prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('PersonService', () => {
   let service: PersonService;
   let prisma: PrismaService;
-
-  beforeAll(async () => {
-    const module: TestingModule = await TestModuleHelper.createTestingModule({
-      providers: [PersonService],
-    });
-
-    service = module.get<PersonService>(PersonService);
-    prisma = module.get<PrismaService>(PrismaService);
-  });
+  let dbHelper: DatabaseHelper;
 
   beforeEach(async () => {
-    await DatabaseHelper.cleanDatabase();
+    // Get database helper instance
+    dbHelper = DatabaseHelper.getInstance();
+    prisma = dbHelper.getPrismaService();
+
+    const module = await Test.createTestingModule({
+      providers: [
+        PersonService,
+        {
+          provide: PrismaService,
+          useValue: prisma,
+        },
+      ],
+    }).compile();
+
+    service = module.get<PersonService>(PersonService);
+  });
+
+  afterEach(async () => {
+    await dbHelper.cleanDatabase();
   });
 
   afterAll(async () => {
-    await DatabaseHelper.resetDatabase();
+    await dbHelper.disconnect();
   });
 
   it('should be defined', () => {

@@ -139,3 +139,35 @@ Keep in mind that this project is a Nestjs backend, for frontends in other proje
 - Use decimal.js methods instead of native JavaScript methods for precision
 - Implement proper error handling and logging for financial calculations
 - Regularly review and update decimal precision requirements
+
+# Test-Driven Development
+- Follow test driven development process. Before writing any code, write the test first.
+- Confirm the test passes before delivering your work as completed. Keep improving the tests until they pass.
+- Do not delete existing tests and code just to make things pass. Deletion should only happen when it is absolutely necessary or when it is a part of a refactoring.
+
+# Test Verification Requirements
+- ALWAYS run `npm run test` after making any code changes
+- ALWAYS run `npm run test:cov` after completing changes to verify coverage
+- NEVER ignore failing tests - fix them immediately
+- Maintain minimum 80% coverage for critical paths
+- Maintain minimum 60% overall coverage
+- Document any coverage exceptions with clear reasons
+
+# Test Failure Protocol
+1. When a test fails:
+   - Stop and analyze the failure immediately
+   - Fix the failing test before proceeding
+   - Verify the fix with both `npm run test` and `npm run test:cov`
+   - Document the fix if it reveals a systemic issue
+
+2. Database test failures:
+   - Ensure proper cleanup between tests
+   - Verify foreign key constraints are handled
+   - Check transaction isolation
+   - Confirm test database is being used
+
+3. Coverage failures:
+   - Identify areas below threshold
+   - Add missing test cases
+   - Document complex or untestable code
+   - Never skip coverage verification

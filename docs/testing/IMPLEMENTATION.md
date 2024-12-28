@@ -280,3 +280,67 @@ Last Checked: 2024-12-27
    - Schema validation
    - Backward compatibility
    - Documentation sync
+
+# Testing Guidelines
+1. Test File Organization:
+   - Co-locate test files with source files
+   - Use `.spec.ts` for unit tests, `.e2e-spec.ts` for E2E
+   - Group related tests in describe blocks
+   - Clear, descriptive test names
+   - Test DTOs through controller/service integration tests, not separately
+
+2. Test Structure:
+   - Follow Arrange-Act-Assert pattern
+   - One behavior per test
+   - Use beforeEach for setup
+   - Clean up in afterEach when needed
+   - Mock external dependencies
+   - Only create separate DTO tests for custom validation or transformation logic
+
+3. Coverage Requirements:
+   - 80% minimum for critical paths
+   - 60% minimum overall coverage
+   - 100% for permission code
+   - Test success and error cases
+   - Include edge cases
+   - Ensure DTOs are covered through controller/service tests
+   - Run `npm run test:cov` after changes to verify coverage
+   - Fix failing tests before committing changes
+   - Never delete existing tests unless part of approved refactoring
+
+4. Database Testing:
+   - Use test database
+   - Clean before each test
+   - Use transactions
+   - Mock for unit tests
+   - Real DB for E2E
+   - Verify database cleanup works correctly
+
+5. Authentication Testing:
+   - Test auth states
+   - Verify tokens
+   - Check permissions
+   - Test refresh flows
+   - Test expiration
+
+6. Error Handling:
+   - Test all errors
+   - Verify messages
+   - Check status codes
+   - Test validation
+   - Verify logging
+
+7. Code Quality:
+   - No test duplication
+   - Use test helpers
+   - Keep maintainable
+   - Document complexity
+   - Follow style guide
+
+8. Test Verification Steps:
+   - Run `npm run test` after every code change
+   - Run `npm run test:cov` to check coverage
+   - Fix any failing tests immediately
+   - Improve coverage if below requirements
+   - Document any coverage exceptions
+   - Never skip test verification
