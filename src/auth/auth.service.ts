@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
+  LogLevel,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,18 +15,25 @@ const ms = require('ms');
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import Decimal from 'decimal.js';
 import { Prisma } from '@prisma/client';
+import { RbacCacheService } from '../rbac/services/rbac-cache.service';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly logger: Logger;
   private readonly debugMode: boolean;
 
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private rbacCache: RbacCacheService,
   ) {
     this.debugMode = process.env.DEBUG?.toLowerCase() === 'true';
+    // Create logger with no output during tests
+    this.logger = new Logger(AuthService.name);
+    if (process.env.NODE_ENV === 'test') {
+      Logger.overrideLogger([]);
+    }
   }
 
   /**
@@ -160,7 +168,18 @@ export class AuthService {
   }
 
   private async generateTokens(personId: string, req: Request) {
-    // Get person's permissions through roles
+    // Check cache first
+    let permissionBits: Decimal | null = null;
+    const cachedPermissions = await this.rbacCache.getCachedPersonPermissions(personId);
+    
+    if (cachedPermissions) {
+      permissionBits = new Decimal(cachedPermissions);
+      if (this.debugMode) {
+        this.logger.debug('Using cached permissions:', permissionBits.toString());
+      }
+    }
+
+    // Get person's permissions through roles if not cached
     const personWithRoles = await this.prisma.person.findUnique({
       where: { id: personId },
       include: {
@@ -169,7 +188,7 @@ export class AuthService {
             role: {
               select: {
                 name: true,
-                permissions: {
+                permissions: !cachedPermissions ? {
                   include: {
                     permission: {
                       select: {
@@ -179,7 +198,7 @@ export class AuthService {
                       },
                     },
                   },
-                },
+                } : undefined,
               },
             },
           },
@@ -197,31 +216,40 @@ export class AuthService {
     // Check if person has SUPER_ADMIN role
     const isSuperAdmin = personWithRoles.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
 
-    // Calculate combined permission bitfield
-    const permissionBits = personWithRoles.roles.reduce((acc, pr) => {
-      if (this.debugMode) {
-        this.logger.debug(`Processing role ${pr.role.name}`);
-      }
+    // Calculate combined permission bitfield if not cached
+    if (!permissionBits) {
+      permissionBits = personWithRoles.roles.reduce((acc, pr) => {
+        if (this.debugMode) {
+          this.logger.debug(`Processing role ${pr.role.name}`);
+        }
 
-      const roleBits = pr.role.permissions.reduce(
-        (roleAcc, rp) => {
-          if (!rp.permission.isDeprecated) {
-            if (this.debugMode) {
-              this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+        const roleBits = pr.role.permissions.reduce(
+          (roleAcc, rp) => {
+            if (!rp.permission.isDeprecated) {
+              if (this.debugMode) {
+                this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+              }
+              return roleAcc.add(new Decimal(rp.permission.bitfield));
             }
-            return roleAcc.add(new Decimal(rp.permission.bitfield));
-          }
-          return roleAcc;
-        },
-        new Decimal(0),
-      );
+            return roleAcc;
+          },
+          new Decimal(0),
+        );
+
+        if (this.debugMode) {
+          this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
+        }
+
+        return acc.add(roleBits);
+      }, new Decimal(0));
+
+      // Cache the calculated permissions
+      await this.rbacCache.setCachedPersonPermissions(personId, permissionBits.toString());
 
       if (this.debugMode) {
-        this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
+        this.logger.debug(`Cached new permission bits: ${permissionBits.toString()}`);
       }
-
-      return acc.add(roleBits);
-    }, new Decimal(0));
+    }
 
     if (this.debugMode) {
       this.logger.debug(`Final combined permission bits: ${permissionBits.toString()}`);
@@ -313,12 +341,6 @@ export class AuthService {
             isRevoked: false,
             expiresAt: { gt: new Date() },
           },
-          // This ensures no other transaction can read this record until we're done
-          // Requires @prisma/client 4.16.0 or later
-          // skip if your Prisma version doesn't support it
-          // orderBy: { id: 'asc' },
-          // skip: 0,
-          // take: 1,
         });
 
         if (!token) {
@@ -356,17 +378,6 @@ export class AuthService {
                 role: {
                   select: {
                     name: true,
-                    permissions: {
-                      include: {
-                        permission: {
-                          select: {
-                            code: true,
-                            bitfield: true,
-                            isDeprecated: true,
-                          },
-                        },
-                      },
-                    },
                   },
                 },
               },
@@ -387,31 +398,69 @@ export class AuthService {
         // Check if user has SUPER_ADMIN role
         const isSuperAdmin = user.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
 
-        // Calculate combined permission bitfield
-        const permissionBits = user.roles.reduce((acc, pr) => {
-          if (this.debugMode) {
-            this.logger.debug(`Processing role ${pr.role.name}`);
-          }
-
-          const roleBits = pr.role.permissions.reduce(
-            (roleAcc, rp) => {
-              if (!rp.permission.isDeprecated) {
-                if (this.debugMode) {
-                  this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
-                }
-                return roleAcc.add(new Decimal(rp.permission.bitfield));
-              }
-              return roleAcc;
+        // Get cached permissions or calculate them
+        let permissionBits: Decimal | null = null;
+        const cachedPermissions = await this.rbacCache.getCachedPersonPermissions(user.id);
+        
+        if (!cachedPermissions) {
+          // Get user with full role and permission details
+          const userWithPermissions = await prisma.person.findUnique({
+            where: { id: token.personId },
+            include: {
+              roles: {
+                include: {
+                  role: {
+                    include: {
+                      permissions: {
+                        include: {
+                          permission: {
+                            select: {
+                              code: true,
+                              bitfield: true,
+                              isDeprecated: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
             },
-            new Decimal(0),
-          );
+          });
 
-          if (this.debugMode) {
-            this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
-          }
+          // Calculate combined permission bitfield
+          permissionBits = userWithPermissions.roles.reduce((acc, pr) => {
+            if (this.debugMode) {
+              this.logger.debug(`Processing role ${pr.role.name}`);
+            }
 
-          return acc.add(roleBits);
-        }, new Decimal(0));
+            const roleBits = pr.role.permissions.reduce(
+              (roleAcc, rp) => {
+                if (!rp.permission.isDeprecated) {
+                  if (this.debugMode) {
+                    this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+                  }
+                  return roleAcc.add(new Decimal(rp.permission.bitfield));
+                }
+                return roleAcc;
+              },
+              new Decimal(0),
+            );
+
+            if (this.debugMode) {
+              this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
+            }
+
+            return acc.add(roleBits);
+          }, new Decimal(0));
+
+          // Cache the calculated permissions
+          await this.rbacCache.setCachedPersonPermissions(user.id, permissionBits.toString());
+        } else {
+          // Convert cached string to Decimal
+          permissionBits = new Decimal(cachedPermissions);
+        }
 
         if (this.debugMode) {
           this.logger.debug(`Final combined permission bits: ${permissionBits.toString()}`);
@@ -495,6 +544,9 @@ export class AuthService {
         this.logger.error('Refresh token error:', error);
       }
       this.clearAuthCookies(req);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

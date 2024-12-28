@@ -7,12 +7,15 @@ import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import Decimal from 'decimal.js';
+import { RbacCacheService } from '../rbac/services/rbac-cache.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaService;
   let jwtService: JwtService;
   let configService: ConfigService;
+  let rbacCache: RbacCacheService;
 
   const mockPrisma = {
     email: {
@@ -53,6 +56,11 @@ describe('AuthService', () => {
     }),
   };
 
+  const mockRbacCache = {
+    getCachedPersonPermissions: jest.fn(),
+    setCachedPersonPermissions: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -69,6 +77,18 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: mockConfigService,
         },
+        {
+          provide: RbacCacheService,
+          useValue: mockRbacCache,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -76,6 +96,7 @@ describe('AuthService', () => {
     prisma = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
     configService = module.get<ConfigService>(ConfigService);
+    rbacCache = module.get<RbacCacheService>(RbacCacheService);
 
     // Reset all mocks
     jest.clearAllMocks();
@@ -114,9 +135,29 @@ describe('AuthService', () => {
 
       mockPrisma.email.findUnique.mockResolvedValue(mockEmail);
       mockPrisma.person.update.mockResolvedValue(mockEmail.person);
-      mockPrisma.person.findUnique.mockResolvedValue(mockEmail.person);
+      mockPrisma.person.findUnique.mockResolvedValue({
+        ...mockEmail.person,
+        roles: [
+          {
+            role: {
+              name: 'USER',
+              permissions: [
+                {
+                  permission: {
+                    code: 'users.read',
+                    bitfield: '1',
+                    isDeprecated: false,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
       mockPrisma.refreshToken.create.mockResolvedValue({ id: 'token-id' });
       mockJwtService.sign.mockReturnValue('mock-access-token');
+      mockRbacCache.getCachedPersonPermissions.mockResolvedValue(null);
+      mockRbacCache.setCachedPersonPermissions.mockResolvedValue(undefined);
 
       const result = await service.validateLogin('test@example.com', 'password123', mockRequest);
 
@@ -127,6 +168,7 @@ describe('AuthService', () => {
         where: { id: '1' },
         data: { lastLoginAt: expect.any(Date) },
       });
+      expect(mockRbacCache.setCachedPersonPermissions).toHaveBeenCalledWith('1', '1');
     });
 
     it('should throw UnauthorizedException for unverified email', async () => {
@@ -386,6 +428,7 @@ describe('AuthService', () => {
 
       mockPrisma.$transaction.mockImplementation((callback) => callback(mockTransaction));
       mockJwtService.sign.mockReturnValue('new-access-token');
+      mockRbacCache.getCachedPersonPermissions.mockResolvedValue('1');
 
       const result = await service.refreshToken(mockRequest);
 
@@ -393,6 +436,25 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('new-access-token');
       expect(result.tokenType).toBe('Bearer');
       expect(mockRequest.res.cookie).toHaveBeenCalledTimes(2);
+      expect(mockRbacCache.getCachedPersonPermissions).toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when no refresh token is provided', async () => {
+      const req = {
+        cookies: {},
+      } as any;
+
+      await expect(service.refreshToken(req)).rejects.toThrow('No refresh token provided');
+    });
+
+    it('should throw UnauthorizedException when refresh token is invalid', async () => {
+      const req = {
+        cookies: {
+          refreshToken: 'invalid.token',
+        },
+      } as any;
+
+      await expect(service.refreshToken(req)).rejects.toThrow('Invalid refresh token');
     });
 
     it('should throw UnauthorizedException for invalid refresh token', async () => {
@@ -478,7 +540,7 @@ describe('AuthService', () => {
 
     it('should handle non-existent token', async () => {
       mockPrisma.refreshToken.findUnique.mockResolvedValue(null);
-      
+
       await expect(service.revokeRefreshToken('token-id.token-value'))
         .rejects.toThrow(UnauthorizedException);
     });
@@ -586,7 +648,7 @@ describe('AuthService', () => {
 
     it('should log debug information when DEBUG is true', () => {
       process.env.DEBUG = 'true';
-      const service = new AuthService(prisma, jwtService, configService);
+      const service = new AuthService(prisma, jwtService, configService, rbacCache);
       const loggerSpy = jest.spyOn(service['logger'], 'debug');
       
       const mockRequest = {
@@ -600,7 +662,7 @@ describe('AuthService', () => {
 
     it('should not log debug information when DEBUG is false', () => {
       process.env.DEBUG = 'false';
-      const service = new AuthService(prisma, jwtService, configService);
+      const service = new AuthService(prisma, jwtService, configService, rbacCache);
       const loggerSpy = jest.spyOn(service['logger'], 'debug');
       
       const mockRequest = {

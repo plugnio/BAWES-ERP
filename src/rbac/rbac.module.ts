@@ -10,9 +10,17 @@ import { PermissionGuard } from '../auth/guards/permission.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisCacheModule } from '../cache/redis-cache.module';
 import { PermissionController } from './controllers/permission.controller';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [PrismaModule, RedisCacheModule, DiscoveryModule],
+  imports: [
+    PrismaModule, 
+    RedisCacheModule, 
+    DiscoveryModule,
+    ConfigModule.forRoot({
+      isGlobal: true
+    }),
+  ],
   controllers: [RoleController, PermissionController],
   providers: [
     RoleService,

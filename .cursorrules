@@ -1,5 +1,10 @@
 Keep in mind that this project is a Nestjs backend, for frontends in other projects. No frontend will be implemented in this project.
 
+# Required process
+- Follow test driven development process. Before writing any code, write the test first.
+- Confirm the test passes before delivering your work as completed. Keep improving the tests until they pass.
+- Do not delete existing tests and code just to make things pass. Deletion should only happen when it is absolutely necessary or when it is a part of a refactoring.
+
 # Development Guidelines
 - Project docs are under /docs
 - We use Github actions for publishing swagger as SDK for frontend usage

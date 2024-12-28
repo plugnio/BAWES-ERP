@@ -6,6 +6,9 @@ import { Logger } from '@nestjs/common';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator';
 import { Decimal } from 'decimal.js';
 import { Permission, Prisma } from '@prisma/client';
+import { ConfigModule } from '@nestjs/config';
+import { RbacCacheService } from './rbac-cache.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('PermissionDiscoveryService', () => {
   let service: PermissionDiscoveryService;
@@ -13,6 +16,7 @@ describe('PermissionDiscoveryService', () => {
   let metadataScanner: jest.Mocked<MetadataScanner>;
   let prisma: jest.Mocked<PrismaService>;
   let logger: jest.SpyInstance;
+  let rbacCache: RbacCacheService;
 
   beforeEach(async () => {
     // Reset mocks
@@ -101,12 +105,28 @@ describe('PermissionDiscoveryService', () => {
       }),
     } as unknown as jest.Mocked<MetadataScanner>;
 
+    const mockCacheManager = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+    };
+
     const module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [() => ({
+            PERMISSION_CACHE_TTL: '300',
+          })],
+        }),
+      ],
       providers: [
         PermissionDiscoveryService,
+        RbacCacheService,
         { provide: DiscoveryService, useValue: mockDiscovery },
         { provide: MetadataScanner, useValue: mockMetadataScanner },
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: CACHE_MANAGER, useValue: mockCacheManager },
       ],
     }).compile();
 
@@ -114,6 +134,72 @@ describe('PermissionDiscoveryService', () => {
     discoveryService = module.get<DiscoveryService>(DiscoveryService) as jest.Mocked<DiscoveryService>;
     metadataScanner = module.get<MetadataScanner>(MetadataScanner) as jest.Mocked<MetadataScanner>;
     prisma = module.get<PrismaService>(PrismaService) as jest.Mocked<PrismaService>;
+    rbacCache = module.get<RbacCacheService>(RbacCacheService);
+  });
+
+  afterEach(async () => {
+    // Restore all mocks
+    jest.restoreAllMocks();
+    
+    // Clear all timers
+    jest.useRealTimers();
+    jest.clearAllTimers();
+    
+    // Reset modules
+    jest.resetModules();
+    
+    // Allow time for cleanup
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+
+  describe('Module Configuration', () => {
+    it('should properly inject ConfigService and RbacCacheService', async () => {
+      // Create a test module with real ConfigModule
+      const testModule = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot({
+            isGlobal: true,
+            load: [() => ({
+              PERMISSION_CACHE_TTL: '300',
+            })],
+          }),
+        ],
+        providers: [
+          PermissionDiscoveryService,
+          RbacCacheService,
+          { provide: DiscoveryService, useValue: discoveryService },
+          { provide: MetadataScanner, useValue: metadataScanner },
+          { provide: PrismaService, useValue: prisma },
+          { provide: CACHE_MANAGER, useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() } },
+        ],
+      }).compile();
+
+      // Get instances of services
+      const permissionService = testModule.get<PermissionDiscoveryService>(PermissionDiscoveryService);
+      const cacheService = testModule.get<RbacCacheService>(RbacCacheService);
+
+      // Verify services are properly instantiated
+      expect(permissionService).toBeDefined();
+      expect(cacheService).toBeDefined();
+
+      // Verify cache service can access config
+      const ttl = cacheService.getPermissionCacheTTL();
+      expect(ttl).toBe(300);
+    });
+
+    it('should throw error if ConfigService is not provided', async () => {
+      // Attempt to create module without ConfigModule
+      await expect(Test.createTestingModule({
+        providers: [
+          PermissionDiscoveryService,
+          RbacCacheService,
+          { provide: DiscoveryService, useValue: discoveryService },
+          { provide: MetadataScanner, useValue: metadataScanner },
+          { provide: PrismaService, useValue: prisma },
+          { provide: CACHE_MANAGER, useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() } },
+        ],
+      }).compile()).rejects.toThrow();
+    });
   });
 
   describe('onModuleInit', () => {
