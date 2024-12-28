@@ -5,6 +5,12 @@ import { RbacCacheService } from './rbac-cache.service';
 import { Decimal } from 'decimal.js';
 import { discoverActualPermissions } from '../../../test/helpers/permission-discovery.helper';
 
+const log = (...args: any[]) => {
+  if (process.env.DEBUG === 'true') {
+    console.log(...args);
+  }
+};
+
 describe('PermissionService', () => {
   let service: PermissionService;
   let prisma: PrismaService;
@@ -17,7 +23,7 @@ describe('PermissionService', () => {
     
     // Validate we have permissions to test with
     expect(actualPermissions.length).toBeGreaterThan(0);
-    console.log(`Discovered ${actualPermissions.length} permissions for testing`);
+    log(`Discovered ${actualPermissions.length} permissions for testing`);
   });
 
   const mockPrisma = {

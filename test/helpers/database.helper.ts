@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 export class DatabaseHelper {
   private static instance: DatabaseHelper;
   private prisma: PrismaService;
+  private debugMode: boolean;
 
   private constructor() {
     // Create ConfigService with test configuration
@@ -13,6 +14,7 @@ export class DatabaseHelper {
     });
 
     this.prisma = new PrismaService(configService);
+    this.debugMode = process.env.DEBUG === 'true';
   }
 
   public static getInstance(): DatabaseHelper {
@@ -26,8 +28,14 @@ export class DatabaseHelper {
     return this.prisma;
   }
 
+  private log(...args: any[]) {
+    if (this.debugMode) {
+      console.log(...args);
+    }
+  }
+
   public async cleanDatabase() {
-    console.log('Starting database cleanup...');
+    this.log('Starting database cleanup...');
 
     // Delete in correct order to handle foreign key constraints
     const results = await this.prisma.$transaction([
@@ -40,7 +48,7 @@ export class DatabaseHelper {
       this.prisma.person.deleteMany(),
     ]);
 
-    console.log('Cleanup results:', {
+    this.log('Cleanup results:', {
       refreshTokens: results[0].count,
       emails: results[1].count,
       personRoles: results[2].count,
@@ -50,7 +58,7 @@ export class DatabaseHelper {
       persons: results[6].count,
     });
 
-    console.log('Database cleanup completed');
+    this.log('Database cleanup completed');
   }
 
   public async disconnect() {

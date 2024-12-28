@@ -83,7 +83,7 @@ describe('PersonService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return all people', async () => {
+    it('should return all non-deleted people', async () => {
       // Create test data
       const dto1: CreatePersonDto = {
         nameEn: 'Test User 1',
@@ -97,14 +97,17 @@ describe('PersonService', () => {
         accountStatus: 'active',
       };
 
-      await service.create(dto1);
-      await service.create(dto2);
+      // Create the test users
+      const person1 = await service.create(dto1);
+      const person2 = await service.create(dto2);
 
+      // Get all people
       const result = await service.findAll();
 
+      // Verify we get exactly our two created users
       expect(result).toHaveLength(2);
-      expect(result.map(p => p.nameEn)).toContain(dto1.nameEn);
-      expect(result.map(p => p.nameEn)).toContain(dto2.nameEn);
+      expect(result.map(p => p.id).sort()).toEqual([person1.id, person2.id].sort());
+      expect(result.map(p => p.nameEn).sort()).toEqual([dto1.nameEn, dto2.nameEn].sort());
     });
   });
 

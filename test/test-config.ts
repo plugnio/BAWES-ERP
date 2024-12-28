@@ -9,13 +9,25 @@ export const TestConfigModule = ConfigModule.forRoot({
   envFilePath: '.env.test',
 });
 
+const log = (...args: any[]) => {
+  if (process.env.DEBUG === 'true') {
+    console.log(...args);
+  }
+};
+
+const error = (...args: any[]) => {
+  if (process.env.DEBUG === 'true') {
+    console.error(...args);
+  }
+};
+
 export const getTestPrismaService = async () => {
   // Create Prisma instance with test config
   const prisma = new PrismaService(new ConfigService());
   
   // Clean database before tests
   try {
-    console.log('Starting database cleanup...');
+    log('Starting database cleanup...');
     
     // Delete in correct order to handle foreign key constraints
     await prisma.$transaction(async (tx) => {
@@ -29,7 +41,7 @@ export const getTestPrismaService = async () => {
         tx.person.deleteMany(),
       ]);
 
-      console.log('Cleanup results:', {
+      log('Cleanup results:', {
         refreshTokens: results[0].count,
         rolePermissions: results[1].count,
         personRoles: results[2].count,
@@ -40,14 +52,14 @@ export const getTestPrismaService = async () => {
       });
     });
     
-    console.log('Database cleanup completed');
-  } catch (error) {
-    if (error.code === 'P2021') {
+    log('Database cleanup completed');
+  } catch (err) {
+    if (err.code === 'P2021') {
       // Table does not exist - this is fine during initial setup
-      console.log('Some tables do not exist yet. This is expected during initial setup.');
+      log('Some tables do not exist yet. This is expected during initial setup.');
     } else {
-      console.error('Error during cleanup:', error);
-      throw error;
+      error('Error during cleanup:', err);
+      throw err;
     }
   }
 
