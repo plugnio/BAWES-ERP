@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DatabaseHelper } from '../../test/helpers/database.helper';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
+import { ConfigService } from '@nestjs/config';
 
 describe('PersonService', () => {
   let service: PersonService;
@@ -11,17 +12,30 @@ describe('PersonService', () => {
   let dbHelper: DatabaseHelper;
 
   beforeAll(async () => {
+    dbHelper = DatabaseHelper.getInstance();
+    prisma = dbHelper.getPrismaService();
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PersonService, PrismaService],
+      providers: [
+        PersonService,
+        {
+          provide: PrismaService,
+          useValue: prisma,
+        },
+      ],
     }).compile();
 
     service = module.get<PersonService>(PersonService);
-    prisma = module.get<PrismaService>(PrismaService);
-    dbHelper = new DatabaseHelper(prisma);
   });
 
   beforeEach(async () => {
     await dbHelper.cleanDatabase();
+  });
+
+  afterAll(async () => {
+    if (dbHelper) {
+      await dbHelper.disconnect();
+    }
   });
 
   it('should be defined', () => {

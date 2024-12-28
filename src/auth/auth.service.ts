@@ -72,7 +72,8 @@ export class AuthService {
       this.logger.debug('Cookies received:', req.cookies);
     }
     try {
-      const [id, token] = (req.cookies?.refreshToken || '').split('.');
+      const refreshToken = req.cookies?.refreshToken || req.cookies?.refresh_token;
+      const [id, token] = (refreshToken || '').split('.');
       if (!id || !token) return null;
       return { id, token };
     } catch {
@@ -592,17 +593,21 @@ export class AuthService {
 
       // Find the specific token by ID first
       const tokenRecord = await this.prisma.refreshToken.findUnique({
-        where: { 
-          id,
-          isRevoked: false 
-        },
+        where: { id },
       });
 
       if (!tokenRecord) {
         if (this.debugMode) {
-          this.logger.debug('Token not found or already revoked:', id);
+          this.logger.debug('Token not found:', id);
         }
-        throw new UnauthorizedException('Token not found or already revoked');
+        throw new UnauthorizedException('Token not found');
+      }
+
+      if (tokenRecord.isRevoked) {
+        if (this.debugMode) {
+          this.logger.debug('Token already revoked:', id);
+        }
+        throw new UnauthorizedException('Token already revoked');
       }
 
       // Verify the token
@@ -632,6 +637,9 @@ export class AuthService {
     } catch (error) {
       if (this.debugMode) {
         this.logger.error('Token revocation failed:', error);
+      }
+      if (error instanceof UnauthorizedException) {
+        throw error;
       }
       // Always throw UnauthorizedException to avoid leaking implementation details
       throw new UnauthorizedException('Failed to revoke token');

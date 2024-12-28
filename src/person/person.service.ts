@@ -38,15 +38,14 @@ export class PersonService {
       },
     });
 
-    if (!person) {
-      throw new NotFoundException(`Person with ID ${id} not found`);
-    }
-
     return person;
   }
 
   async update(id: string, updatePersonDto: UpdatePersonDto) {
-    await this.findOne(id);
+    const person = await this.findOne(id);
+    if (!person) {
+      return null;
+    }
 
     return this.prisma.person.update({
       where: { id },
@@ -55,7 +54,10 @@ export class PersonService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const person = await this.findOne(id);
+    if (!person) {
+      return null;
+    }
 
     return this.prisma.person.update({
       where: { id },
