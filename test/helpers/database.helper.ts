@@ -4,13 +4,9 @@ import { ConfigService } from '@nestjs/config';
 export class DatabaseHelper {
   private static instance: DatabaseHelper;
   private prisma: PrismaService;
-  private debugMode: boolean;
 
   private constructor() {
-    // Create ConfigService with environment variables
-    const configService = new ConfigService();
-    this.prisma = new PrismaService(configService);
-    this.debugMode = process.env.DEBUG === 'true';
+    this.prisma = new PrismaService(new ConfigService());
   }
 
   public static getInstance(): DatabaseHelper {
@@ -24,40 +20,65 @@ export class DatabaseHelper {
     return this.prisma;
   }
 
-  private log(...args: any[]) {
-    if (this.debugMode) {
-      console.log(...args);
+  public async cleanDatabase(): Promise<void> {
+    const log = (...args: any[]) => {
+      if (process.env.DEBUG === 'true') {
+        console.log(...args);
+      }
+    };
+
+    const error = (...args: any[]) => {
+      if (process.env.DEBUG === 'true') {
+        console.error(...args);
+      }
+    };
+
+    try {
+      log('Starting database cleanup...');
+
+      // Delete in correct order to handle foreign key constraints
+      await this.prisma.$transaction(async (tx) => {
+        const results = await Promise.all([
+          tx.refreshToken.deleteMany(),
+          tx.rolePermission.deleteMany(),
+          tx.personRole.deleteMany(),
+          tx.permission.deleteMany(),
+          tx.role.deleteMany(),
+          tx.email.deleteMany(),
+          tx.person.deleteMany(),
+        ]);
+
+        log('Cleanup results:', {
+          refreshTokens: results[0].count,
+          rolePermissions: results[1].count,
+          personRoles: results[2].count,
+          permissions: results[3].count,
+          roles: results[4].count,
+          emails: results[5].count,
+          persons: results[6].count,
+        });
+      });
+
+      log('Database cleanup completed');
+    } catch (err) {
+      if (err.code === 'P2021') {
+        // Table does not exist - this is fine during initial setup
+        log('Some tables do not exist yet. This is expected during initial setup.');
+      } else {
+        error('Error during cleanup:', err);
+        throw err;
+      }
     }
   }
 
-  public async cleanDatabase() {
-    this.log('Starting database cleanup...');
-
-    // Delete in correct order to handle foreign key constraints
-    const results = await this.prisma.$transaction([
-      this.prisma.refreshToken.deleteMany(),
-      this.prisma.email.deleteMany(),
-      this.prisma.personRole.deleteMany(),
-      this.prisma.rolePermission.deleteMany(),
-      this.prisma.permission.deleteMany(),
-      this.prisma.role.deleteMany(),
-      this.prisma.person.deleteMany(),
-    ]);
-
-    this.log('Cleanup results:', {
-      refreshTokens: results[0].count,
-      emails: results[1].count,
-      personRoles: results[2].count,
-      rolePermissions: results[3].count,
-      permissions: results[4].count,
-      roles: results[5].count,
-      persons: results[6].count,
-    });
-
-    this.log('Database cleanup completed');
+  public async disconnect(): Promise<void> {
+    await this.prisma.$disconnect();
   }
 
-  public async disconnect() {
-    await this.prisma.$disconnect();
+  public static async cleanup(): Promise<void> {
+    if (DatabaseHelper.instance) {
+      await DatabaseHelper.instance.disconnect();
+      DatabaseHelper.instance = null;
+    }
   }
 } 
