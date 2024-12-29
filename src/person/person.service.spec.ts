@@ -9,11 +9,11 @@ import { ConfigService } from '@nestjs/config';
 describe('PersonService', () => {
   let service: PersonService;
   let prisma: PrismaService;
-  const dbHelper = DatabaseHelper.getInstance();
+  let dbHelper: DatabaseHelper;
 
-  beforeEach(async () => {
-    // Get Prisma instance
-    prisma = await dbHelper.getPrismaService();
+  beforeAll(async () => {
+    dbHelper = DatabaseHelper.getInstance();
+    prisma = dbHelper.getPrismaService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -28,12 +28,14 @@ describe('PersonService', () => {
     service = module.get<PersonService>(PersonService);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await dbHelper.cleanDatabase();
   });
 
   afterAll(async () => {
-    await dbHelper.disconnect();
+    if (dbHelper) {
+      await dbHelper.disconnect();
+    }
   });
 
   it('should be defined', () => {

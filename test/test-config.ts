@@ -27,15 +27,6 @@ export async function getTestPrismaService(): Promise<PrismaService> {
 // Add global teardown
 afterAll(async () => {
   await DatabaseHelper.cleanup();
-  // Add a small delay to ensure all connections are properly closed
-  await new Promise(resolve => setTimeout(resolve, 100));
-}, 500); // Set timeout to 500ms to ensure cleanup completes
-
-// Add global error handler for unhandled promises
-beforeAll(() => {
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  });
 });
 
 export const TEST_JWT_SECRET = 'test-secret';

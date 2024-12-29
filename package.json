@@ -121,9 +121,6 @@
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
-    "detectOpenHandles": true,
-    "forceExit": false,
-    "verbose": true,
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
     },
