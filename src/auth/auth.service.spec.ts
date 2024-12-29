@@ -69,7 +69,6 @@ describe('AuthService', () => {
     });
 
     it('should handle debug mode logging', async () => {
-      process.env.DEBUG = 'true';
       const personId = '1';
       const mockPerson = {
         id: personId,
@@ -119,11 +118,17 @@ describe('AuthService', () => {
       mockJwtService.sign.mockReturnValue('mock-access-token');
       mockRbacCacheService.getCachedPersonPermissions.mockResolvedValue(null);
 
-      // Create a new instance of AuthService with debug mode enabled
+      // Mock ConfigService to enable debug mode
+      const debugConfigService = {
+        get: jest.fn((key) => key === 'DEBUG' ? 'true' : undefined),
+        getOrThrow: jest.fn().mockReturnValue('7d'),
+      } as unknown as jest.Mocked<ConfigService>;
+
+      // Create a new instance of AuthService with debug mode enabled via config
       const debugService = new AuthService(
         mockPrismaService,
         mockJwtService,
-        mockConfigService,
+        debugConfigService,
         mockRbacCacheService,
       );
 
@@ -432,15 +437,28 @@ describe('AuthService', () => {
     });
 
     it('should handle debug mode logging', () => {
-      process.env.DEBUG = 'true';
+      // Mock ConfigService to enable debug mode
+      const debugConfigService = {
+        get: jest.fn((key) => key === 'DEBUG' ? 'true' : undefined),
+        getOrThrow: jest.fn().mockReturnValue('7d'),
+      } as unknown as jest.Mocked<ConfigService>;
+
       const mockRequest = {
         cookies: {
           refreshToken: 'token-id.token-value',
         },
       } as unknown as Request;
 
-      const loggerSpy = jest.spyOn(service['logger'], 'debug');
-      service.extractRefreshTokenFromCookie(mockRequest);
+      // Create a new instance of AuthService with debug mode enabled via config
+      const debugService = new AuthService(
+        mockPrismaService,
+        mockJwtService,
+        debugConfigService,
+        mockRbacCacheService,
+      );
+
+      const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
+      debugService.extractRefreshTokenFromCookie(mockRequest);
 
       expect(loggerSpy).toHaveBeenCalledWith('Cookies received:', mockRequest.cookies);
     });
@@ -708,17 +726,35 @@ describe('AuthService', () => {
     });
 
     it('should handle debug mode logging', async () => {
-      process.env.DEBUG = 'true';
-
-      // Create a new instance of AuthService with debug mode enabled
-      const debugService = new AuthService(
-        mockPrismaService,
-        mockJwtService,
-        mockConfigService,
-        mockRbacCacheService,
-      );
-
-      const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
+      // Mock ConfigService to enable debug mode
+      const debugConfigService = {
+        get: jest.fn((key) => {
+          switch (key) {
+            case 'DEBUG':
+              return 'true';
+            case 'JWT_REFRESH_TOKEN_EXPIRY':
+              return '7d';
+            case 'JWT_ACCESS_TOKEN_EXPIRY':
+              return '15m';
+            case 'JWT_SECRET':
+              return 'test-secret';
+            default:
+              return undefined;
+          }
+        }),
+        getOrThrow: jest.fn((key) => {
+          switch (key) {
+            case 'JWT_REFRESH_TOKEN_EXPIRY':
+              return '7d';
+            case 'JWT_ACCESS_TOKEN_EXPIRY':
+              return '15m';
+            case 'JWT_SECRET':
+              return 'test-secret';
+            default:
+              throw new Error(`Config key not found: ${key}`);
+          }
+        }),
+      } as unknown as jest.Mocked<ConfigService>;
 
       const mockRequestWithClearCookie = {
         ...mockRequest,
@@ -729,6 +765,16 @@ describe('AuthService', () => {
         },
       } as unknown as Request;
 
+      // Create a new instance of AuthService with debug mode enabled via config
+      const debugService = new AuthService(
+        mockPrismaService,
+        mockJwtService,
+        debugConfigService,
+        mockRbacCacheService,
+      );
+
+      const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
+
       await expect(debugService.refreshToken(mockRequestWithClearCookie))
         .rejects
         .toThrow(UnauthorizedException);
@@ -737,7 +783,36 @@ describe('AuthService', () => {
     });
 
     it('should recalculate permissions when cache is empty', async () => {
-      process.env.DEBUG = 'true';
+      // Mock ConfigService to enable debug mode
+      const debugConfigService = {
+        get: jest.fn((key) => {
+          switch (key) {
+            case 'DEBUG':
+              return 'true';
+            case 'JWT_REFRESH_TOKEN_EXPIRY':
+              return '7d';
+            case 'JWT_ACCESS_TOKEN_EXPIRY':
+              return '15m';
+            case 'JWT_SECRET':
+              return 'test-secret';
+            default:
+              return undefined;
+          }
+        }),
+        getOrThrow: jest.fn((key) => {
+          switch (key) {
+            case 'JWT_REFRESH_TOKEN_EXPIRY':
+              return '7d';
+            case 'JWT_ACCESS_TOKEN_EXPIRY':
+              return '15m';
+            case 'JWT_SECRET':
+              return 'test-secret';
+            default:
+              throw new Error(`Config key not found: ${key}`);
+          }
+        }),
+      } as unknown as jest.Mocked<ConfigService>;
+
       const mockToken = {
         id: 'token-id',
         createdAt: new Date(),
@@ -833,27 +908,14 @@ describe('AuthService', () => {
         return await callback(mockPrismaInTransaction);
       });
 
-      mockConfigService.getOrThrow.mockImplementation((key: string) => {
-        switch (key) {
-          case 'JWT_REFRESH_TOKEN_EXPIRY':
-            return '7d';
-          case 'JWT_ACCESS_TOKEN_EXPIRY':
-            return '15m';
-          case 'JWT_SECRET':
-            return 'test-secret';
-          default:
-            return undefined;
-        }
-      });
-
       mockJwtService.sign.mockReturnValue('new-access-token');
       mockRbacCacheService.getCachedPersonPermissions.mockResolvedValue(null); // No cached permissions
 
-      // Create a new instance of AuthService with debug mode enabled
+      // Create a new instance of AuthService with debug mode enabled via config
       const debugService = new AuthService(
         mockPrismaService,
         mockJwtService,
-        mockConfigService,
+        debugConfigService,
         mockRbacCacheService,
       );
 
@@ -1026,13 +1088,23 @@ describe('AuthService', () => {
     });
 
     it('should handle debug mode logging', async () => {
-      process.env.DEBUG = 'true';
+      // Mock ConfigService to enable debug mode
+      const debugConfigService = {
+        get: jest.fn((key) => key === 'DEBUG' ? 'true' : undefined),
+        getOrThrow: jest.fn().mockReturnValue('7d'),
+      } as unknown as jest.Mocked<ConfigService>;
+
+      // Create a new instance of AuthService with debug mode enabled via config
       const debugService = new AuthService(
         mockPrismaService,
         mockJwtService,
-        mockConfigService,
+        debugConfigService,
         mockRbacCacheService,
       );
+
+      // Override Logger to allow debug messages during test
+      Logger.overrideLogger(['debug']);
+
       const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
 
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
@@ -1043,6 +1115,9 @@ describe('AuthService', () => {
 
       expect(loggerSpy).toHaveBeenCalledWith('Attempting to revoke token:', 'token-id.token-value');
       expect(loggerSpy).toHaveBeenCalledWith('Token not found:', 'token-id');
+
+      // Reset Logger override
+      Logger.overrideLogger([]);
     });
   });
 

@@ -28,7 +28,7 @@ export class AuthService {
     private configService: ConfigService,
     private rbacCache: RbacCacheService,
   ) {
-    this.debugMode = process.env.DEBUG?.toLowerCase() === 'true';
+    this.debugMode = configService.get('DEBUG')?.toLowerCase() === 'true';
     // Create logger with no output during tests
     this.logger = new Logger(AuthService.name);
     if (process.env.NODE_ENV === 'test') {
