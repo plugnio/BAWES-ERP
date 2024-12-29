@@ -57,19 +57,27 @@ export class PersonService {
   }
 
   async remove(id: string) {
-    const person = await this.findOne(id);
-    if (!person) {
-      return null;
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const person = await tx.person.findFirst({
+        where: {
+          id,
+          isDeleted: false,
+        },
+      });
 
-    return this.prisma.person.update({
-      where: { 
-        id,
-        isDeleted: false 
-      },
-      data: {
-        isDeleted: true,
-      },
+      if (!person) {
+        return null;
+      }
+
+      return tx.person.update({
+        where: { 
+          id: person.id,
+          isDeleted: false 
+        },
+        data: {
+          isDeleted: true,
+        },
+      });
     });
   }
 }
