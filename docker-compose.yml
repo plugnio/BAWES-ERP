@@ -16,6 +16,23 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres_test:
+    image: postgres:latest
+    container_name: postgres_test
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=erpuser_test
+      - POSTGRES_PASSWORD=erppassword_test
+      - POSTGRES_DB=erp_db_test
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U erpuser_test -d erp_db_test']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -30,6 +47,22 @@ services:
       timeout: 3s
       retries: 5
 
+  redis_test:
+    image: redis:7-alpine
+    container_name: redis_test
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
+    ports:
+      - '6380:6379'
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   postgres_data:
+  postgres_test_data:
   redis_data:
+  redis_test_data:
