@@ -10,9 +10,7 @@ export class DatabaseHelper {
   }
 
   public static getInstance(): DatabaseHelper {
-    if (!DatabaseHelper.instance) {
-      DatabaseHelper.instance = new DatabaseHelper();
-    }
+    DatabaseHelper.instance = new DatabaseHelper();
     return DatabaseHelper.instance;
   }
 

@@ -30,4 +30,11 @@ afterAll(async () => {
 });
 
 export const TEST_JWT_SECRET = 'test-secret';
-export const TEST_REDIS_URL = 'redis://localhost:6379/1'; // Use different DB for tests 
+
+// Construct Redis URL from environment variables
+const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
+const REDIS_PORT = process.env.REDIS_PORT || '6379';
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+const REDIS_DB = process.env.REDIS_DB || '0';
+
+export const TEST_REDIS_URL = `redis://${REDIS_PASSWORD ? `${REDIS_PASSWORD}@` : ''}${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}`; 
