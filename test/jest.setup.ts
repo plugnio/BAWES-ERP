@@ -1,17 +1,25 @@
-const { DatabaseHelper } = require('./helpers/database.helper');
+import { DatabaseHelper } from './helpers/database.helper';
+import { Logger } from '@nestjs/common';
+
+// Silence NestJS logger during tests
+Logger.overrideLogger([]);
 
 // Increase timeout for all tests
 jest.setTimeout(30000);
 
 // Global test setup
 beforeAll(async () => {
-  // Ensure database tables exist
-  await DatabaseHelper.ensureTablesExist();
+  // Clean database before all tests
+  await DatabaseHelper.getInstance().cleanDatabase();
 });
 
 // Global test cleanup
 afterAll(async () => {
-  await DatabaseHelper.resetDatabase();
+  // Clean database after all tests
+  await DatabaseHelper.getInstance().cleanDatabase();
+  
+  // Disconnect from database
+  await DatabaseHelper.cleanup();
   
   // Use real timers
   jest.useRealTimers();

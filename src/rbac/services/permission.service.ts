@@ -90,14 +90,14 @@ export class PermissionService {
 
     return {
       categories,
-      roles,
+      roles: roles || [],
       stats: {
         totalPermissions: categories.reduce(
           (acc, cat) => acc + cat.permissions.length,
           0,
         ),
-        totalRoles: roles.length,
-        systemRoles: roles.filter((r) => r.isSystem).length,
+        totalRoles: (roles || []).length,
+        systemRoles: (roles || []).filter((r) => r.isSystem).length,
       },
     };
   }

@@ -756,6 +756,17 @@ describe('AuthService', () => {
         }),
       } as unknown as jest.Mocked<ConfigService>;
 
+      // Create a new instance of AuthService with debug mode enabled via config
+      const debugService = new AuthService(
+        mockPrismaService,
+        mockJwtService,
+        debugConfigService,
+        mockRbacCacheService,
+      );
+
+      // Mock the logger's debug method
+      const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
+
       const mockRequestWithClearCookie = {
         ...mockRequest,
         cookies: {}, // Remove refresh token to trigger the "no token" debug message
@@ -765,20 +776,11 @@ describe('AuthService', () => {
         },
       } as unknown as Request;
 
-      // Create a new instance of AuthService with debug mode enabled via config
-      const debugService = new AuthService(
-        mockPrismaService,
-        mockJwtService,
-        debugConfigService,
-        mockRbacCacheService,
-      );
-
-      const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
-
       await expect(debugService.refreshToken(mockRequestWithClearCookie))
         .rejects
         .toThrow(UnauthorizedException);
 
+      // Verify debug logs were attempted
       expect(loggerSpy).toHaveBeenCalledWith('No refresh token found in cookies');
     });
 
@@ -995,6 +997,11 @@ describe('AuthService', () => {
         lastUsedAt: new Date(),
       };
 
+      // Mock bcrypt.compare to return true for matching token
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async (token, hash) => {
+        return token === 'token-value';
+      });
+
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockToken);
       mockPrismaService.refreshToken.update.mockResolvedValue({
         ...mockToken,
@@ -1102,9 +1109,7 @@ describe('AuthService', () => {
         mockRbacCacheService,
       );
 
-      // Override Logger to allow debug messages during test
-      Logger.overrideLogger(['debug']);
-
+      // Mock the logger's debug method
       const loggerSpy = jest.spyOn(debugService['logger'], 'debug');
 
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(null);
@@ -1113,11 +1118,9 @@ describe('AuthService', () => {
         .rejects
         .toThrow(UnauthorizedException);
 
+      // Verify debug logs were attempted
       expect(loggerSpy).toHaveBeenCalledWith('Attempting to revoke token:', 'token-id.token-value');
       expect(loggerSpy).toHaveBeenCalledWith('Token not found:', 'token-id');
-
-      // Reset Logger override
-      Logger.overrideLogger([]);
     });
   });
 
