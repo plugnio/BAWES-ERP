@@ -4,13 +4,17 @@ import { ConfigService } from '@nestjs/config';
 export class DatabaseHelper {
   private static instance: DatabaseHelper;
   private prisma: PrismaService;
+  private debugMode: boolean;
 
   private constructor() {
     this.prisma = new PrismaService(new ConfigService());
+    this.debugMode = process.env.DEBUG?.toLowerCase() === 'true';
   }
 
   public static getInstance(): DatabaseHelper {
-    DatabaseHelper.instance = new DatabaseHelper();
+    if (!DatabaseHelper.instance) {
+      DatabaseHelper.instance = new DatabaseHelper();
+    }
     return DatabaseHelper.instance;
   }
 
@@ -20,13 +24,13 @@ export class DatabaseHelper {
 
   public async cleanDatabase(): Promise<void> {
     const log = (...args: any[]) => {
-      if (process.env.DEBUG === 'true') {
+      if (this.debugMode) {
         console.log(...args);
       }
     };
 
     const error = (...args: any[]) => {
-      if (process.env.DEBUG === 'true') {
+      if (this.debugMode) {
         console.error(...args);
       }
     };
