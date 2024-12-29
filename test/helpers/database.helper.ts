@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 export class DatabaseHelper {
   private static instance: DatabaseHelper;
   private prisma: PrismaService;
+  private isConnected: boolean = false;
 
   private constructor() {
     this.prisma = new PrismaService(new ConfigService());
@@ -14,7 +15,11 @@ export class DatabaseHelper {
     return DatabaseHelper.instance;
   }
 
-  public getPrismaService(): PrismaService {
+  public async getPrismaService(): Promise<PrismaService> {
+    if (!this.isConnected) {
+      await this.prisma.$connect();
+      this.isConnected = true;
+    }
     return this.prisma;
   }
 
@@ -70,7 +75,10 @@ export class DatabaseHelper {
   }
 
   public async disconnect(): Promise<void> {
-    await this.prisma.$disconnect();
+    if (this.isConnected) {
+      await this.prisma.$disconnect();
+      this.isConnected = false;
+    }
   }
 
   public static async cleanup(): Promise<void> {
