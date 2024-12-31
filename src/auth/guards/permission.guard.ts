@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSIONS_KEY } from '../../rbac/decorators/require-permission.decorator';
+import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { PermissionCacheService } from '../../rbac/services/permission-cache.service';
 import Decimal from 'decimal.js';
 

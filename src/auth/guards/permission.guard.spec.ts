@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { PermissionGuard } from './permission.guard';
 import { PermissionCacheService } from '../../rbac/services/permission-cache.service';
 import Decimal from 'decimal.js';
-import { PERMISSIONS_KEY } from '../../rbac/decorators/require-permission.decorator';
+import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 
 describe('PermissionGuard', () => {
   let guard: PermissionGuard;
