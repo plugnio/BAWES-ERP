@@ -1,5 +1,16 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { DatabaseHelper } from './helpers/database.helper';
 import { Logger } from '@nestjs/common';
+
+// Load test environment before anything else
+const envPath = path.resolve(process.cwd(), '.env.test');
+dotenv.config({ path: envPath });
+
+// Verify we're in test environment
+if (process.env.NODE_ENV !== 'test') {
+  throw new Error('Tests must run with NODE_ENV=test');
+}
 
 // Silence NestJS logger during tests
 Logger.overrideLogger([]);

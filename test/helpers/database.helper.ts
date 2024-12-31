@@ -1,5 +1,7 @@
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 export class DatabaseHelper {
   private static instance: DatabaseHelper;
@@ -7,8 +9,18 @@ export class DatabaseHelper {
   private debugMode: boolean;
 
   private constructor() {
-    this.prisma = new PrismaService(new ConfigService());
+    // Explicitly load test environment
+    const envPath = path.resolve(process.cwd(), '.env.test');
+    dotenv.config({ path: envPath });
+    
     const configService = new ConfigService();
+    // Verify we're using test database
+    const dbUrl = configService.get('DATABASE_URL');
+    if (!dbUrl.includes('_test')) {
+      throw new Error('Test database URL must contain "_test" to ensure we are not using production database');
+    }
+    
+    this.prisma = new PrismaService(configService);
     this.debugMode = configService.get('DEBUG')?.toLowerCase() === 'true';
   }
 
