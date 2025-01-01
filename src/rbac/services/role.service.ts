@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoleDto } from '../dto/create-role.dto';
@@ -39,6 +40,15 @@ export class RoleService {
   }
 
   async createRole(data: CreateRoleDto) {
+    // Check for existing role with same name
+    const existingRole = await this.prisma.role.findFirst({
+      where: { name: data.name },
+    });
+
+    if (existingRole) {
+      throw new ConflictException('Role with this name already exists');
+    }
+
     const role = await this.prisma.role.create({
       data: {
         name: data.name,

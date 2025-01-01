@@ -3,7 +3,7 @@ import { RoleService } from './role.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RbacCacheService } from './rbac-cache.service';
 import { CreateRoleDto } from '../dto/create-role.dto';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('RoleService', () => {
   let service: RoleService;
@@ -159,6 +159,21 @@ describe('RoleService', () => {
         },
       });
       expect(prisma.rolePermission.createMany).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException when role name already exists', async () => {
+      const dto: CreateRoleDto = {
+        name: 'Existing Role',
+        description: 'Test role',
+      };
+
+      // Mock finding existing role with same name
+      mockPrisma.role.findFirst.mockResolvedValue({ 
+        id: 'existing-id', 
+        name: 'Existing Role' 
+      });
+
+      await expect(service.createRole(dto)).rejects.toThrow('Role with this name already exists');
     });
 
     it('should create role with permissions', async () => {
