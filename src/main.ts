@@ -5,6 +5,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { Logger, LogLevel } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { ValidationPipe, HttpStatus } from '@nestjs/common';
 
 async function bootstrap() {
   // Configure logging levels based on DEBUG environment variable
@@ -19,6 +20,16 @@ async function bootstrap() {
 
   // Add cookie parser middleware
   app.use(cookieParser());
+
+  // Add global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      errorHttpStatusCode: HttpStatus.BAD_REQUEST,
+    }),
+  );
 
   // Add global request logging middleware only in debug mode
   if (debugMode) {

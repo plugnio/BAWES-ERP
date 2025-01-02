@@ -2,13 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoleController } from './role.controller';
 import { RoleService } from '../services/role.service';
 import { PersonRoleService } from '../services/person-role.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ValidationPipe, HttpStatus } from '@nestjs/common';
 import { ToggleRolePermissionDto } from '../dto/toggle-role-permission.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../auth/guards/permission.guard';
 import { PermissionCacheService } from '../services/permission-cache.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { validate } from 'class-validator';
+import * as request from 'supertest';
 
 describe('RoleController', () => {
   let controller: RoleController;
@@ -105,6 +106,51 @@ describe('RoleController', () => {
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].constraints).toHaveProperty('isString');
       expect(errors[1].constraints).toHaveProperty('isBoolean');
+    });
+
+    it('should return 400 Bad Request when validation fails', async () => {
+      const moduleRef = await Test.createTestingModule({
+        controllers: [RoleController],
+        providers: [
+          {
+            provide: RoleService,
+            useValue: mockRoleService,
+          },
+          {
+            provide: PersonRoleService,
+            useValue: mockPersonRoleService,
+          },
+        ],
+      })
+        .overrideGuard(JwtAuthGuard)
+        .useValue({ canActivate: () => true })
+        .overrideGuard(PermissionGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
+
+      const app = moduleRef.createNestApplication();
+      app.useGlobalPipes(
+        new ValidationPipe({
+          transform: true,
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          validateCustomDecorators: true,
+        }),
+      );
+      await app.init();
+
+      // Test with empty DTO
+      const response = await request(app.getHttpServer())
+        .patch('/roles/role-1/permissions')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toEqual([
+        'permissionCode must be a string',
+        'enabled must be a boolean value',
+      ]);
+
+      await app.close();
     });
   });
 }); 
