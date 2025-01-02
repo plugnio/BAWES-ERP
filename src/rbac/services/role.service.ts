@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoleDto } from '../dto/create-role.dto';
+import { UpdateRoleDto } from '../dto/update-role.dto';
 import { RbacCacheService } from './rbac-cache.service';
 
 @Injectable()
@@ -151,10 +152,83 @@ export class RoleService {
     return this.getRoleWithPermissions(roleId);
   }
 
-  private async getNextRolePosition(): Promise<number> {
-    const maxRole = await this.prisma.role.findFirst({
+  async updateRole(roleId: string, data: UpdateRoleDto) {
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+    });
+
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    if (role.isSystem) {
+      throw new ForbiddenException('Cannot modify system roles');
+    }
+
+    // Check for name conflict if name is being updated
+    if (data.name && data.name !== role.name) {
+      const existingRole = await this.prisma.role.findFirst({
+        where: { name: data.name },
+      });
+
+      if (existingRole) {
+        throw new ConflictException('Role with this name already exists');
+      }
+    }
+
+    const updatedRole = await this.prisma.role.update({
+      where: { id: roleId },
+      data: {
+        name: data.name,
+        description: data.description,
+        sortOrder: data.sortOrder,
+      },
+    });
+
+    // Clear cache for all users with this role
+    await this.cacheService.clearPermissionCache(roleId);
+
+    return this.getRoleWithPermissions(updatedRole.id);
+  }
+
+  async deleteRole(roleId: string) {
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+    });
+
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    if (role.isSystem) {
+      throw new ForbiddenException('Cannot delete system roles');
+    }
+
+    // Delete role permissions first
+    await this.prisma.rolePermission.deleteMany({
+      where: { roleId },
+    });
+
+    // Delete person role assignments
+    await this.prisma.personRole.deleteMany({
+      where: { roleId },
+    });
+
+    // Delete the role
+    await this.prisma.role.delete({
+      where: { id: roleId },
+    });
+
+    // Clear cache for all users with this role
+    await this.cacheService.clearPermissionCache(roleId);
+
+    return { success: true };
+  }
+
+  private async getNextRolePosition() {
+    const lastRole = await this.prisma.role.findFirst({
       orderBy: { sortOrder: 'desc' },
     });
-    return (maxRole?.sortOrder ?? -1) + 1;
+    return lastRole ? lastRole.sortOrder + 1 : 0;
   }
 } 

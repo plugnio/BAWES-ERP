@@ -15,6 +15,7 @@ import { RequirePermissions } from '../../auth/decorators/permissions.decorator'
 import { RoleService } from '../services/role.service';
 import { PersonRoleService } from '../services/person-role.service';
 import { CreateRoleDto } from '../dto/create-role.dto';
+import { UpdateRoleDto } from '../dto/update-role.dto';
 
 @ApiTags('Roles')
 @ApiBearerAuth()
@@ -47,6 +48,16 @@ export class RoleController {
     return this.roleService.getRoleWithPermissions(id);
   }
 
+  @Patch(':id')
+  @RequirePermissions('roles.update')
+  @ApiOperation({ summary: 'Update a role' })
+  async updateRole(
+    @Param('id') id: string,
+    @Body() updateRoleDto: UpdateRoleDto,
+  ) {
+    return this.roleService.updateRole(id, updateRoleDto);
+  }
+
   @Patch(':roleId/position')
   @RequirePermissions('roles.update')
   @ApiOperation({ summary: 'Update role position' })
@@ -69,6 +80,13 @@ export class RoleController {
       data.permissionCode,
       data.enabled,
     );
+  }
+
+  @Delete(':id')
+  @RequirePermissions('roles.delete')
+  @ApiOperation({ summary: 'Delete a role' })
+  async deleteRole(@Param('id') id: string) {
+    return this.roleService.deleteRole(id);
   }
 
   @Post(':roleId/assign/:personId')

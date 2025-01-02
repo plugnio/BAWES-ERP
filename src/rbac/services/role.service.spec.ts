@@ -28,6 +28,9 @@ describe('RoleService', () => {
       create: jest.fn(),
       deleteMany: jest.fn(),
     },
+    personRole: {
+      deleteMany: jest.fn(),
+    },
     $transaction: jest.fn((updates) => Promise.resolve(updates)),
   };
 
@@ -303,6 +306,118 @@ describe('RoleService', () => {
       await expect(
         service.toggleRolePermission('1', 'users.create', true),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('updateRole', () => {
+    const mockRole = {
+      id: '1',
+      name: 'Test Role',
+      description: 'Test Description',
+      isSystem: false,
+      sortOrder: 1,
+    };
+
+    beforeEach(() => {
+      mockPrisma.role.findUnique.mockResolvedValue(mockRole);
+    });
+
+    it('should update role successfully', async () => {
+      const updateDto = {
+        name: 'Updated Role',
+        description: 'Updated Description',
+        sortOrder: 2,
+      };
+
+      mockPrisma.role.findFirst.mockResolvedValue(null);
+      mockPrisma.role.update.mockResolvedValue({ ...mockRole, ...updateDto });
+      mockPrisma.role.findUnique.mockResolvedValueOnce(mockRole);
+
+      const result = await service.updateRole('1', updateDto);
+
+      expect(prisma.role.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: updateDto,
+      });
+      expect(cacheService.clearPermissionCache).toHaveBeenCalledWith('1');
+      expect(result).toBeDefined();
+    });
+
+    it('should throw NotFoundException when role not found', async () => {
+      mockPrisma.role.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateRole('1', { name: 'Updated Role' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when updating system role', async () => {
+      mockPrisma.role.findUnique.mockResolvedValue({
+        ...mockRole,
+        isSystem: true,
+      });
+
+      await expect(
+        service.updateRole('1', { name: 'Updated Role' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ConflictException when new name already exists', async () => {
+      mockPrisma.role.findFirst.mockResolvedValue({
+        id: '2',
+        name: 'Updated Role',
+      });
+
+      await expect(
+        service.updateRole('1', { name: 'Updated Role' }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('deleteRole', () => {
+    const mockRole = {
+      id: '1',
+      name: 'Test Role',
+      isSystem: false,
+    };
+
+    beforeEach(() => {
+      mockPrisma.role.findUnique.mockResolvedValue(mockRole);
+    });
+
+    it('should delete role successfully', async () => {
+      mockPrisma.rolePermission.deleteMany.mockResolvedValue({ count: 1 });
+      mockPrisma.personRole.deleteMany.mockResolvedValue({ count: 1 });
+      mockPrisma.role.delete.mockResolvedValue(mockRole);
+
+      const result = await service.deleteRole('1');
+
+      expect(prisma.rolePermission.deleteMany).toHaveBeenCalledWith({
+        where: { roleId: '1' },
+      });
+      expect(prisma.personRole.deleteMany).toHaveBeenCalledWith({
+        where: { roleId: '1' },
+      });
+      expect(prisma.role.delete).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
+      expect(cacheService.clearPermissionCache).toHaveBeenCalledWith('1');
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw NotFoundException when role not found', async () => {
+      mockPrisma.role.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteRole('1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when deleting system role', async () => {
+      mockPrisma.role.findUnique.mockResolvedValue({
+        ...mockRole,
+        isSystem: true,
+      });
+
+      await expect(service.deleteRole('1')).rejects.toThrow(ForbiddenException);
     });
   });
 }); 
