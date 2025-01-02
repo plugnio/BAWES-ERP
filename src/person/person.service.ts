@@ -42,38 +42,34 @@ export class PersonService {
   }
 
   async update(id: string, updatePersonDto: UpdatePersonDto) {
-    const person = await this.findOne(id);
-    if (!person) {
-      return null;
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const person = await tx.person.findUnique({
+        where: { id },
+      });
 
-    return this.prisma.person.update({
-      where: { 
-        id,
-        isDeleted: false 
-      },
-      data: updatePersonDto,
+      if (!person || person.isDeleted) {
+        return null;
+      }
+
+      return tx.person.update({
+        where: { id },
+        data: updatePersonDto,
+      });
     });
   }
 
   async remove(id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const person = await tx.person.findFirst({
-        where: {
-          id,
-          isDeleted: false,
-        },
+      const person = await tx.person.findUnique({
+        where: { id },
       });
 
-      if (!person) {
+      if (!person || person.isDeleted) {
         return null;
       }
 
       return tx.person.update({
-        where: { 
-          id: person.id,
-          isDeleted: false 
-        },
+        where: { id },
         data: {
           isDeleted: true,
         },

@@ -33,9 +33,7 @@ describe('PersonService', () => {
   });
 
   afterAll(async () => {
-    if (dbHelper) {
-      await dbHelper.disconnect();
-    }
+    await DatabaseHelper.cleanup();
   });
 
   it('should be defined', () => {
