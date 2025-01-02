@@ -16,6 +16,7 @@ import { RoleService } from '../services/role.service';
 import { PersonRoleService } from '../services/person-role.service';
 import { CreateRoleDto } from '../dto/create-role.dto';
 import { UpdateRoleDto } from '../dto/update-role.dto';
+import { ToggleRolePermissionDto } from '../dto/toggle-role-permission.dto';
 
 @ApiTags('Roles')
 @ApiBearerAuth()
@@ -73,7 +74,7 @@ export class RoleController {
   @ApiOperation({ summary: 'Toggle role permissions' })
   async togglePermissions(
     @Param('roleId') roleId: string,
-    @Body() data: { permissionCode: string; enabled: boolean },
+    @Body() data: ToggleRolePermissionDto,
   ) {
     return this.roleService.toggleRolePermission(
       roleId,

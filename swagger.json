@@ -315,6 +315,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleRolePermissionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -757,6 +767,23 @@
           "permissionIds",
           "isSystem",
           "sortOrder"
+        ]
+      },
+      "ToggleRolePermissionDto": {
+        "type": "object",
+        "properties": {
+          "permissionCode": {
+            "type": "string",
+            "description": "The permission code to toggle"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether to enable or disable the permission"
+          }
+        },
+        "required": [
+          "permissionCode",
+          "enabled"
         ]
       },
       "CreatePersonDto": {
