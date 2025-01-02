@@ -6,15 +6,5 @@ export const roles = [
     isSystem: true,
     sortOrder: 0,
     permissions: '*' // Will be assigned all permissions
-  },
-  {
-    name: 'SYSTEM_ADMIN',
-    description: 'System Administrator with limited system permissions',
-    isSystem: true,
-    sortOrder: 10,
-    permissions: [
-      'roles.read',
-      'roles.assign'
-    ]
   }
 ]; 
