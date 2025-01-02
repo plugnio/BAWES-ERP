@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -22,7 +23,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     this.debugMode = configService.get<string>('DEBUG')?.toLowerCase() === 'true';
   }
 
-  async validate(request: any, payload: JwtPayload) {
+  async validate(request: Request, payload: JwtPayload) {
+    // Check if validation result is already cached
+    if (request['_jwtValidationResult']) {
+      if (this.debugMode) {
+        this.logger.debug('Using cached JWT validation result');
+      }
+      return request['_jwtValidationResult'];
+    }
+
     if (this.debugMode) {
       this.logger.debug('JWT Validation Start ----------------------------------------');
       this.logger.debug('Request headers:', JSON.stringify(request.headers, null, 2));
@@ -58,6 +67,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       permissionBits: payload.permissionBits,
       isSuperAdmin: payload.isSuperAdmin || false,
     };
+
+    // Cache the validation result
+    request['_jwtValidationResult'] = user;
 
     if (this.debugMode) {
       this.logger.debug('JWT Validation Success - Returning user:', JSON.stringify(user, null, 2));

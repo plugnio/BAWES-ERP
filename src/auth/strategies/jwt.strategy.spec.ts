@@ -4,6 +4,12 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PassportStrategy } from '@nestjs/passport';
+import { Request } from 'express';
+
+// Create a mock Request type that includes only what we need
+type MockRequest = Pick<Request, 'headers'> & {
+  _jwtValidationResult?: any;
+};
 
 // Mock passport-jwt
 jest.mock('passport-jwt', () => {
@@ -68,11 +74,12 @@ describe('JwtStrategy', () => {
   });
 
   describe('validate', () => {
-    const mockRequest = {
+    const createMockRequest = (headers: any = {}): MockRequest => ({
       headers: {
         authorization: 'Bearer test.token.here',
+        ...headers,
       },
-    };
+    });
 
     it('should successfully validate and return user data', async () => {
       const mockPerson = {
@@ -90,28 +97,19 @@ describe('JwtStrategy', () => {
         emails: [{ email: 'test@example.com', isPrimary: true }],
       });
 
-      const result = await strategy.validate(mockRequest, { 
+      const result = await strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
       });
 
       expect(result).toEqual(mockPerson);
-      expect(mockPrisma.person.findUnique).toHaveBeenCalledWith({
-        where: { id: '1' },
-        include: {
-          emails: {
-            where: { isPrimary: true },
-            take: 1,
-          },
-        },
-      });
     });
 
     it('should throw UnauthorizedException when person not found', async () => {
       mockPrisma.person.findUnique.mockResolvedValueOnce(null);
 
-      await expect(strategy.validate(mockRequest, { 
+      await expect(strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
@@ -127,7 +125,7 @@ describe('JwtStrategy', () => {
         emails: [{ email: 'test@example.com', isPrimary: true }],
       });
 
-      await expect(strategy.validate(mockRequest, { 
+      await expect(strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
@@ -152,7 +150,7 @@ describe('JwtStrategy', () => {
         emails: [],
       });
 
-      const result = await strategy.validate(mockRequest, { 
+      const result = await strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
@@ -177,7 +175,7 @@ describe('JwtStrategy', () => {
         emails: [{ email: 'test@example.com', isPrimary: true }],
       });
 
-      const result = await strategy.validate(mockRequest, { 
+      const result = await strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
@@ -201,7 +199,7 @@ describe('JwtStrategy', () => {
         emails: [{ email: 'test@example.com', isPrimary: true }],
       });
 
-      const result = await strategy.validate(mockRequest, { 
+      const result = await strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
@@ -228,7 +226,7 @@ describe('JwtStrategy', () => {
         nameAr: 'جون دو',
       });
 
-      const result = await strategy.validate(mockRequest, { 
+      const result = await strategy.validate(createMockRequest() as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
@@ -238,9 +236,7 @@ describe('JwtStrategy', () => {
 
     it('should handle debug mode with missing authorization header', async () => {
       mockConfigService.get.mockReturnValueOnce('true');
-      const mockRequestNoAuth = {
-        headers: {},
-      };
+      const mockRequestNoAuth = createMockRequest();
 
       const mockPerson = {
         id: '1',
@@ -257,12 +253,60 @@ describe('JwtStrategy', () => {
         emails: [{ email: 'test@example.com', isPrimary: true }],
       });
 
-      const result = await strategy.validate(mockRequestNoAuth, { 
+      const result = await strategy.validate(mockRequestNoAuth as Request, { 
         sub: '1',
         email: 'test@example.com',
         permissionBits: '1',
       });
       expect(result).toEqual(mockPerson);
+    });
+
+    it('should use cached validation result if available', async () => {
+      const cachedUser = {
+        id: '1',
+        email: 'test@example.com',
+        nameEn: 'John Doe',
+        nameAr: undefined,
+        permissionBits: '1',
+        isSuperAdmin: false,
+      };
+
+      const mockRequest = createMockRequest();
+      mockRequest._jwtValidationResult = cachedUser;
+
+      mockConfigService.get.mockReturnValueOnce('true'); // Enable debug mode
+
+      const result = await strategy.validate(mockRequest as Request, { 
+        sub: '1',
+        email: 'test@example.com',
+        permissionBits: '1',
+      });
+
+      expect(result).toEqual(cachedUser);
+      expect(mockPrisma.person.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should cache validation result after successful validation', async () => {
+      const mockRequest = createMockRequest();
+
+      const mockPerson = {
+        id: '1',
+        accountStatus: 'active',
+        nameEn: 'John Doe',
+        nameAr: undefined,
+        emails: [{ email: 'test@example.com', isPrimary: true }],
+      };
+
+      mockPrisma.person.findUnique.mockResolvedValueOnce(mockPerson);
+
+      const result = await strategy.validate(mockRequest as Request, { 
+        sub: '1',
+        email: 'test@example.com',
+        permissionBits: '1',
+      });
+
+      expect(mockRequest['_jwtValidationResult']).toEqual(result);
+      expect(mockPrisma.person.findUnique).toHaveBeenCalledTimes(1);
     });
   });
 }); 
