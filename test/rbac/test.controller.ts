@@ -20,4 +20,22 @@ export class TestController {
   async testManage() {
     return { message: 'Test manage' };
   }
+
+  @Get('users')
+  @RequirePermissions('users.read')
+  async testUsers() {
+    return { message: 'Test users' };
+  }
+
+  @Get('roles')
+  @RequirePermissions('roles.read')
+  async testRoles() {
+    return { message: 'Test roles' };
+  }
+
+  @Get('permissions')
+  @RequirePermissions('permissions.read')
+  async testPermissions() {
+    return { message: 'Test permissions' };
+  }
 } 

@@ -66,16 +66,24 @@ describe('Permission Flow (e2e)', () => {
     jwtService = moduleRef.get(JwtService);
     rbacCacheService = moduleRef.get(RbacCacheService);
 
-    // Clean database
+    // Clean database first
     await prisma.$transaction([
       prisma.refreshToken.deleteMany(),
       prisma.personRole.deleteMany(),
       prisma.rolePermission.deleteMany(),
-      prisma.role.deleteMany(),
-      prisma.permission.deleteMany(),
       prisma.email.deleteMany(),
       prisma.person.deleteMany(),
+      prisma.role.deleteMany(),
+      prisma.permission.deleteMany(),
     ]);
+
+    // Wait for permission discovery to complete
+    await discoveryService.onModuleInit();
+    permissions = await prisma.permission.findMany();
+
+    if (permissions.length === 0) {
+      throw new Error('No permissions discovered. Check if TestController is properly registered.');
+    }
   });
 
   beforeEach(async () => {
