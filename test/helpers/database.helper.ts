@@ -53,15 +53,14 @@ export class DatabaseHelper {
 
       // Delete in correct order to handle foreign key constraints
       await this.prisma.$transaction(async (tx) => {
-        // First delete all dependent tables
+        // First delete child tables
         await tx.refreshToken.deleteMany();
-        await tx.rolePermission.deleteMany();
         await tx.personRole.deleteMany();
+        await tx.rolePermission.deleteMany();
         await tx.email.deleteMany();
-
         // Then delete parent tables
-        await tx.permission.deleteMany();
         await tx.role.deleteMany();
+        await tx.permission.deleteMany();
         await tx.person.deleteMany();
 
         log('Database cleanup completed');

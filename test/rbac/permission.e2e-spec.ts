@@ -12,6 +12,8 @@ import { RbacCacheService } from '../../src/rbac/services/rbac-cache.service';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
+import { ConfigModule } from '@nestjs/config';
+import { TestController } from './test.controller';
 
 describe('Permission (e2e)', () => {
   let app: INestApplication;
@@ -31,6 +33,9 @@ describe('Permission (e2e)', () => {
   let permissions: any[];
 
   beforeAll(async () => {
+    // Set debug mode for permission discovery
+    process.env.DEBUG = 'true';
+
     const moduleRef = await Test.createTestingModule({
       imports: [
         AppModule,
@@ -39,7 +44,12 @@ describe('Permission (e2e)', () => {
           store: 'memory',
           ttl: 300, // 5 minutes
         }),
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [() => ({ DEBUG: true })],
+        }),
       ],
+      controllers: [TestController],
     })
     .overrideProvider('REDIS_CLIENT')
     .useValue(null)
@@ -56,14 +66,18 @@ describe('Permission (e2e)', () => {
     jwtService = moduleRef.get(JwtService);
     rbacCacheService = moduleRef.get(RbacCacheService);
 
+    // Wait for permission discovery to complete
+    await discoveryService.onModuleInit();
+    permissions = await prisma.permission.findMany();
+
     // Clean database
     await prisma.$transaction([
       prisma.refreshToken.deleteMany(),
-      prisma.email.deleteMany(),
       prisma.personRole.deleteMany(),
       prisma.rolePermission.deleteMany(),
       prisma.role.deleteMany(),
       prisma.permission.deleteMany(),
+      prisma.email.deleteMany(),
       prisma.person.deleteMany(),
     ]);
   });
@@ -72,12 +86,12 @@ describe('Permission (e2e)', () => {
     // Clean up before each test
     await prisma.$transaction([
       prisma.refreshToken.deleteMany(),
-      prisma.email.deleteMany(),
       prisma.personRole.deleteMany(),
       prisma.rolePermission.deleteMany(),
-      prisma.person.deleteMany(),
-      prisma.permission.deleteMany(),
       prisma.role.deleteMany(),
+      prisma.permission.deleteMany(),
+      prisma.email.deleteMany(),
+      prisma.person.deleteMany(),
     ]);
 
     // Rediscover permissions for each test
@@ -95,7 +109,7 @@ describe('Permission (e2e)', () => {
           accountStatus: 'active',
           emails: {
             create: {
-              email: `admin-${Date.now()}@test.com`,
+              email: `admin-${Date.now()}-${Math.random().toString(36).substring(2)}@test.com`,
               isPrimary: true,
               isVerified: true,
             },
@@ -115,7 +129,7 @@ describe('Permission (e2e)', () => {
           accountStatus: 'active',
           emails: {
             create: {
-              email: `limited-${Date.now()}@test.com`,
+              email: `limited-${Date.now()}-${Math.random().toString(36).substring(2)}@test.com`,
               isPrimary: true,
               isVerified: true,
             },
@@ -182,7 +196,7 @@ describe('Permission (e2e)', () => {
       const testPermissions = await tx.permission.findMany({
         where: {
           code: {
-            in: ['people.read', 'people.list'],
+            in: ['test.read', 'test.write'],
           },
         },
       });
@@ -220,37 +234,98 @@ describe('Permission (e2e)', () => {
       },
     } as unknown as Request;
 
-    // Verify users exist with roles
-    const adminWithRoles = await prisma.person.findUnique({
-      where: { id: adminUser.id },
-      include: { roles: true },
+    // Generate tokens in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Clean up any existing refresh tokens
+      await tx.refreshToken.deleteMany({
+        where: {
+          personId: {
+            in: [adminUser.id, limitedUser.id],
+          },
+        },
+      });
+
+      // Get users with roles for token generation
+      const [adminWithRoles, limitedWithRoles] = await Promise.all([
+        tx.person.findUnique({
+          where: { id: adminUser.id },
+          include: {
+            roles: {
+              include: {
+                role: {
+                  include: {
+                    permissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            emails: {
+              where: { isPrimary: true },
+            },
+          },
+        }),
+        tx.person.findUnique({
+          where: { id: limitedUser.id },
+          include: {
+            roles: {
+              include: {
+                role: {
+                  include: {
+                    permissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            emails: {
+              where: { isPrimary: true },
+            },
+          },
+        }),
+      ]);
+
+      if (!adminWithRoles || !limitedWithRoles) {
+        throw new Error('Users not found with roles');
+      }
+
+      // Generate tokens for admin
+      const adminAuth = await authService.validateLogin(
+        adminWithRoles.emails[0].email,
+        'password',
+        mockReq,
+        tx,
+      );
+
+      // Generate tokens for limited user
+      const limitedAuth = await authService.validateLogin(
+        limitedWithRoles.emails[0].email,
+        'password',
+        mockReq,
+        tx,
+      );
+
+      adminToken = adminAuth.accessToken;
+      limitedUserToken = limitedAuth.accessToken;
     });
-
-    const limitedWithRoles = await prisma.person.findUnique({
-      where: { id: limitedUser.id },
-      include: { roles: true },
-    });
-
-    if (!adminWithRoles || !limitedWithRoles) {
-      throw new Error('Users not found with roles');
-    }
-
-    const adminAuth = await (authService as any).generateTokens(adminWithRoles.id, mockReq);
-    const limitedAuth = await (authService as any).generateTokens(limitedWithRoles.id, mockReq);
-
-    adminToken = adminAuth.accessToken;
-    limitedUserToken = limitedAuth.accessToken;
   });
 
   afterAll(async () => {
+    // Clean up in correct order to avoid deadlocks
     await prisma.$transaction([
       prisma.refreshToken.deleteMany(),
-      prisma.email.deleteMany(),
       prisma.personRole.deleteMany(),
       prisma.rolePermission.deleteMany(),
+      prisma.email.deleteMany(),
       prisma.person.deleteMany(),
-      prisma.permission.deleteMany(),
       prisma.role.deleteMany(),
+      prisma.permission.deleteMany(),
     ]);
     await app.close();
   });
@@ -287,7 +362,7 @@ describe('Permission (e2e)', () => {
     });
 
     it('should properly cache permission responses', async () => {
-      // First request to populate cache
+      // First request should hit database
       const firstResponse = await request(app.getHttpServer())
         .get('/permissions/dashboard')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -299,6 +374,18 @@ describe('Permission (e2e)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
+      // Verify structure and non-empty arrays
+      expect(firstResponse.body.categories).toBeDefined();
+      expect(Array.isArray(firstResponse.body.categories)).toBe(true);
+      expect(firstResponse.body.categories.length).toBeGreaterThan(0);
+      expect(firstResponse.body.roles).toBeDefined();
+      expect(Array.isArray(firstResponse.body.roles)).toBe(true);
+      expect(firstResponse.body.roles.length).toBeGreaterThan(0);
+      expect(firstResponse.body.stats).toBeDefined();
+      expect(firstResponse.body.stats.totalPermissions).toBeGreaterThan(0);
+      expect(firstResponse.body.stats.totalRoles).toBeGreaterThan(0);
+
+      // Verify both responses are identical
       expect(firstResponse.body).toEqual(secondResponse.body);
     });
 

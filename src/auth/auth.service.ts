@@ -81,9 +81,15 @@ export class AuthService {
     }
   }
 
-  async validateLogin(email: string, password: string, req: Request) {
+  async validateLogin(
+    email: string,
+    password: string,
+    req: Request,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prisma = tx || this.prisma;
     // Find person by email
-    const person = await this.prisma.person.findFirst({
+    const person = await prisma.person.findFirst({
       where: {
         emails: {
           some: {
@@ -126,7 +132,7 @@ export class AuthService {
 
     try {
       // Update last login
-      await this.prisma.person.update({
+      await prisma.person.update({
         where: { id: person.id },
         data: { lastLoginAt: new Date() },
       });
@@ -136,7 +142,7 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(person.id, req);
+    const tokens = await this.generateTokens(person.id, req, tx);
 
     return tokens;
   }
@@ -196,7 +202,12 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(personId: string, req: Request) {
+  private async generateTokens(
+    personId: string,
+    req: Request,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prisma = tx || this.prisma;
     // Check cache first
     let permissionBits: Decimal | null = null;
     const cachedPermissions = await this.rbacCache.getCachedPersonPermissions(personId);
@@ -209,7 +220,7 @@ export class AuthService {
     }
 
     // Get person's permissions through roles if not cached
-    const personWithRoles = await this.prisma.person.findUnique({
+    const personWithRoles = await prisma.person.findUnique({
       where: { id: personId },
       include: {
         roles: {
@@ -253,7 +264,7 @@ export class AuthService {
     if (!permissionBits) {
       if (isSuperAdmin) {
         // Super admin gets all permissions
-        const allPermissions = await this.prisma.permission.findMany({
+        const allPermissions = await prisma.permission.findMany({
           where: { isDeprecated: false },
         });
         permissionBits = allPermissions
@@ -320,7 +331,7 @@ export class AuthService {
     const expiresAt = this.getRefreshTokenExpiryDate();
 
     // Create refresh token record and get its ID
-    const { id: tokenId } = await this.prisma.refreshToken.create({
+    const { id: tokenId } = await prisma.refreshToken.create({
       select: { id: true },
       data: {
         personId,
