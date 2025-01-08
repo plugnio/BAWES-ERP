@@ -50,33 +50,48 @@ export class RoleService {
       throw new ConflictException('Role with this name already exists');
     }
 
-    const role = await this.prisma.role.create({
-      data: {
-        name: data.name,
-        description: data.description,
-        isSystem: false,
-        sortOrder: await this.getNextRolePosition(),
-      },
-    });
-
-    if (data.permissions?.length) {
-      const permissions = await this.prisma.permission.findMany({
-        where: {
-          code: {
-            in: data.permissions,
-          },
+    // Create role and assign permissions in a transaction
+    const role = await this.prisma.$transaction(async (prisma) => {
+      const newRole = await prisma.role.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          isSystem: false,
+          sortOrder: await this.getNextRolePosition(),
         },
       });
 
-      await this.prisma.rolePermission.createMany({
-        data: permissions.map((permission) => ({
-          roleId: role.id,
-          permissionId: permission.id,
-        })),
-      });
-    }
+      if (data.permissions?.length) {
+        const permissions = await prisma.permission.findMany({
+          where: {
+            code: {
+              in: data.permissions,
+            },
+          },
+        });
 
-    return this.getRoleWithPermissions(role.id);
+        await prisma.rolePermission.createMany({
+          data: permissions.map((permission) => ({
+            roleId: newRole.id,
+            permissionId: permission.id,
+          })),
+        });
+      }
+
+      // Return role with permissions
+      return prisma.role.findUnique({
+        where: { id: newRole.id },
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      });
+    });
+
+    return role;
   }
 
   async updateRolePosition(roleId: string, newPosition: number) {

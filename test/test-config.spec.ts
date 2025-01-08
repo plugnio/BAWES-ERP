@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { TestConfigModule, getTestPrismaService } from './test-config';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { Test } from '@nestjs/testing';
+import { DatabaseHelper } from './helpers/database.helper';
 
 describe('TestConfig', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -36,10 +37,13 @@ describe('TestConfig', () => {
     });
 
     afterEach(async () => {
-      // Clean up and disconnect after each test
-      if (prisma) {
-        await prisma.$disconnect();
-      }
+      // Clean up after each test
+      await DatabaseHelper.getInstance().cleanDatabase();
+    });
+
+    afterAll(async () => {
+      // Disconnect after all tests
+      await DatabaseHelper.cleanup();
     });
 
     it('should create PrismaService with test configuration', async () => {
@@ -52,21 +56,16 @@ describe('TestConfig', () => {
         data: {
           nameEn: 'Test Person',
           accountStatus: 'active',
-          passwordHash: 'test-hash', // Required field
+          passwordHash: 'test-hash',
         },
       });
 
       // Get new instance (should clean tables)
       const newPrisma = await getTestPrismaService();
 
-      try {
-        // Verify tables are empty
-        const count = await newPrisma.person.count();
-        expect(count).toBe(0);
-      } finally {
-        // Clean up
-        await newPrisma.$disconnect();
-      }
+      // Verify tables are empty
+      const count = await newPrisma.person.count();
+      expect(count).toBe(0);
     });
   });
 }); 

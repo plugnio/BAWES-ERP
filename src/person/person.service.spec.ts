@@ -123,10 +123,24 @@ describe('PersonService', () => {
       expect(result).toBeDefined();
       expect(result.id).toBe(created.id);
       expect(result.nameEn).toBe(dto.nameEn);
+      expect(result.isDeleted).toBe(false);
     });
 
     it('should return null for non-existent id', async () => {
       const result = await service.findOne('non-existent-id');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for deleted person', async () => {
+      const dto: CreatePersonDto = {
+        nameEn: 'Test User',
+        passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
+      };
+
+      const created = await service.create(dto);
+      await service.remove(created.id);
+      const result = await service.findOne(created.id);
       expect(result).toBeNull();
     });
   });

@@ -21,6 +21,16 @@ export class PermissionController {
     private roleService: RoleService,
   ) {}
 
+  @Get()
+  async getPermissions() {
+    const categories = await this.permissionService.getPermissionCategories();
+    return categories.flatMap(cat => cat.permissions.map(p => ({
+      ...p,
+      category: p.category.toLowerCase(),
+      code: p.code.toLowerCase()
+    })));
+  }
+
   @Get('dashboard')
   async getPermissionDashboard() {
     const [categories, roles] = await Promise.all([
