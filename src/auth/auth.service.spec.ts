@@ -201,23 +201,10 @@ describe('AuthService', () => {
             },
           },
         ],
-        emails: [{ email: 'test@example.com', isPrimary: true }],
+        emails: [{ email: 'test@example.com', isPrimary: true, isVerified: true }],
       };
 
-      mockPrismaService.email.findUnique.mockResolvedValue({
-        id: '1',
-        email,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isPrimary: true,
-        isVerified: true,
-        verificationCode: null,
-        verificationCodeExpiresAt: null,
-        personId: '1',
-        organizationId: '1',
-        person: mockPerson,
-      } as any);
-
+      mockPrismaService.person.findFirst.mockResolvedValue(mockPerson);
       mockPrismaService.person.findUnique.mockResolvedValue(mockPerson);
       mockPrismaService.refreshToken.create.mockResolvedValue({
         id: 'token-id',

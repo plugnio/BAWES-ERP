@@ -101,14 +101,14 @@ describe('PermissionService', () => {
 
       // Assert
       result.forEach(category => {
-        // Category names should be PascalCase
-        expect(category.name).toMatch(/^[A-Z][a-zA-Z]*$/);
+        // Category names should be lowercase
+        expect(category.name).toMatch(/^[a-z]+$/);
         expect(Array.isArray(category.permissions)).toBe(true);
         
         category.permissions.forEach(permission => {
           expect(permission.category).toBe(category.name);
           // Permission codes should be lowercase.category.action
-          expect(permission.code).toMatch(new RegExp(`^${category.name.toLowerCase()}\\.`));
+          expect(permission.code).toMatch(new RegExp(`^${category.name}\\.`));
         });
       });
     });

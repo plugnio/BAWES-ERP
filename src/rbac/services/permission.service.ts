@@ -27,20 +27,17 @@ export class PermissionService {
     // Group permissions by category
     const categories = permissions.reduce(
       (acc, permission) => {
-        const categoryName = this.formatCategoryName(permission.category);
-        const category = acc.find((c) => c.name === categoryName);
+        const category = acc.find((c) => c.name === permission.category);
         if (category) {
           category.permissions.push({
             ...permission,
-            category: categoryName,
             code: permission.code.toLowerCase(),
           });
         } else {
           acc.push({
-            name: categoryName,
+            name: permission.category,
             permissions: [{
               ...permission,
-              category: categoryName,
               code: permission.code.toLowerCase(),
             }],
           });
