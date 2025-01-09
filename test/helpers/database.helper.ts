@@ -73,23 +73,22 @@ export class DatabaseHelper {
     };
 
     try {
-      // Disable foreign key checks, clean up, then re-enable
+      // Disable foreign key checks
       await this.prisma.$executeRaw`SET session_replication_role = 'replica';`;
 
-      await this.prisma.$transaction([
-        this.prisma.refreshToken.deleteMany(),
-        this.prisma.email.deleteMany(),
-        this.prisma.phone.deleteMany(),
-        this.prisma.accountBalances.deleteMany(),
-        this.prisma.account.deleteMany(),
-        this.prisma.bank.deleteMany(),
-        this.prisma.country.deleteMany(),
-        this.prisma.personRole.deleteMany(),
-        this.prisma.rolePermission.deleteMany(),
-        this.prisma.person.deleteMany(),
-        this.prisma.role.deleteMany(),
-        this.prisma.permission.deleteMany(),
-      ]);
+      // Truncate tables in sequence
+      await this.prisma.$executeRaw`TRUNCATE TABLE "refresh_token" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "email" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "phone" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "account_balances" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "account" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "bank" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "country" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "person_role" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "role_permission" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "person" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "role" CASCADE;`;
+      await this.prisma.$executeRaw`TRUNCATE TABLE "permission" CASCADE;`;
 
       // Re-enable foreign key checks
       await this.prisma.$executeRaw`SET session_replication_role = 'origin';`;

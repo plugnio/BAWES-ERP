@@ -15,6 +15,7 @@ import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
 import { TestController } from './rbac/test.controller';
 import { DatabaseHelper } from './helpers/database.helper';
+import { TestModule } from './rbac/test.module';
 
 describe('Permission Flow (e2e)', () => {
   let app: INestApplication;
@@ -40,6 +41,7 @@ describe('Permission Flow (e2e)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         AppModule,
+        TestModule,
         CacheModule.register({
           isGlobal: true,
           store: 'memory',
@@ -50,7 +52,6 @@ describe('Permission Flow (e2e)', () => {
           load: [() => ({ DEBUG: true })],
         }),
       ],
-      controllers: [TestController],
     })
     .overrideProvider('REDIS_CLIENT')
     .useValue(null)
@@ -70,8 +71,11 @@ describe('Permission Flow (e2e)', () => {
     // Clean database using helper
     await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
 
-    // Wait for permission discovery to complete
+    // Wait for module initialization and permission discovery
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for module init
     await discoveryService.onModuleInit();
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for discovery
+    
     permissions = await prisma.permission.findMany();
 
     if (permissions.length === 0) {
@@ -310,6 +314,9 @@ describe('Permission Flow (e2e)', () => {
     await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
     await DatabaseHelper.cleanup();
     await app.close();
+
+    // Clear any remaining timers
+    jest.useRealTimers();
   });
 
   describe('Permission Flow', () => {

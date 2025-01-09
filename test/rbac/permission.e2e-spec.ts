@@ -13,8 +13,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
-import { TestController } from './test.controller';
 import { DatabaseHelper } from '../helpers/database.helper';
+import { TestModule } from './test.module';
 
 describe('Permission (e2e)', () => {
   let app: INestApplication;
@@ -40,6 +40,7 @@ describe('Permission (e2e)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         AppModule,
+        TestModule,
         CacheModule.register({
           isGlobal: true,
           store: 'memory',
@@ -50,7 +51,6 @@ describe('Permission (e2e)', () => {
           load: [() => ({ DEBUG: true })],
         }),
       ],
-      controllers: [TestController],
     })
     .overrideProvider('REDIS_CLIENT')
     .useValue(null)
@@ -70,8 +70,11 @@ describe('Permission (e2e)', () => {
     // Clean database using helper
     await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
 
-    // Wait for permission discovery to complete
+    // Wait for module initialization and permission discovery
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for module init
     await discoveryService.onModuleInit();
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for discovery
+    
     permissions = await prisma.permission.findMany();
 
     if (permissions.length === 0) {
@@ -87,7 +90,7 @@ describe('Permission (e2e)', () => {
     await discoveryService.onModuleInit();
     permissions = await prisma.permission.findMany();
 
-    // Create users and roles in a transaction
+    // Create users, roles, and assign permissions in a single transaction
     const { adminUser: newAdminUser, limitedUser: newLimitedUser, superAdminRole, testRole: newTestRole } = await prisma.$transaction(async (tx) => {
       // Create admin user first
       const newAdminUser = await tx.person.create({
@@ -161,16 +164,6 @@ describe('Permission (e2e)', () => {
         },
       });
 
-      return { adminUser: newAdminUser, limitedUser: newLimitedUser, superAdminRole, testRole: newTestRole };
-    });
-
-    // Update references
-    adminUser = newAdminUser;
-    limitedUser = newLimitedUser;
-    testRole = newTestRole;
-
-    // Assign permissions in a transaction
-    await prisma.$transaction(async (tx) => {
       // Assign all permissions to SUPER_ADMIN
       const allPermissions = await tx.permission.findMany();
       await tx.rolePermission.createMany({
@@ -192,7 +185,7 @@ describe('Permission (e2e)', () => {
 
       await tx.rolePermission.createMany({
         data: testPermissions.map(permission => ({
-          roleId: testRole.id,
+          roleId: newTestRole.id,
           permissionId: permission.id,
         })),
         skipDuplicates: true,
@@ -202,16 +195,23 @@ describe('Permission (e2e)', () => {
       await tx.personRole.createMany({
         data: [
           {
-            personId: adminUser.id,
+            personId: newAdminUser.id,
             roleId: superAdminRole.id,
           },
           {
-            personId: limitedUser.id,
-            roleId: testRole.id,
+            personId: newLimitedUser.id,
+            roleId: newTestRole.id,
           },
         ],
       });
+
+      return { adminUser: newAdminUser, limitedUser: newLimitedUser, superAdminRole, testRole: newTestRole };
     });
+
+    // Update references
+    adminUser = newAdminUser;
+    limitedUser = newLimitedUser;
+    testRole = newTestRole;
 
     // Generate tokens
     const mockReq = {
@@ -310,6 +310,9 @@ describe('Permission (e2e)', () => {
     await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
     await DatabaseHelper.cleanup();
     await app.close();
+
+    // Clear any remaining timers
+    jest.useRealTimers();
   });
 
   describe('Permission Management', () => {
