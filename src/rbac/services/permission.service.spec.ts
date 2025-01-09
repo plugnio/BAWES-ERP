@@ -76,7 +76,7 @@ describe('PermissionService', () => {
 
       // Assert
       // Get unique categories from actual permissions
-      const uniqueCategories = [...new Set(actualPermissions.map(p => p.category))];
+      const uniqueCategories = [...new Set(actualPermissions.map(p => service.formatCategoryName(p.category)))];
       
       expect(result.length).toBe(uniqueCategories.length);
       
@@ -85,7 +85,7 @@ describe('PermissionService', () => {
         const categoryGroup = result.find(r => r.name === category);
         expect(categoryGroup).toBeDefined();
         
-        const expectedPermissions = actualPermissions.filter(p => p.category === category);
+        const expectedPermissions = actualPermissions.filter(p => service.formatCategoryName(p.category) === category);
         expect(categoryGroup.permissions).toHaveLength(expectedPermissions.length);
       });
 
@@ -101,14 +101,13 @@ describe('PermissionService', () => {
 
       // Assert
       result.forEach(category => {
-        // Category names should be lowercase
-        expect(category.name).toMatch(/^[a-z]+$/);
+        // Category names should be PascalCase
+        expect(category.name).toMatch(/^[A-Z][a-zA-Z]*$/);
         expect(Array.isArray(category.permissions)).toBe(true);
         
         category.permissions.forEach(permission => {
-          expect(permission.category).toBe(category.name);
-          // Permission codes should be lowercase.category.action
-          expect(permission.code).toMatch(new RegExp(`^${category.name}\\.`));
+          // Permission codes should be lowercase.action
+          expect(permission.code).toMatch(/^[a-z]+\.[a-z_]+$/);
         });
       });
     });

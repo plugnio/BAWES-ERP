@@ -11,7 +11,7 @@ export class PermissionService {
    * Formats a category name to PascalCase.
    * Example: "user_management" -> "UserManagement"
    */
-  private formatCategoryName(category: string): string {
+  formatCategoryName(category: string): string {
     return category
       .split(/[_\s]+/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -27,7 +27,8 @@ export class PermissionService {
     // Group permissions by category
     const categories = permissions.reduce(
       (acc, permission) => {
-        const category = acc.find((c) => c.name === permission.category);
+        const formattedName = this.formatCategoryName(permission.category);
+        const category = acc.find((c) => c.name === formattedName);
         if (category) {
           category.permissions.push({
             ...permission,
@@ -35,7 +36,7 @@ export class PermissionService {
           });
         } else {
           acc.push({
-            name: permission.category,
+            name: formattedName,
             permissions: [{
               ...permission,
               code: permission.code.toLowerCase(),
