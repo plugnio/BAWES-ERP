@@ -176,6 +176,8 @@
           "<rootDir>/test/jest.setup.ts"
         ]
       }
-    ]
+    ],
+    "verbose": true,
+    "testEnvironment": "node"
   }
 }
