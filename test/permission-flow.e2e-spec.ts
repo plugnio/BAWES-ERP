@@ -14,6 +14,7 @@ import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
 import { TestController } from './rbac/test.controller';
+import { DatabaseHelper } from './helpers/database.helper';
 
 describe('Permission Flow (e2e)', () => {
   let app: INestApplication;
@@ -66,16 +67,8 @@ describe('Permission Flow (e2e)', () => {
     jwtService = moduleRef.get(JwtService);
     rbacCacheService = moduleRef.get(RbacCacheService);
 
-    // Clean database first
-    await prisma.$transaction([
-      prisma.refreshToken.deleteMany(),
-      prisma.personRole.deleteMany(),
-      prisma.rolePermission.deleteMany(),
-      prisma.email.deleteMany(),
-      prisma.person.deleteMany(),
-      prisma.role.deleteMany(),
-      prisma.permission.deleteMany(),
-    ]);
+    // Clean database using helper
+    await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
 
     // Wait for permission discovery to complete
     await discoveryService.onModuleInit();
@@ -87,16 +80,8 @@ describe('Permission Flow (e2e)', () => {
   });
 
   beforeEach(async () => {
-    // Clean up before each test
-    await prisma.$transaction([
-      prisma.refreshToken.deleteMany(),
-      prisma.personRole.deleteMany(),
-      prisma.rolePermission.deleteMany(),
-      prisma.role.deleteMany(),
-      prisma.permission.deleteMany(),
-      prisma.email.deleteMany(),
-      prisma.person.deleteMany(),
-    ]);
+    // Clean up before each test using helper
+    await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
 
     // Rediscover permissions for each test
     await discoveryService.onModuleInit();
@@ -321,15 +306,9 @@ describe('Permission Flow (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.$transaction([
-      prisma.refreshToken.deleteMany(),
-      prisma.personRole.deleteMany(),
-      prisma.rolePermission.deleteMany(),
-      prisma.role.deleteMany(),
-      prisma.permission.deleteMany(),
-      prisma.email.deleteMany(),
-      prisma.person.deleteMany(),
-    ]);
+    // Clean up using helper
+    await DatabaseHelper.getInstance().cleanAll(rbacCacheService);
+    await DatabaseHelper.cleanup();
     await app.close();
   });
 
