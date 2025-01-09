@@ -2,12 +2,19 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { DatabaseHelper } from './helpers/database.helper';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.test',
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      // Use memory store for tests
+      store: 'memory',
+      ttl: 300, // 5 minutes
     }),
   ],
 })

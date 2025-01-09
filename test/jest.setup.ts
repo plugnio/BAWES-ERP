@@ -18,6 +18,10 @@ Logger.overrideLogger([]);
 // Increase timeout for all tests
 jest.setTimeout(30000);
 
+// Configure Jest to show individual test results
+process.env.JEST_HIDE_TERMINAL_CURSOR = '1';
+process.env.JEST_SHOW_INDIVIDUAL_TEST_RESULTS = '1';
+
 // Global test setup
 beforeAll(async () => {
   // Clean database before all tests

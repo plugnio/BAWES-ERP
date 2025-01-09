@@ -81,41 +81,70 @@ export class AuthService {
     }
   }
 
-  async validateLogin(email: string, password: string, req: Request) {
-    // Find the email record
-    const emailRecord = await this.prisma.email.findUnique({
-      where: { email },
-      include: { person: true },
+  async validateLogin(
+    email: string,
+    password: string,
+    req: Request,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prisma = tx || this.prisma;
+    // Find person by email
+    const person = await prisma.person.findFirst({
+      where: {
+        emails: {
+          some: {
+            email: email.toLowerCase(),
+            isVerified: true,
+          },
+        },
+      },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
-    if (!emailRecord || !emailRecord.person || !emailRecord.isVerified) {
-      throw new UnauthorizedException(
-        'Invalid credentials or unverified email',
-      );
+    if (!person) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const person = emailRecord.person;
-
-    if (!person.passwordHash) {
-      throw new UnauthorizedException('Password not set');
-    }
-
-    if (person.accountStatus !== 'active') {
-      throw new UnauthorizedException('Account is not active');
-    }
-
+    // Verify password
     const isPasswordValid = await bcrypt.compare(password, person.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Update last login
-    await this.prisma.person.update({
-      where: { id: person.id },
-      data: { lastLoginAt: new Date() },
-    });
+    // Check account status
+    if (person.accountStatus !== 'active') {
+      throw new UnauthorizedException('Account is not active');
+    }
 
-    return this.generateTokens(person.id, req);
+    try {
+      // Update last login
+      await prisma.person.update({
+        where: { id: person.id },
+        data: { lastLoginAt: new Date() },
+      });
+    } catch (error) {
+      // Log error but don't fail login
+      this.logger.error('Failed to update last login time', error);
+    }
+
+    // Generate tokens
+    const tokens = await this.generateTokens(person.id, req, tx);
+
+    return tokens;
   }
 
   async register(data: {
@@ -173,7 +202,12 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(personId: string, req: Request) {
+  private async generateTokens(
+    personId: string,
+    req: Request,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prisma = tx || this.prisma;
     // Check cache first
     let permissionBits: Decimal | null = null;
     const cachedPermissions = await this.rbacCache.getCachedPersonPermissions(personId);
@@ -186,7 +220,7 @@ export class AuthService {
     }
 
     // Get person's permissions through roles if not cached
-    const personWithRoles = await this.prisma.person.findUnique({
+    const personWithRoles = await prisma.person.findUnique({
       where: { id: personId },
       include: {
         roles: {
@@ -215,39 +249,53 @@ export class AuthService {
       },
     });
 
+    if (!personWithRoles) {
+      throw new UnauthorizedException('Invalid person ID');
+    }
+
     if (this.debugMode) {
       this.logger.debug('Person roles:', JSON.stringify(personWithRoles.roles, null, 2));
     }
 
     // Check if person has SUPER_ADMIN role
-    const isSuperAdmin = personWithRoles.roles.some(pr => pr.role.name === 'SUPER_ADMIN');
+    const isSuperAdmin = personWithRoles.roles?.some(pr => pr.role.name === 'SUPER_ADMIN') ?? false;
 
     // Calculate combined permission bitfield if not cached
     if (!permissionBits) {
-      permissionBits = personWithRoles.roles.reduce((acc, pr) => {
-        if (this.debugMode) {
-          this.logger.debug(`Processing role ${pr.role.name}`);
-        }
+      if (isSuperAdmin) {
+        // Super admin gets all permissions
+        const allPermissions = await prisma.permission.findMany({
+          where: { isDeprecated: false },
+        });
+        permissionBits = allPermissions
+          .reduce((acc, p) => acc.add(new Decimal(p.bitfield)), new Decimal(0));
+      } else {
+        // Regular user gets combined permissions from roles
+        permissionBits = personWithRoles.roles?.reduce((acc, pr) => {
+          if (this.debugMode) {
+            this.logger.debug(`Processing role ${pr.role.name}`);
+          }
 
-        const roleBits = pr.role.permissions.reduce(
-          (roleAcc, rp) => {
-            if (!rp.permission.isDeprecated) {
-              if (this.debugMode) {
-                this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+          const roleBits = pr.role.permissions?.reduce(
+            (roleAcc, rp) => {
+              if (!rp.permission.isDeprecated) {
+                if (this.debugMode) {
+                  this.logger.debug(`Adding permission ${rp.permission.code} with bitfield ${rp.permission.bitfield}`);
+                }
+                return roleAcc.add(new Decimal(rp.permission.bitfield));
               }
-              return roleAcc.add(new Decimal(rp.permission.bitfield));
-            }
-            return roleAcc;
-          },
-          new Decimal(0),
-        );
+              return roleAcc;
+            },
+            new Decimal(0),
+          ) ?? new Decimal(0);
 
-        if (this.debugMode) {
-          this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
-        }
+          if (this.debugMode) {
+            this.logger.debug(`Role ${pr.role.name} combined bits: ${roleBits.toString()}`);
+          }
 
-        return acc.add(roleBits);
-      }, new Decimal(0));
+          return acc.add(roleBits);
+        }, new Decimal(0)) ?? new Decimal(0);
+      }
 
       // Cache the calculated permissions
       await this.rbacCache.setCachedPersonPermissions(personId, permissionBits.toString());
@@ -283,7 +331,7 @@ export class AuthService {
     const expiresAt = this.getRefreshTokenExpiryDate();
 
     // Create refresh token record and get its ID
-    const { id: tokenId } = await this.prisma.refreshToken.create({
+    const { id: tokenId } = await prisma.refreshToken.create({
       select: { id: true },
       data: {
         personId,

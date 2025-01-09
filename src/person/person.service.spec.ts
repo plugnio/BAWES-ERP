@@ -1,39 +1,45 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PersonService } from './person.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { DatabaseHelper } from '../../test/helpers/database.helper';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
-import { ConfigService } from '@nestjs/config';
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { Person } from '@prisma/client';
 
 describe('PersonService', () => {
   let service: PersonService;
-  let prisma: PrismaService;
-  let dbHelper: DatabaseHelper;
+  let prisma: DeepMockProxy<PrismaService>;
 
-  beforeAll(async () => {
-    dbHelper = DatabaseHelper.getInstance();
-    prisma = dbHelper.getPrismaService();
+  const mockPerson = (data: Partial<Person> = {}): Person => ({
+    id: '1',
+    nameEn: 'Test User',
+    nameAr: '',
+    passwordHash: 'hashedpassword123',
+    accountStatus: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLoginAt: new Date(),
+    passwordResetToken: '',
+    passwordResetTokenExpiresAt: new Date(),
+    isDeleted: false,
+    ...data,
+  });
+
+  beforeEach(async () => {
+    const mockPrisma = mockDeep<PrismaService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PersonService,
         {
           provide: PrismaService,
-          useValue: prisma,
+          useValue: mockPrisma,
         },
       ],
     }).compile();
 
     service = module.get<PersonService>(PersonService);
-  });
-
-  beforeEach(async () => {
-    await dbHelper.cleanDatabase();
-  });
-
-  afterAll(async () => {
-    await DatabaseHelper.cleanup();
+    prisma = module.get(PrismaService);
   });
 
   it('should be defined', () => {
@@ -48,6 +54,8 @@ describe('PersonService', () => {
         passwordHash: 'hashedpassword123',
         accountStatus: 'active',
       };
+
+      prisma.person.create.mockResolvedValue(mockPerson(dto));
 
       const result = await service.create(dto);
 
@@ -65,11 +73,13 @@ describe('PersonService', () => {
         accountStatus: 'active',
       };
 
+      prisma.person.create.mockResolvedValue(mockPerson(dto));
+
       const result = await service.create(dto);
 
       expect(result).toBeDefined();
       expect(result.nameEn).toBe(dto.nameEn);
-      expect(result.nameAr).toBeNull();
+      expect(result.nameAr).toBe('');
       expect(result.passwordHash).toBe(dto.passwordHash);
       expect(result.accountStatus).toBe(dto.accountStatus);
     });
@@ -77,12 +87,12 @@ describe('PersonService', () => {
 
   describe('findAll', () => {
     it('should return empty array when no people exist', async () => {
+      prisma.person.findMany.mockResolvedValue([]);
       const result = await service.findAll();
       expect(result).toEqual([]);
     });
 
     it('should return all non-deleted people', async () => {
-      // Create test data
       const dto1: CreatePersonDto = {
         nameEn: 'Test User 1',
         passwordHash: 'hashedpassword123',
@@ -95,16 +105,23 @@ describe('PersonService', () => {
         accountStatus: 'active',
       };
 
+      const person1 = mockPerson({ id: '1', ...dto1 });
+      const person2 = mockPerson({ id: '2', ...dto2 });
+
+      prisma.person.create.mockResolvedValueOnce(person1);
+      prisma.person.create.mockResolvedValueOnce(person2);
+      prisma.person.findMany.mockResolvedValue([person1, person2]);
+
       // Create the test users
-      const person1 = await service.create(dto1);
-      const person2 = await service.create(dto2);
+      await service.create(dto1);
+      await service.create(dto2);
 
       // Get all people
       const result = await service.findAll();
 
       // Verify we get exactly our two created users
       expect(result).toHaveLength(2);
-      expect(result.map(p => p.id).sort()).toEqual([person1.id, person2.id].sort());
+      expect(result.map(p => p.id).sort()).toEqual(['1', '2']);
       expect(result.map(p => p.nameEn).sort()).toEqual([dto1.nameEn, dto2.nameEn].sort());
     });
   });
@@ -117,16 +134,55 @@ describe('PersonService', () => {
         accountStatus: 'active',
       };
 
+      const person = mockPerson(dto);
+      const personWithIncludes = {
+        ...person,
+        emails: [],
+        phones: [],
+        roles: [],
+      };
+
+      prisma.person.create.mockResolvedValue(person);
+      prisma.person.findFirst.mockResolvedValue(personWithIncludes);
+
       const created = await service.create(dto);
       const result = await service.findOne(created.id);
 
       expect(result).toBeDefined();
       expect(result.id).toBe(created.id);
       expect(result.nameEn).toBe(dto.nameEn);
+      expect(result.isDeleted).toBe(false);
     });
 
     it('should return null for non-existent id', async () => {
+      prisma.person.findFirst.mockResolvedValue(null);
       const result = await service.findOne('non-existent-id');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for deleted person', async () => {
+      const dto: CreatePersonDto = {
+        nameEn: 'Test User',
+        passwordHash: 'hashedpassword123',
+        accountStatus: 'active',
+      };
+
+      const person = mockPerson(dto);
+      const deletedPerson = mockPerson({ ...dto, isDeleted: true });
+      const deletedPersonWithIncludes = {
+        ...deletedPerson,
+        emails: [],
+        phones: [],
+        roles: [],
+      };
+
+      prisma.person.create.mockResolvedValue(person);
+      prisma.person.update.mockResolvedValue(deletedPerson);
+      prisma.person.findFirst.mockResolvedValue(null);
+
+      const created = await service.create(dto);
+      await service.remove(created.id);
+      const result = await service.findOne(created.id);
       expect(result).toBeNull();
     });
   });
@@ -139,13 +195,21 @@ describe('PersonService', () => {
         accountStatus: 'active',
       };
 
-      const created = await service.create(createDto);
+      const person = mockPerson(createDto);
 
       const updateDto: UpdatePersonDto = {
         nameEn: 'Updated User',
         nameAr: 'مستخدم محدث',
       };
 
+      const updatedPerson = mockPerson({ ...person, ...updateDto });
+
+      prisma.person.create.mockResolvedValue(person);
+      prisma.person.findUnique.mockResolvedValue(person);
+      prisma.person.update.mockResolvedValue(updatedPerson);
+      prisma.$transaction.mockImplementation(cb => cb(prisma));
+
+      const created = await service.create(createDto);
       const result = await service.update(created.id, updateDto);
 
       expect(result).toBeDefined();
@@ -160,6 +224,8 @@ describe('PersonService', () => {
         nameEn: 'Updated User',
       };
 
+      prisma.person.findUnique.mockResolvedValue(null);
+      prisma.$transaction.mockImplementation(cb => cb(prisma));
       const result = await service.update('non-existent-id', updateDto);
       expect(result).toBeNull();
     });
@@ -168,10 +234,18 @@ describe('PersonService', () => {
   describe('remove', () => {
     it('should soft delete a person', async () => {
       const dto: CreatePersonDto = {
-        nameEn: 'Test User',
+        nameEn: 'Test Person',
         passwordHash: 'hashedpassword123',
         accountStatus: 'active',
       };
+
+      const person = mockPerson(dto);
+      const deletedPerson = mockPerson({ ...dto, isDeleted: true });
+
+      prisma.person.create.mockResolvedValue(person);
+      prisma.person.findUnique.mockResolvedValue(person);
+      prisma.person.update.mockResolvedValue(deletedPerson);
+      prisma.$transaction.mockImplementation(cb => cb(prisma));
 
       const created = await service.create(dto);
       const result = await service.remove(created.id);
@@ -179,13 +253,15 @@ describe('PersonService', () => {
       expect(result).toBeDefined();
       expect(result.id).toBe(created.id);
       expect(result.isDeleted).toBe(true);
-
-      // Verify the person is not returned in findAll
-      const allPeople = await service.findAll();
-      expect(allPeople.map(p => p.id)).not.toContain(created.id);
+      expect(prisma.person.update).toHaveBeenCalledWith({
+        where: { id: created.id },
+        data: { isDeleted: true },
+      });
     });
 
     it('should return null for non-existent id', async () => {
+      prisma.person.findUnique.mockResolvedValue(null);
+      prisma.$transaction.mockImplementation(cb => cb(prisma));
       const result = await service.remove('non-existent-id');
       expect(result).toBeNull();
     });

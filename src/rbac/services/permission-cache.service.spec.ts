@@ -4,6 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cache } from 'cache-manager';
 import { PermissionCacheService } from './permission-cache.service';
 import { Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('PermissionCacheService', () => {
   let service: PermissionCacheService;
@@ -30,6 +31,13 @@ describe('PermissionCacheService', () => {
       emit: jest.fn(),
     };
 
+    const mockPrisma = {
+      permission: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      $transaction: jest.fn(fn => fn()),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PermissionCacheService,
@@ -40,6 +48,10 @@ describe('PermissionCacheService', () => {
         {
           provide: EventEmitter2,
           useValue: mockEventEmitter,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrisma,
         },
       ],
     }).compile();
@@ -73,7 +85,7 @@ describe('PermissionCacheService', () => {
       );
       expect(cacheManager.set).toHaveBeenCalledWith(
         'permission:categories:users',
-        'read'
+        'users.read'
       );
       expect(loggerDebug).toHaveBeenCalledWith('Permission cache initialized successfully');
     });
@@ -161,7 +173,7 @@ describe('PermissionCacheService', () => {
       // Verify new values are set
       expect(cacheManager.set).toHaveBeenCalledWith('permission:bitfields:users.read', '1');
       expect(cacheManager.set).toHaveBeenCalledWith('permission:bitfields:users.write', '2');
-      expect(cacheManager.set).toHaveBeenCalledWith('permission:categories:users', 'read,write');
+      expect(cacheManager.set).toHaveBeenCalledWith('permission:categories:users', 'users.read,users.write');
     });
 
     it('should handle invalidation errors', async () => {

@@ -3,6 +3,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cache } from 'cache-manager';
+import { PrismaService } from '../../prisma/prisma.service';
+import { Permission } from '@prisma/client';
 
 const PERMISSION_BITFIELDS_KEY = 'permission:bitfields';
 const PERMISSION_CATEGORIES_KEY = 'permission:categories';
@@ -14,6 +16,7 @@ export class PermissionCacheService implements OnModuleInit {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private eventEmitter: EventEmitter2,
+    private prisma: PrismaService,
   ) {
     this.eventEmitter.on('permissions.changed', () => {
       this.invalidatePermissionCache();
@@ -48,7 +51,7 @@ export class PermissionCacheService implements OnModuleInit {
       if (!acc[p.category]) {
         acc[p.category] = [];
       }
-      acc[p.category].push(...p.permissions);
+      acc[p.category].push(p.code);
       return acc;
     }, {} as Record<string, string[]>);
 
@@ -102,10 +105,9 @@ export class PermissionCacheService implements OnModuleInit {
   }
 
   private async discoverPermissions() {
-    // Mock implementation - replace with actual discovery logic
-    return [
-      { code: 'users.read', bitfield: '1', category: 'users', permissions: ['read'] },
-      { code: 'users.write', bitfield: '2', category: 'users', permissions: ['write'] },
-    ];
+    return this.prisma.permission.findMany({
+      where: { isDeprecated: false },
+      orderBy: [{ category: 'asc' }, { code: 'asc' }],
+    });
   }
 } 

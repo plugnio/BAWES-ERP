@@ -151,9 +151,9 @@ export class PermissionDiscoveryService {
 
   /**
    * Syncs discovered permissions with the database.
-   * @private
+   * @internal Used by tests
    */
-  private async syncPermissions() {
+  async syncPermissions() {
     try {
       const discoveredPermissions = await this.discoverPermissions();
 
@@ -165,7 +165,7 @@ export class PermissionDiscoveryService {
       await this.prisma.$transaction(async (prisma) => {
         // Get existing permissions
         const existingPermissions = await prisma.permission.findMany();
-        const existingCodes = new Set(existingPermissions.map(p => p.code));
+        const existingCodes = new Set(existingPermissions.map(p => p.code.toLowerCase()));
 
         if (this.debugMode) {
           this.logger.debug(`Found ${existingPermissions.length} existing permissions in database`);
@@ -173,7 +173,7 @@ export class PermissionDiscoveryService {
 
         // Find new permissions to add
         const newPermissions = discoveredPermissions
-          .filter(p => !existingCodes.has(p.code));
+          .filter(p => !existingCodes.has(p.code.toLowerCase()));
 
         if (newPermissions.length > 0) {
           if (this.debugMode) {
@@ -184,10 +184,9 @@ export class PermissionDiscoveryService {
           }
 
           // Calculate next bitfield for each new permission
-          const lastPermission = await prisma.permission.findMany({
+          const lastPermission = await prisma.permission.findFirst({
             orderBy: { bitfield: 'desc' },
-            take: 1,
-          }).then(perms => perms[0]);
+          });
 
           let nextBitfield = lastPermission
             ? BigInt(lastPermission.bitfield.toString()) * 2n
@@ -199,15 +198,20 @@ export class PermissionDiscoveryService {
 
           // Create new permissions
           for (const permission of newPermissions) {
-            const created = await prisma.permission.create({
-              data: {
+            await prisma.permission.upsert({
+              where: { code: permission.code.toLowerCase() },
+              update: {
+                name: permission.name,
+                description: permission.description,
+                category: permission.category.toLowerCase(),
+              },
+              create: {
                 ...permission,
+                code: permission.code.toLowerCase(),
+                category: permission.category.toLowerCase(),
                 bitfield: nextBitfield.toString(),
               },
             });
-            if (this.debugMode) {
-              this.logger.debug(`Created permission: ${created.code} with bitfield ${created.bitfield}`);
-            }
             nextBitfield *= 2n;
           }
         }
@@ -252,43 +256,10 @@ export class PermissionDiscoveryService {
               skipDuplicates: true,
             });
           }
-        } else if (this.debugMode) {
-          this.logger.warn('SUPER_ADMIN role not found, skipping permission assignment');
-        }
-
-        // Mark permissions as deprecated if they no longer exist in code
-        const permissionsToDeprecate = existingPermissions
-          .filter(p => !discoveredPermissions.some(dp => dp.code === p.code) && !p.isDeprecated);
-
-        if (permissionsToDeprecate.length > 0) {
-          if (this.debugMode) {
-            this.logger.debug(`Marking ${permissionsToDeprecate.length} permissions as deprecated:`);
-            permissionsToDeprecate.forEach(p => {
-              this.logger.debug(`- ${p.code}`);
-            });
-          }
-          await prisma.permission.updateMany({
-            where: {
-              code: {
-                in: permissionsToDeprecate.map(p => p.code),
-              },
-            },
-            data: {
-              isDeprecated: true,
-            },
-          });
-        }
-
-        if (this.debugMode) {
-          this.logger.debug('Permission sync completed successfully');
         }
       });
     } catch (error) {
-      this.logger.error('Failed to sync permissions', {
-        error: error.message,
-        stack: error.stack,
-        context: 'syncPermissions',
-      });
+      this.logger.error('Failed to sync permissions', error.stack);
       throw error;
     }
   }

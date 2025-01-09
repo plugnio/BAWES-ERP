@@ -11,6 +11,16 @@ export class PersonRoleService {
   ) {}
 
   async assignRole(personId: string, roleId: string) {
+    // Verify person exists
+    const person = await this.prisma.person.findUnique({
+      where: { id: personId },
+    });
+
+    if (!person) {
+      throw new NotFoundException('Person not found');
+    }
+
+    // Verify role exists
     const role = await this.prisma.role.findUnique({
       where: { id: roleId },
     });
@@ -19,12 +29,21 @@ export class PersonRoleService {
       throw new NotFoundException('Role not found');
     }
 
-    await this.prisma.personRole.create({
-      data: {
-        personId,
-        roleId,
-      },
-    });
+    // Create person role
+    try {
+      await this.prisma.personRole.create({
+        data: {
+          personId,
+          roleId,
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        // Unique constraint violation - role already assigned
+        return;
+      }
+      throw error;
+    }
 
     // Clear person's permission cache
     await this.cacheService.clearPersonPermissionCache(personId);

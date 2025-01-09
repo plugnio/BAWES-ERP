@@ -50,6 +50,13 @@ describe('PermissionDiscoveryService', () => {
         createMany: jest.fn(),
         updateMany: jest.fn(),
         deleteMany: jest.fn(),
+        upsert: jest.fn().mockImplementation(({ create }) => ({
+          ...create,
+          id: '1',
+          bitfield: '2',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })),
       },
       role: {
         findUnique: jest.fn(),
@@ -74,6 +81,13 @@ describe('PermissionDiscoveryService', () => {
             createMany: jest.fn().mockResolvedValue({ count: 1 }),
             updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+            upsert: jest.fn().mockImplementation(({ create }) => ({
+              ...create,
+              id: '1',
+              bitfield: '2',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })),
           },
           role: {
             findUnique: jest.fn().mockResolvedValue({
@@ -271,16 +285,13 @@ describe('PermissionDiscoveryService', () => {
 
     it('should handle errors during sync', async () => {
       const error = new Error('Sync failed');
+      error.stack = 'Error: Sync failed\n    at Object.<anonymous>';
       
       // Mock transaction to throw error
       (prisma.$transaction as jest.Mock).mockRejectedValue(error);
-      
-      await expect((service as any).syncPermissions()).rejects.toThrow('Sync failed');
-      expect(logger).toHaveBeenCalledWith('Failed to sync permissions', {
-        error: error.message,
-        stack: error.stack,
-        context: 'syncPermissions',
-      });
+
+      await expect(service.syncPermissions()).rejects.toThrow('Sync failed');
+      expect(logger).toHaveBeenCalledWith('Failed to sync permissions', error.stack);
     });
   });
 

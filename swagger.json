@@ -415,6 +415,25 @@
         ]
       }
     },
+    "/permissions": {
+      "get": {
+        "operationId": "PermissionController_getPermissions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Permissions"
+        ]
+      }
+    },
     "/permissions/dashboard": {
       "get": {
         "operationId": "PermissionController_getPermissionDashboard",

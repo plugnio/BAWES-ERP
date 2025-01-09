@@ -15,7 +15,13 @@ describe('RoleService', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
-      create: jest.fn(),
+      create: jest.fn().mockImplementation(({ data }) => ({
+        id: '1',
+        ...data,
+        permissions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
       update: jest.fn(),
       delete: jest.fn(),
     },
@@ -31,7 +37,12 @@ describe('RoleService', () => {
     personRole: {
       deleteMany: jest.fn(),
     },
-    $transaction: jest.fn((updates) => Promise.resolve(updates)),
+    $transaction: jest.fn(async (callback) => {
+      if (typeof callback === 'function') {
+        return callback(mockPrisma);
+      }
+      return Promise.all(callback);
+    }),
   };
 
   const mockCacheService = {
@@ -150,6 +161,14 @@ describe('RoleService', () => {
         permissions: [],
       });
 
+      // Mock transaction to return the role with permissions
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        if (typeof callback === 'function') {
+          return callback(mockPrisma);
+        }
+        return Promise.all(callback);
+      });
+
       const result = await service.createRole(dto);
 
       expect(result).toEqual({ ...mockRole, permissions: [] });
@@ -198,6 +217,14 @@ describe('RoleService', () => {
       mockPrisma.role.findUnique.mockResolvedValue({
         ...mockRole,
         permissions: mockPermissions.map(p => ({ permission: p })),
+      });
+
+      // Mock transaction to return the role with permissions
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        if (typeof callback === 'function') {
+          return callback(mockPrisma);
+        }
+        return Promise.all(callback);
       });
 
       const result = await service.createRole(dto);

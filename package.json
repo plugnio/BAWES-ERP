@@ -19,11 +19,12 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --maxWorkers=50%",
-    "test:watch": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --watch --maxWorkers=50%",
-    "test:cov": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --coverage --maxWorkers=50%",
+    "test": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --runInBand --selectProjects=unit src/",
+    "test:watch": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --watch --runInBand --selectProjects=unit src/",
+    "test:cov": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --coverage --runInBand --selectProjects=unit src/",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --config ./test/jest-e2e.json",
+    "test:e2e": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --runInBand --selectProjects=e2e test/",
+    "test:e2e:cov": "cross-env npm run db:migrate:test && cross-env NODE_ENV=test dotenv -e .env.test jest --verbose --coverage --runInBand --selectProjects=e2e test/",
     "seed": "ts-node prisma/seed.ts",
     "seed:dev": "cross-env NODE_ENV=development prisma db seed",
     "seed:prod": "cross-env NODE_ENV=production prisma db seed",
@@ -110,32 +111,73 @@
     "typescript": "^5.7.2"
   },
   "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
+    "projects": [
+      {
+        "displayName": "unit",
+        "moduleFileExtensions": ["js", "json", "ts"],
+        "rootDir": ".",
+        "testMatch": [
+          "<rootDir>/src/**/*.spec.ts"
+        ],
+        "testPathIgnorePatterns": [
+          "\\.e2e-spec\\.ts$",
+          "/node_modules/",
+          "/dist/"
+        ],
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "collectCoverageFrom": [
+          "src/**/*.ts"
+        ],
+        "coverageDirectory": "./coverage",
+        "testEnvironment": "node",
+        "moduleNameMapper": {
+          "^@/(.*)$": "<rootDir>/src/$1"
+        },
+        "roots": [
+          "<rootDir>/src/"
+        ],
+        "globalSetup": "<rootDir>/test/setup.ts",
+        "globalTeardown": "<rootDir>/test/teardown.ts",
+        "setupFilesAfterEnv": [
+          "<rootDir>/test/jest.setup.ts"
+        ]
+      },
+      {
+        "displayName": "e2e",
+        "moduleFileExtensions": ["js", "json", "ts"],
+        "rootDir": ".",
+        "testMatch": [
+          "<rootDir>/test/**/*.e2e-spec.ts"
+        ],
+        "testPathIgnorePatterns": [
+          "/node_modules/",
+          "/dist/",
+          "/src/"
+        ],
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "collectCoverageFrom": [
+          "src/**/*.ts"
+        ],
+        "coverageDirectory": "./coverage-e2e",
+        "testEnvironment": "node",
+        "moduleNameMapper": {
+          "^@/(.*)$": "<rootDir>/src/$1"
+        },
+        "roots": [
+          "<rootDir>/test/"
+        ],
+        "globalSetup": "<rootDir>/test/setup.ts",
+        "globalTeardown": "<rootDir>/test/teardown.ts",
+        "setupFilesAfterEnv": [
+          "<rootDir>/test/jest.setup.ts"
+        ]
+      }
     ],
-    "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "./coverage",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
-    },
-    "roots": [
-      "<rootDir>/src/",
-      "<rootDir>/test/"
-    ],
-    "globalSetup": "<rootDir>/test/setup.ts",
-    "globalTeardown": "<rootDir>/test/teardown.ts",
-    "setupFilesAfterEnv": [
-      "<rootDir>/test/jest.setup.ts"
-    ]
+    "verbose": true,
+    "testEnvironment": "node"
   }
 }
