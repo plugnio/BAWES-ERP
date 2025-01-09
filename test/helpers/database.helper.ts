@@ -73,26 +73,27 @@ export class DatabaseHelper {
     };
 
     try {
-      log('Starting database cleanup...');
+      // Disable foreign key checks, clean up, then re-enable
+      await this.prisma.$executeRaw`SET session_replication_role = 'replica';`;
 
-      // Delete in correct order to handle foreign key constraints
-      await this.prisma.$transaction(async (tx) => {
-        // First delete child tables
-        await tx.refreshToken.deleteMany();
-        await tx.personRole.deleteMany();
-        await tx.rolePermission.deleteMany();
-        await tx.email.deleteMany();
-        // Then delete parent tables
-        await tx.role.deleteMany();
-        await tx.permission.deleteMany();
-        await tx.person.deleteMany();
+      await this.prisma.$transaction([
+        this.prisma.refreshToken.deleteMany(),
+        this.prisma.email.deleteMany(),
+        this.prisma.phone.deleteMany(),
+        this.prisma.accountBalances.deleteMany(),
+        this.prisma.account.deleteMany(),
+        this.prisma.bank.deleteMany(),
+        this.prisma.country.deleteMany(),
+        this.prisma.personRole.deleteMany(),
+        this.prisma.rolePermission.deleteMany(),
+        this.prisma.person.deleteMany(),
+        this.prisma.role.deleteMany(),
+        this.prisma.permission.deleteMany(),
+      ]);
 
-        log('Database cleanup completed');
-      }, {
-        timeout: 10000, // 10 second timeout
-        maxWait: 5000, // 5 second max wait
-        isolationLevel: 'Serializable', // Highest isolation level
-      });
+      // Re-enable foreign key checks
+      await this.prisma.$executeRaw`SET session_replication_role = 'origin';`;
+
     } catch (err) {
       if (err.code === 'P2021') {
         // Table does not exist - this is fine during initial setup
